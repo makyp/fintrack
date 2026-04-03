@@ -36,6 +36,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegisterRequested>(_onRegister);
     on<AuthPasswordResetRequested>(_onPasswordReset);
     on<AuthSignOutRequested>(_onSignOut);
+    on<AuthOnboardingCompleted>(_onOnboardingCompleted);
   }
 
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
@@ -114,6 +115,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     await _signOut();
     emit(const AuthState.unauthenticated());
+  }
+
+  void _onOnboardingCompleted(
+    AuthOnboardingCompleted event,
+    Emitter<AuthState> emit,
+  ) {
+    final user = state.user;
+    if (user != null) {
+      emit(AuthState.authenticated(user.copyWith(onboardingCompleted: true)));
+    }
   }
 
   @override

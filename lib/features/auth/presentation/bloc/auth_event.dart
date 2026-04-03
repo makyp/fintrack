@@ -53,3 +53,7 @@ class AuthPasswordResetRequested extends AuthEvent {
 class AuthSignOutRequested extends AuthEvent {
   const AuthSignOutRequested();
 }
+
+class AuthOnboardingCompleted extends AuthEvent {
+  const AuthOnboardingCompleted();
+}

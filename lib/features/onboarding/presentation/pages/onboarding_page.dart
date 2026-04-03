@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../domain/onboarding_service.dart';
 import '../widgets/onboarding_step_indicator.dart';
 import 'onboarding_step_cash.dart';
@@ -72,7 +73,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
         bankAccounts: bankAccounts,
         cards: cards,
       );
-      if (mounted) context.go('/');
+      if (mounted) {
+        context.read<AuthBloc>().add(const AuthOnboardingCompleted());
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,9 +105,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
         bankAccounts: const [],
         cards: const [],
       );
-      if (mounted) context.go('/');
+      if (mounted) {
+        context.read<AuthBloc>().add(const AuthOnboardingCompleted());
+      }
     } catch (_) {
-      if (mounted) context.go('/');
+      if (mounted) {
+        context.read<AuthBloc>().add(const AuthOnboardingCompleted());
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
