@@ -79,7 +79,7 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i296.SendPasswordReset(gh<_i305.AuthRepository>()));
     gh.lazySingleton<_i812.SignOut>(
         () => _i812.SignOut(gh<_i305.AuthRepository>()));
-    gh.factory<_i847.AuthBloc>(
+    gh.lazySingleton<_i847.AuthBloc>(
       () => _i847.AuthBloc(
         gh<_i305.AuthRepository>(),
         gh<_i1.SignInWithEmail>(),

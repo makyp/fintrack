@@ -1,8 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/bloc/auth_event.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -17,13 +20,16 @@ class FinTrackApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'FinTrack',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
-      routerConfig: AppRouter.buildRouter(),
-      debugShowCheckedModeBanner: false,
+    return BlocProvider.value(
+      value: getIt<AuthBloc>()..add(const AuthStarted()),
+      child: MaterialApp.router(
+        title: 'FinTrack',
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.system,
+        routerConfig: AppRouter.buildRouter(),
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

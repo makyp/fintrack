@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
-import '../../features/auth/presentation/bloc/auth_event.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -18,7 +17,7 @@ import '../di/injection.dart';
 
 class AppRouter {
   static GoRouter buildRouter() {
-    final authBloc = getIt<AuthBloc>()..add(const AuthStarted());
+    final authBloc = getIt<AuthBloc>();
 
     return GoRouter(
       initialLocation: '/login',
