@@ -99,7 +99,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<AppUserModel> signInWithGoogle() async {
     try {
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) throw const AuthException('Inicio de sesión cancelado');
+      // null = user closed the picker without selecting an account
+      if (googleUser == null) throw const AuthException('cancelled');
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -127,6 +128,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw AuthException(_mapFirebaseAuthError(e.code));
     } catch (e) {
       if (e is AuthException) rethrow;
+      // popup_closed / user_cancelled = user dismissed the Google picker
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('popup_closed') ||
+          msg.contains('popup-closed') ||
+          msg.contains('cancelled') ||
+          msg.contains('canceled') ||
+          msg.contains('user_cancelled')) {
+        throw const AuthException('cancelled');
+      }
       throw AuthException(e.toString());
     }
   }

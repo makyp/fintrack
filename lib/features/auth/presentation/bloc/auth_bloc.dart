@@ -83,7 +83,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthState.loading());
     final result = await _signInWithGoogle();
     result.fold(
-      (failure) => emit(AuthState.error(failure.message)),
+      (failure) {
+        // 'cancelled' = user closed the Google picker — not an error to show
+        if (failure.message == 'cancelled') {
+          emit(const AuthState.unauthenticated());
+        } else {
+          emit(AuthState.error(failure.message));
+        }
+      },
       (user) {
         AnalyticsService.logLogin('google');
         emit(AuthState.authenticated(user));
