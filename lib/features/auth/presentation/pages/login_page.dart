@@ -98,15 +98,10 @@ class _LoginForm extends StatelessWidget {
           if (!isWeb) ...[
             const SizedBox(height: AppDimensions.xl),
             // Mobile logo
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.account_balance_wallet,
-                  color: AppColors.white, size: 32),
+            Image.asset(
+              'assets/images/LogoFintrack.png',
+              width: 64,
+              height: 64,
             ),
             const SizedBox(height: AppDimensions.md),
           ],

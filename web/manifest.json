@@ -1,11 +1,11 @@
 {
-    "name": "fintrack",
-    "short_name": "fintrack",
+    "name": "FinTrack",
+    "short_name": "FinTrack",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#2563EB",
+    "theme_color": "#2563EB",
+    "description": "Gestión de finanzas personales y colaborativas",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

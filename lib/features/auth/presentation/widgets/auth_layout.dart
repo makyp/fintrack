@@ -138,17 +138,10 @@ class _BrandPanel extends StatelessWidget {
                 // Logo
                 Row(
                   children: [
-                    Container(
+                    Image.asset(
+                      'assets/images/LogoFintrack.png',
                       width: 44,
                       height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.3), width: 1),
-                      ),
-                      child: const Icon(Icons.account_balance_wallet,
-                          color: Colors.white, size: 24),
                     ),
                     const SizedBox(width: 12),
                     const Text(

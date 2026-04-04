@@ -137,15 +137,10 @@ class _Sidebar extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: Row(
               children: [
-                Container(
+                Image.asset(
+                  'assets/images/LogoFintrack.png',
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.account_balance_wallet,
-                      color: AppColors.white, size: 20),
                 ),
                 const SizedBox(width: 10),
                 const Text(
