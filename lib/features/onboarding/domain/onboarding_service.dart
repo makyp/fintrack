@@ -92,13 +92,14 @@ class OnboardingService {
       );
     }
 
-    // Mark onboarding complete
-    batch.update(
+    // Mark onboarding complete (set+merge crea el doc si no existe)
+    batch.set(
       _firestore.collection('users').doc(userId),
       {
         'onboardingCompleted': true,
         'updatedAt': Timestamp.now(),
       },
+      SetOptions(merge: true),
     );
 
     await batch.commit();
