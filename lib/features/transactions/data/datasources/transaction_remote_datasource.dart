@@ -101,11 +101,19 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           'balance': FieldValue.increment(tx.amount),
         });
       } else if (tx.type == TransactionType.transfer && tx.toAccountId != null) {
+        // Fetch destination account type to determine correct balance delta.
+        // Liability accounts (credit cards): payment reduces debt → delta = -amount
+        // Asset accounts: receiving money increases balance → delta = +amount
+        final toAccSnap = await _accountRef(tx.userId, tx.toAccountId!).get();
+        final toAccType = toAccSnap.data()?['type'] as String? ?? 'cash';
+        final isLiability = toAccType == 'credit';
+        final toDelta = isLiability ? -tx.amount : tx.amount;
+
         batch.update(_accountRef(tx.userId, tx.accountId), {
           'balance': FieldValue.increment(-tx.amount),
         });
         batch.update(_accountRef(tx.userId, tx.toAccountId!), {
-          'balance': FieldValue.increment(tx.amount),
+          'balance': FieldValue.increment(toDelta),
         });
       }
 
@@ -132,6 +140,15 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         batch.update(_accountRef(tx.userId, old.accountId), {'balance': FieldValue.increment(old.amount)});
       } else if (old.type == TransactionType.income) {
         batch.update(_accountRef(tx.userId, old.accountId), {'balance': FieldValue.increment(-old.amount)});
+      } else if (old.type == TransactionType.transfer && old.toAccountId != null) {
+        // Restore source account
+        batch.update(_accountRef(tx.userId, old.accountId), {'balance': FieldValue.increment(old.amount)});
+        // Restore destination account (reverse the payment that was applied)
+        final oldToSnap = await _accountRef(tx.userId, old.toAccountId!).get();
+        final oldToType = oldToSnap.data()?['type'] as String? ?? 'cash';
+        final oldIsLiability = oldToType == 'credit';
+        final oldToDelta = oldIsLiability ? old.amount : -old.amount;
+        batch.update(_accountRef(tx.userId, old.toAccountId!), {'balance': FieldValue.increment(oldToDelta)});
       }
 
       // Apply new balance effect
@@ -139,6 +156,13 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         batch.update(_accountRef(tx.userId, tx.accountId), {'balance': FieldValue.increment(-tx.amount)});
       } else if (tx.type == TransactionType.income) {
         batch.update(_accountRef(tx.userId, tx.accountId), {'balance': FieldValue.increment(tx.amount)});
+      } else if (tx.type == TransactionType.transfer && tx.toAccountId != null) {
+        final toSnap = await _accountRef(tx.userId, tx.toAccountId!).get();
+        final toType = toSnap.data()?['type'] as String? ?? 'cash';
+        final isLiability = toType == 'credit';
+        final toDelta = isLiability ? -tx.amount : tx.amount;
+        batch.update(_accountRef(tx.userId, tx.accountId), {'balance': FieldValue.increment(-tx.amount)});
+        batch.update(_accountRef(tx.userId, tx.toAccountId!), {'balance': FieldValue.increment(toDelta)});
       }
 
       await batch.commit();
