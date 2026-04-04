@@ -3,7 +3,13 @@
     "allow": [
       "Bash(python -c ':*)",
       "Bash(flutter pub:*)",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(./gradlew signingReport)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(xargs grep:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

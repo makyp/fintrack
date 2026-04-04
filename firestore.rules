@@ -54,8 +54,12 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.auth.uid in request.resource.data.memberUids;
 
-      // Solo miembros actuales pueden actualizar (unirse, salir, cambiar nombre)
-      allow update: if isMember();
+      // Miembros pueden actualizar; también se permite auto-unirse (el UID no
+      // estaba antes en memberUids pero sí queda en la nueva data).
+      allow update: if isMember()
+                    || (request.auth != null
+                        && request.auth.uid in request.resource.data.memberUids
+                        && !(request.auth.uid in resource.data.memberUids));
 
       // Nadie puede borrar hogares desde el cliente
       allow delete: if false;

@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "94712880912-gmjpeajg1jdhc9eieapv79vip6ba28d7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fintrack",
+            "certificate_hash": "6dd1e157ed4149011c6ae4fc1202016db7be1102"
+          }
+        },
+        {
           "client_id": "94712880912-1720u10csae2be7lccojkojc5l189213.apps.googleusercontent.com",
           "client_type": 3
         }
