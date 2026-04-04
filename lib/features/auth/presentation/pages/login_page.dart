@@ -7,6 +7,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import '../widgets/auth_layout.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/social_sign_in_button.dart';
 
@@ -32,198 +33,226 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: context.read<AuthBloc>(),
-      child: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state.status == AuthStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'Error desconocido'),
-                backgroundColor: AppColors.danger,
-              ),
-            );
-          }
-          if (state.isAuthenticated) {
-            if (state.user?.onboardingCompleted == false) {
-              context.go('/onboarding');
-            } else {
-              context.go('/');
-            }
-          }
-        },
-        builder: (context, state) {
-          return Scaffold(
-            body: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppDimensions.pagePadding),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: AppDimensions.xxl),
-                      _buildHeader(),
-                      const SizedBox(height: AppDimensions.xl),
-                      _buildForm(context, state),
-                      const SizedBox(height: AppDimensions.md),
-                      _buildForgotPassword(context),
-                      const SizedBox(height: AppDimensions.lg),
-                      _buildLoginButton(context, state),
-                      const SizedBox(height: AppDimensions.lg),
-                      _buildDivider(),
-                      const SizedBox(height: AppDimensions.lg),
-                      SocialSignInButton.google(
-                        onTap: () => context
-                            .read<AuthBloc>()
-                            .add(const AuthSignInWithGoogleRequested()),
-                        isLoading: state.isLoading,
-                      ),
-                      const SizedBox(height: AppDimensions.xl),
-                      _buildRegisterLink(context),
-                    ],
-                  ),
-                ),
-              ),
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state.status == AuthStatus.error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage ?? 'Error desconocido'),
+              backgroundColor: AppColors.danger,
             ),
           );
-        },
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(16),
+        }
+        if (state.isAuthenticated) {
+          if (state.user?.onboardingCompleted == false) {
+            context.go('/onboarding');
+          } else {
+            context.go('/');
+          }
+        }
+      },
+      builder: (context, state) {
+        return AuthLayout(
+          isLogin: true,
+          form: _LoginForm(
+            formKey: _formKey,
+            emailCtrl: _emailCtrl,
+            passwordCtrl: _passwordCtrl,
+            obscurePassword: _obscurePassword,
+            onToggleObscure: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
+            state: state,
           ),
-          child: const Icon(Icons.account_balance_wallet, color: AppColors.white, size: 32),
-        ),
-        const SizedBox(height: AppDimensions.md),
-        Text(
-          'Bienvenido a FinTrack',
-          style: AppTextStyles.displaySmall,
-        ),
-        const SizedBox(height: AppDimensions.xs),
-        Text(
-          'Controla tus finanzas con inteligencia',
-          style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey500),
-        ),
-      ],
+        );
+      },
     );
   }
+}
 
-  Widget _buildForm(BuildContext context, AuthState state) {
-    return Column(
-      children: [
-        AuthTextField(
-          controller: _emailCtrl,
-          label: 'Correo electrónico',
-          hint: 'tu@correo.com',
-          keyboardType: TextInputType.emailAddress,
-          prefixIcon: Icons.email_outlined,
-          enabled: !state.isLoading,
-          validator: (v) {
-            if (v == null || v.isEmpty) return 'Ingresa tu correo';
-            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
-              return 'Correo no válido';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: AppDimensions.md),
-        AuthTextField(
-          controller: _passwordCtrl,
-          label: 'Contraseña',
-          hint: '••••••••',
-          obscureText: _obscurePassword,
-          prefixIcon: Icons.lock_outline,
-          enabled: !state.isLoading,
-          suffixIcon: IconButton(
-            icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-          ),
-          validator: (v) {
-            if (v == null || v.isEmpty) return 'Ingresa tu contraseña';
-            return null;
-          },
-        ),
-      ],
-    );
-  }
+class _LoginForm extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailCtrl;
+  final TextEditingController passwordCtrl;
+  final bool obscurePassword;
+  final VoidCallback onToggleObscure;
+  final AuthState state;
 
-  Widget _buildForgotPassword(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: () => context.push('/forgot-password'),
-        child: const Text('¿Olvidaste tu contraseña?'),
-      ),
-    );
-  }
+  const _LoginForm({
+    required this.formKey,
+    required this.emailCtrl,
+    required this.passwordCtrl,
+    required this.obscurePassword,
+    required this.onToggleObscure,
+    required this.state,
+  });
 
-  Widget _buildLoginButton(BuildContext context, AuthState state) {
-    return ElevatedButton(
-      onPressed: state.isLoading
-          ? null
-          : () {
-              if (_formKey.currentState!.validate()) {
-                context.read<AuthBloc>().add(
-                      AuthSignInWithEmailRequested(
-                        email: _emailCtrl.text.trim(),
-                        password: _passwordCtrl.text,
-                      ),
-                    );
-              }
-            },
-      child: state.isLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.white,
+  @override
+  Widget build(BuildContext context) {
+    final isWeb = MediaQuery.of(context).size.width >= 800;
+
+    return Form(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isWeb) ...[
+            const SizedBox(height: AppDimensions.xl),
+            // Mobile logo
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(16),
               ),
-            )
-          : const Text('Iniciar sesión'),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        const Expanded(child: Divider()),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimensions.md),
-          child: Text(
-            'o continúa con',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
+              child: const Icon(Icons.account_balance_wallet,
+                  color: AppColors.white, size: 32),
+            ),
+            const SizedBox(height: AppDimensions.md),
+          ],
+          // Header
+          Text(
+            isWeb ? 'Inicia sesión' : 'Bienvenido a FinTrack',
+            style: isWeb
+                ? AppTextStyles.headlineLarge
+                : AppTextStyles.displaySmall,
           ),
-        ),
-        const Expanded(child: Divider()),
-      ],
-    );
-  }
+          const SizedBox(height: AppDimensions.xs),
+          Text(
+            'Controla tus finanzas con inteligencia',
+            style: AppTextStyles.bodyLarge
+                .copyWith(color: AppColors.grey500),
+          ),
+          const SizedBox(height: AppDimensions.xl),
 
-  Widget _buildRegisterLink(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '¿No tienes cuenta? ',
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
-        ),
-        TextButton(
-          onPressed: () => context.push('/register'),
-          child: const Text('Regístrate'),
-        ),
-      ],
+          // Email
+          AuthTextField(
+            controller: emailCtrl,
+            label: 'Correo electrónico',
+            hint: 'tu@correo.com',
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email_outlined,
+            enabled: !state.isLoading,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Ingresa tu correo';
+              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
+                return 'Correo no válido';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: AppDimensions.md),
+
+          // Password
+          AuthTextField(
+            controller: passwordCtrl,
+            label: 'Contraseña',
+            hint: '••••••••',
+            obscureText: obscurePassword,
+            prefixIcon: Icons.lock_outline,
+            enabled: !state.isLoading,
+            suffixIcon: IconButton(
+              icon: Icon(obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined),
+              onPressed: onToggleObscure,
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Ingresa tu contraseña';
+              return null;
+            },
+          ),
+          const SizedBox(height: AppDimensions.sm),
+
+          // Forgot password
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => context.push('/forgot-password'),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('¿Olvidaste tu contraseña?'),
+            ),
+          ),
+          const SizedBox(height: AppDimensions.lg),
+
+          // Login button
+          ElevatedButton(
+            onPressed: state.isLoading
+                ? null
+                : () {
+                    if (formKey.currentState!.validate()) {
+                      context.read<AuthBloc>().add(
+                            AuthSignInWithEmailRequested(
+                              email: emailCtrl.text.trim(),
+                              password: passwordCtrl.text,
+                            ),
+                          );
+                    }
+                  },
+            child: state.isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.white),
+                  )
+                : const Text('Iniciar sesión'),
+          ),
+          const SizedBox(height: AppDimensions.lg),
+
+          // Divider
+          Row(
+            children: [
+              const Expanded(child: Divider()),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.md),
+                child: Text('o continúa con',
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.grey500)),
+              ),
+              const Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.lg),
+
+          // Google sign in
+          SocialSignInButton.google(
+            onTap: () => context
+                .read<AuthBloc>()
+                .add(const AuthSignInWithGoogleRequested()),
+            isLoading: state.isLoading,
+          ),
+          const SizedBox(height: AppDimensions.xl),
+
+          // Register link
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '¿No tienes cuenta? ',
+                style: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.grey500),
+              ),
+              TextButton(
+                onPressed: () => context.push('/register'),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Regístrate'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

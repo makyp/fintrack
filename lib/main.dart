@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +10,6 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
-import 'features/auth/presentation/bloc/auth_state.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -68,7 +66,7 @@ class _FinTrackAppState extends State<FinTrackApp> {
         title: 'FinTrack',
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.light,
         routerConfig: _routerConfig,
         debugShowCheckedModeBanner: false,
       ),

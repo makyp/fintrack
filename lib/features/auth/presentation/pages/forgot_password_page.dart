@@ -53,6 +53,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               elevation: 0,
             ),
             body: SafeArea(
+              child: Center(
+              child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
               child: Padding(
                 padding: const EdgeInsets.all(AppDimensions.pagePadding),
                 child: Form(
@@ -122,6 +125,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                 ),
               ),
+            ),
+            ),
             ),
           );
         },
