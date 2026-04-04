@@ -1,1 +1,29 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"fintrack-6b6d4","appId":"1:94712880912:android:8e6d87421b2aadf7bf4f95","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"fintrack-6b6d4","configurations":{"android":"1:94712880912:android:8e6d87421b2aadf7bf4f95","web":"1:94712880912:web:d3b4906759aa3f6dbf4f95","windows":"1:94712880912:web:a0b5f4df5420d648bf4f95"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fintrack-6b6d4",
+          "appId": "1:94712880912:android:8e6d87421b2aadf7bf4f95",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fintrack-6b6d4",
+          "configurations": {
+            "android": "1:94712880912:android:8e6d87421b2aadf7bf4f95",
+            "web": "1:94712880912:web:d3b4906759aa3f6dbf4f95",
+            "windows": "1:94712880912:web:a0b5f4df5420d648bf4f95"
+          }
+        }
+      }
+    }
+  }
+}

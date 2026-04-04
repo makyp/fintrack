@@ -31,6 +31,15 @@ import '../../features/transactions/domain/usecases/get_recurring_transactions.d
 import '../../features/transactions/domain/usecases/add_recurring_transaction.dart' as _i914;
 import '../../features/transactions/domain/usecases/update_recurring_transaction.dart' as _i915;
 import '../../features/transactions/presentation/cubit/recurring_cubit.dart' as _i916;
+import '../../features/goals/data/datasources/goal_remote_datasource.dart' as _i920;
+import '../../features/goals/data/repositories/goal_repository_impl.dart' as _i921;
+import '../../features/goals/domain/repositories/goal_repository.dart' as _i922;
+import '../../features/goals/domain/usecases/get_goals.dart' as _i923;
+import '../../features/goals/domain/usecases/add_goal.dart' as _i924;
+import '../../features/goals/domain/usecases/update_goal.dart' as _i925;
+import '../../features/goals/domain/usecases/delete_goal.dart' as _i926;
+import '../../features/goals/domain/usecases/add_contribution.dart' as _i927;
+import '../../features/goals/presentation/cubit/goals_cubit.dart' as _i928;
 import '../../features/auth/data/datasources/auth_remote_datasource.dart' as _i441;
 import '../../features/auth/data/datasources/google_sign_in_module.dart' as _i860;
 import '../../features/auth/data/repositories/auth_repository_impl.dart' as _i738;
@@ -172,6 +181,36 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i913.GetRecurringTransactions>(),
         gh<_i914.AddRecurringTransaction>(),
         gh<_i915.UpdateRecurringTransaction>(),
+      ),
+    );
+
+    // ── Goals ────────────────────────────────────────────
+    gh.lazySingleton<_i920.GoalRemoteDataSource>(
+      () => _i920.GoalRemoteDataSourceImpl(
+        gh<_i974.FirebaseFirestore>(),
+        gh<_i706.Uuid>(),
+      ),
+    );
+    gh.lazySingleton<_i922.GoalRepository>(
+      () => _i921.GoalRepositoryImpl(gh<_i920.GoalRemoteDataSource>()),
+    );
+    gh.lazySingleton<_i923.GetGoals>(
+        () => _i923.GetGoals(gh<_i922.GoalRepository>()));
+    gh.lazySingleton<_i924.AddGoal>(
+        () => _i924.AddGoal(gh<_i922.GoalRepository>()));
+    gh.lazySingleton<_i925.UpdateGoal>(
+        () => _i925.UpdateGoal(gh<_i922.GoalRepository>()));
+    gh.lazySingleton<_i926.DeleteGoal>(
+        () => _i926.DeleteGoal(gh<_i922.GoalRepository>()));
+    gh.lazySingleton<_i927.AddContribution>(
+        () => _i927.AddContribution(gh<_i922.GoalRepository>()));
+    gh.factory<_i928.GoalsCubit>(
+      () => _i928.GoalsCubit(
+        gh<_i923.GetGoals>(),
+        gh<_i924.AddGoal>(),
+        gh<_i925.UpdateGoal>(),
+        gh<_i926.DeleteGoal>(),
+        gh<_i927.AddContribution>(),
       ),
     );
 
