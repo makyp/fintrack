@@ -31,6 +31,8 @@ import '../../features/transactions/domain/usecases/get_recurring_transactions.d
 import '../../features/transactions/domain/usecases/add_recurring_transaction.dart' as _i914;
 import '../../features/transactions/domain/usecases/update_recurring_transaction.dart' as _i915;
 import '../../features/transactions/presentation/cubit/recurring_cubit.dart' as _i916;
+import '../../features/reports/data/datasources/reports_datasource.dart' as _i940;
+import '../../features/reports/presentation/cubit/reports_cubit.dart' as _i941;
 import '../../features/gamification/data/datasources/gamification_datasource.dart' as _i930;
 import '../../features/gamification/data/repositories/gamification_repository_impl.dart' as _i931;
 import '../../features/gamification/domain/repositories/gamification_repository.dart' as _i932;
@@ -186,6 +188,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i914.AddRecurringTransaction>(),
         gh<_i915.UpdateRecurringTransaction>(),
       ),
+    );
+
+    // ── Reports ──────────────────────────────────────────
+    gh.lazySingleton<_i940.ReportsDataSource>(
+      () => _i940.ReportsDataSource(gh<_i974.FirebaseFirestore>()),
+    );
+    gh.factory<_i941.ReportsCubit>(
+      () => _i941.ReportsCubit(gh<_i940.ReportsDataSource>()),
     );
 
     // ── Gamification ─────────────────────────────────────
