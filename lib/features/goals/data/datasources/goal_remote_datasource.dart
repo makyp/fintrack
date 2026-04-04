@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/analytics/analytics_service.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../models/savings_goal_model.dart';
 
@@ -51,6 +52,7 @@ class GoalRemoteDataSourceImpl implements GoalRemoteDataSource {
       ),
     );
     await _col(goal.userId).doc(id).set(model.toFirestore());
+    AnalyticsService.logGoalCreated();
     return model;
   }
 

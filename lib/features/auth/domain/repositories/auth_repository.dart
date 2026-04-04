@@ -26,4 +26,8 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> deleteAccount({required String password});
 
   Future<Either<Failure, AppUser>> getCurrentUserProfile();
+
+  Future<Either<Failure, AppUser>> updateProfile({String? displayName, String? currency});
+
+  Future<Either<Failure, void>> changePassword({required String currentPassword, required String newPassword});
 }

@@ -102,4 +102,24 @@ class AuthRepositoryImpl implements AuthRepository {
       return Either.left(AuthFailure(e.message));
     }
   }
+
+  @override
+  Future<Either<Failure, AppUser>> updateProfile({String? displayName, String? currency}) async {
+    try {
+      final user = await _dataSource.updateProfile(displayName: displayName, currency: currency);
+      return Either.right(user);
+    } on AuthException catch (e) {
+      return Either.left(AuthFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> changePassword({required String currentPassword, required String newPassword}) async {
+    try {
+      await _dataSource.changePassword(currentPassword: currentPassword, newPassword: newPassword);
+      return Either.right(null);
+    } on AuthException catch (e) {
+      return Either.left(AuthFailure(e.message));
+    }
+  }
 }

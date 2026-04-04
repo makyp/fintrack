@@ -26,6 +26,8 @@ abstract class AuthRemoteDataSource {
   Future<void> signOut();
   Future<void> deleteAccount({required String password});
   Future<AppUserModel> getUserProfile(String uid);
+  Future<AppUserModel> updateProfile({String? displayName, String? currency});
+  Future<void> changePassword({required String currentPassword, required String newPassword});
 }
 
 @LazySingleton(as: AuthRemoteDataSource)
@@ -202,6 +204,35 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) throw const AuthException('Perfil no encontrado');
     return AppUserModel.fromFirestore(doc.data()!, uid);
+  }
+
+  @override
+  Future<AppUserModel> updateProfile({String? displayName, String? currency}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw const AuthException('No hay sesión activa');
+    final updates = <String, dynamic>{};
+    if (displayName != null) updates['displayName'] = displayName;
+    if (currency != null) updates['currency'] = currency;
+    if (updates.isEmpty) return getUserProfile(user.uid);
+    await _firestore.collection('users').doc(user.uid).update(updates);
+    if (displayName != null) await user.updateDisplayName(displayName);
+    return getUserProfile(user.uid);
+  }
+
+  @override
+  Future<void> changePassword({required String currentPassword, required String newPassword}) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw const AuthException('No hay sesión activa');
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_mapFirebaseAuthError(e.code));
+    }
   }
 
   String _mapFirebaseAuthError(String code) {
