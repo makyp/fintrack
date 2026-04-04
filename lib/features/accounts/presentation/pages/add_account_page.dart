@@ -104,7 +104,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.errorMessage ?? 'Error al guardar'),
+              content: Text(_cubit.state.errorMessage ?? 'Error al guardar'),
               backgroundColor: AppColors.danger,
             ),
           );
