@@ -65,11 +65,12 @@ class _AddAccountPageState extends State<AddAccountPage> {
     setState(() => _isLoading = true);
 
     final balance = double.tryParse(_balanceCtrl.text.replaceAll(',', '')) ?? 0;
+    final name = _selectedType == AccountType.cash ? 'Efectivo' : _nameCtrl.text.trim();
     final cubit = context.read<AccountsCubit>();
 
     if (_isEditing) {
       final updated = widget.editAccount!.copyWith(
-        name: _nameCtrl.text.trim(),
+        name: name,
         type: _selectedType,
         balance: balance,
         colorValue: _selectedColor,
@@ -80,7 +81,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
       final account = Account(
         id: '',
         userId: userId,
-        name: _nameCtrl.text.trim(),
+        name: name,
         type: _selectedType,
         balance: balance,
         colorValue: _selectedColor,
@@ -117,18 +118,20 @@ class _AddAccountPageState extends State<AddAccountPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildTypeSelector(),
-              const SizedBox(height: AppDimensions.lg),
-              TextFormField(
-                controller: _nameCtrl,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre de la cuenta',
-                  hintText: 'Ej: Bancolombia Ahorros',
-                  prefixIcon: Icon(Icons.label_outline),
+              if (_selectedType != AccountType.cash) ...[
+                const SizedBox(height: AppDimensions.lg),
+                TextFormField(
+                  controller: _nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre de la cuenta',
+                    hintText: 'Ej: Bancolombia Ahorros',
+                    prefixIcon: Icon(Icons.label_outline),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Ingresa un nombre' : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Ingresa un nombre' : null,
-              ),
+              ],
               const SizedBox(height: AppDimensions.md),
               TextFormField(
                 controller: _balanceCtrl,
