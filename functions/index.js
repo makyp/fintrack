@@ -141,6 +141,44 @@ exports.onRecurringCreated = onDocumentCreated(
   }
 );
 
+// ─── UC-25/26: Notificación push al ganar un logro ───────────────────────────
+const BADGE_LABELS = {
+  first_tx:       { title: "🏅 ¡Primer registro!", body: "Registraste tu primera transacción." },
+  tx_10:          { title: "🔥 ¡10 transacciones!", body: "Llevas 10 movimientos registrados." },
+  tx_50:          { title: "💪 ¡50 transacciones!", body: "¡Eres constante! 50 movimientos registrados." },
+  tx_100:         { title: "🎖️ ¡100 transacciones!", body: "Leyenda. 100 transacciones en FinTrack." },
+  streak_3:       { title: "🔥 Racha de 3 días", body: "¡3 días seguidos registrando! Sigue así." },
+  streak_7:       { title: "⚡ Racha de 7 días", body: "¡Una semana sin fallar! Increíble." },
+  streak_30:      { title: "🏆 Racha de 30 días", body: "¡30 días consecutivos! Eres imparable." },
+  first_goal:     { title: "🎯 Primera meta", body: "Creaste tu primera meta de ahorro." },
+  goal_completed: { title: "✅ Meta cumplida", body: "¡Alcanzaste una meta de ahorro!" },
+  first_recurring:{ title: "🔄 Primer recurrente", body: "Configuraste tu primer pago recurrente." },
+};
+
+exports.onBadgeCreated = onDocumentCreated(
+  { document: "users/{userId}/badges/{badgeId}", region: "us-central1" },
+  async (event) => {
+    const { userId, badgeId } = event.params;
+    const label = BADGE_LABELS[badgeId];
+    if (!label) return;
+
+    const tokensSnap = await db.collection("users").doc(userId)
+      .collection("fcm_tokens").get();
+    const tokens = tokensSnap.docs.map((d) => d.id).filter(Boolean);
+    if (tokens.length === 0) return;
+
+    await getMessaging().sendEachForMulticast({
+      tokens,
+      notification: { title: label.title, body: label.body },
+      data: { type: "badge", badgeId },
+      android: { notification: { channelId: "badges" } },
+      apns: { payload: { aps: { sound: "default" } } },
+    });
+
+    console.log(`onBadgeCreated: sent badge=${badgeId} to userId=${userId}`);
+  }
+);
+
 // ─── UC-16: Procesar transacciones recurrentes (00:05 UTC diario) ─────────────
 exports.processRecurringTransactions = onSchedule(
   { schedule: "5 0 * * *", timeZone: "UTC", region: "us-central1" },

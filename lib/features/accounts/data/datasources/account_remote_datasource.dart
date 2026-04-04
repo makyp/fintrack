@@ -52,6 +52,26 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<AccountModel> addAccount(AccountModel account) async {
     try {
+      // ── Prevent duplicates ──────────────────────────────────────────────
+      // One cash account max; no two accounts with the same name
+      final dupQuery = account.type.name == 'cash'
+          ? _accountsRef(account.userId)
+              .where('type', isEqualTo: 'cash')
+              .where('isArchived', isEqualTo: false)
+              .limit(1)
+          : _accountsRef(account.userId)
+              .where('name', isEqualTo: account.name)
+              .where('isArchived', isEqualTo: false)
+              .limit(1);
+
+      final dupSnap = await dupQuery.get();
+      if (dupSnap.docs.isNotEmpty) {
+        final msg = account.type.name == 'cash'
+            ? 'Ya tienes una cuenta de efectivo'
+            : 'Ya existe una cuenta con el nombre "${account.name}"';
+        throw ServerException(msg);
+      }
+
       final id = account.id.isEmpty ? _uuid.v4() : account.id;
       final model = AccountModel(
         id: id,
@@ -75,6 +95,18 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<AccountModel> updateAccount(AccountModel account) async {
     try {
+      // Check name collision against OTHER accounts (exclude itself)
+      if (account.type.name != 'cash') {
+        final dupSnap = await _accountsRef(account.userId)
+            .where('name', isEqualTo: account.name)
+            .where('isArchived', isEqualTo: false)
+            .limit(2)
+            .get();
+        final conflict = dupSnap.docs.any((d) => d.id != account.id);
+        if (conflict) {
+          throw ServerException('Ya existe una cuenta con el nombre "${account.name}"');
+        }
+      }
       await _accountsRef(account.userId).doc(account.id).update({
         'name': account.name,
         'type': account.type.name,

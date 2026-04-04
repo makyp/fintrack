@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -146,16 +147,37 @@ class _DashboardViewState extends State<_DashboardView> {
         ),
         BlocBuilder<AuthBloc, AuthState>(
           builder: (context, authState) {
+            final user = authState.user;
             return Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.primary.withOpacity(0.15),
-                child: Text(
-                  (authState.user?.displayName.isNotEmpty == true)
-                      ? authState.user!.displayName[0].toUpperCase()
-                      : 'U',
-                  style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
+              child: GestureDetector(
+                onTap: () => context.go('/profile'),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.primary.withOpacity(0.15),
+                  child: user?.photoUrl != null && user!.photoUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: user.photoUrl!,
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Text(
+                              user.displayName.isNotEmpty
+                                  ? user.displayName[0].toUpperCase()
+                                  : 'U',
+                              style: AppTextStyles.labelLarge
+                                  .copyWith(color: AppColors.primary),
+                            ),
+                          ),
+                        )
+                      : Text(
+                          (user?.displayName.isNotEmpty == true)
+                              ? user!.displayName[0].toUpperCase()
+                              : 'U',
+                          style: AppTextStyles.labelLarge
+                              .copyWith(color: AppColors.primary),
+                        ),
                 ),
               ),
             );
