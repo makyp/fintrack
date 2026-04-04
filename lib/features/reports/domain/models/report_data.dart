@@ -35,6 +35,30 @@ class MonthlyData {
   String get label => _monthAbbr[month - 1];
 }
 
+class GoalProgressData {
+  final String id;
+  final String name;
+  final String icon;
+  final double currentAmount;
+  final double targetAmount;
+  final double progress;
+  final double remaining;
+  final DateTime? targetDate;
+  final bool isCompleted;
+
+  const GoalProgressData({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.currentAmount,
+    required this.targetAmount,
+    required this.progress,
+    required this.remaining,
+    this.targetDate,
+    required this.isCompleted,
+  });
+}
+
 class ReportData {
   final int month;
   final int year;
@@ -42,7 +66,8 @@ class ReportData {
   final double totalExpenses;
   final List<CategoryData> expensesByCategory;
   final List<CategoryData> incomeByCategory;
-  final List<MonthlyData> trend; // last 6 months
+  final List<MonthlyData> trend;
+  final List<GoalProgressData> goals;
 
   const ReportData({
     required this.month,
@@ -52,9 +77,16 @@ class ReportData {
     required this.expensesByCategory,
     required this.incomeByCategory,
     required this.trend,
+    this.goals = const [],
   });
 
   double get netBalance => totalIncome - totalExpenses;
+
+  CategoryData? get topExpense =>
+      expensesByCategory.isEmpty ? null : expensesByCategory.first;
+
+  CategoryData? get topIncome =>
+      incomeByCategory.isEmpty ? null : incomeByCategory.first;
 
   static ReportData empty(int month, int year) => ReportData(
         month: month,
@@ -64,5 +96,6 @@ class ReportData {
         expensesByCategory: const [],
         incomeByCategory: const [],
         trend: const [],
+        goals: const [],
       );
 }

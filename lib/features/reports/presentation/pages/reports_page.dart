@@ -10,7 +10,8 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/models/report_data.dart';
 import '../cubit/reports_cubit.dart';
 import '../widgets/expense_donut_chart.dart';
-import '../widgets/monthly_bar_chart.dart';
+import '../widgets/category_horizontal_bars.dart';
+import '../widgets/trend_line_chart.dart';
 
 class ReportsPage extends StatelessWidget {
   const ReportsPage({super.key});
@@ -77,20 +78,19 @@ class _ReportsView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: AppColors.grey400),
+                  const Icon(Icons.error_outline,
+                      size: 48, color: AppColors.grey400),
                   const SizedBox(height: AppDimensions.sm),
                   Text(state.errorMessage ?? 'Error',
                       style: AppTextStyles.bodyMedium
                           .copyWith(color: AppColors.grey500)),
                   const SizedBox(height: AppDimensions.md),
                   ElevatedButton(
-                    onPressed: () => context
-                        .read<ReportsCubit>()
-                        .load(userId,
-                            month: state.month,
-                            year: state.year,
-                            mode: state.mode,
-                            householdId: householdId),
+                    onPressed: () => context.read<ReportsCubit>().load(userId,
+                        month: state.month,
+                        year: state.year,
+                        mode: state.mode,
+                        householdId: householdId),
                     child: const Text('Reintentar'),
                   ),
                 ],
@@ -102,55 +102,66 @@ class _ReportsView extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(AppDimensions.pagePadding),
             children: [
-              // ── Period selector ─────────────────────────────────────────
+              // ── Period selector ──────────────────────────────────────────
               _buildPeriodSelector(context, state),
               const SizedBox(height: AppDimensions.lg),
 
               // ── Summary cards ────────────────────────────────────────────
               _buildSummaryCards(data),
-              const SizedBox(height: AppDimensions.lg),
+              const SizedBox(height: AppDimensions.md),
 
-              // ── Expense donut (UC-27) ────────────────────────────────────
-              Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppDimensions.md),
-                  child: ExpenseDonutChart(
-                    categories: data.expensesByCategory,
-                    total: data.totalExpenses,
-                    title: 'Gastos por categoría',
-                  ),
+              // ── Highlight cards: top expense & top income ────────────────
+              if (data.topExpense != null || data.topIncome != null) ...[
+                _buildHighlightCards(data),
+                const SizedBox(height: AppDimensions.md),
+              ],
+
+              // ── Expense donut chart ──────────────────────────────────────
+              _Card(
+                child: ExpenseDonutChart(
+                  categories: data.expensesByCategory,
+                  total: data.totalExpenses,
+                  title: 'Distribución de gastos',
                 ),
               ),
               const SizedBox(height: AppDimensions.md),
 
-              // ── Income donut ─────────────────────────────────────────────
-              if (data.incomeByCategory.isNotEmpty)
-                Card(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppDimensions.md),
-                    child: ExpenseDonutChart(
-                      categories: data.incomeByCategory,
-                      total: data.totalIncome,
-                      title: 'Ingresos por categoría',
-                    ),
-                  ),
-                ),
-              if (data.incomeByCategory.isNotEmpty)
-                const SizedBox(height: AppDimensions.md),
-
-              // ── Monthly bar chart (UC-28, UC-29) ─────────────────────────
-              Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppDimensions.md),
-                  child: MonthlyBarChart(trend: data.trend),
+              // ── Expense horizontal bars ──────────────────────────────────
+              _Card(
+                child: CategoryHorizontalBars(
+                  categories: data.expensesByCategory,
+                  total: data.totalExpenses,
+                  title: 'Gastos por categoría',
+                  barColor: AppColors.danger,
                 ),
               ),
+              const SizedBox(height: AppDimensions.md),
+
+              // ── Income horizontal bars ───────────────────────────────────
+              if (data.incomeByCategory.isNotEmpty || data.totalIncome == 0) ...[
+                _Card(
+                  child: CategoryHorizontalBars(
+                    categories: data.incomeByCategory,
+                    total: data.totalIncome,
+                    title: 'Ingresos por categoría',
+                    barColor: AppColors.success,
+                  ),
+                ),
+                const SizedBox(height: AppDimensions.md),
+              ],
+
+              // ── Trend line chart ─────────────────────────────────────────
+              _Card(
+                child: TrendLineChart(trend: data.trend),
+              ),
+              const SizedBox(height: AppDimensions.md),
+
+              // ── Goals progress ───────────────────────────────────────────
+              if (data.goals.isNotEmpty) ...[
+                _buildGoalsSection(context, data),
+                const SizedBox(height: AppDimensions.md),
+              ],
+
               const SizedBox(height: AppDimensions.xl),
             ],
           );
@@ -162,7 +173,8 @@ class _ReportsView extends StatelessWidget {
   Widget _buildPeriodSelector(BuildContext context, ReportsState state) {
     final cubit = context.read<ReportsCubit>();
     final now = DateTime.now();
-    final canGoForward = !(state.month == now.month && state.year == now.year);
+    final canGoForward =
+        !(state.month == now.month && state.year == now.year);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -226,18 +238,65 @@ class _ReportsView extends StatelessWidget {
           label: 'Neto',
           amount: net.abs(),
           color: netColor,
-          icon: net >= 0 ? Icons.savings_outlined : Icons.warning_amber_outlined,
+          icon: net >= 0
+              ? Icons.savings_outlined
+              : Icons.warning_amber_outlined,
           prefix: net >= 0 ? '+' : '-',
         )),
       ],
     );
   }
 
-  // UC-30: Copy text summary to clipboard
+  Widget _buildHighlightCards(ReportData data) {
+    return Row(
+      children: [
+        if (data.topExpense != null)
+          Expanded(
+            child: _HighlightCard(
+              label: 'Mayor gasto',
+              categoryData: data.topExpense!,
+              color: AppColors.danger,
+            ),
+          ),
+        if (data.topExpense != null && data.topIncome != null)
+          const SizedBox(width: AppDimensions.sm),
+        if (data.topIncome != null)
+          Expanded(
+            child: _HighlightCard(
+              label: 'Mayor ingreso',
+              categoryData: data.topIncome!,
+              color: AppColors.success,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGoalsSection(BuildContext context, ReportData data) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('🎯', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: AppDimensions.sm),
+            Text('Metas activas', style: AppTextStyles.headlineSmall),
+          ],
+        ),
+        const SizedBox(height: AppDimensions.sm),
+        ...data.goals.map((g) => Padding(
+              padding: const EdgeInsets.only(bottom: AppDimensions.sm),
+              child: _GoalCard(goal: g),
+            )),
+      ],
+    );
+  }
+
   void _copyReport(BuildContext context, ReportsState state) {
     final d = state.data!;
     final buf = StringBuffer()
-      ..writeln('📊 Reporte FinTrack — ${_monthNames[state.month - 1]} ${state.year}')
+      ..writeln(
+          '📊 Reporte FinTrack — ${_monthNames[state.month - 1]} ${state.year}')
       ..writeln('─────────────────────────')
       ..writeln('Ingresos:  ${CurrencyFormatter.format(d.totalIncome)}')
       ..writeln('Gastos:    ${CurrencyFormatter.format(d.totalExpenses)}')
@@ -245,8 +304,7 @@ class _ReportsView extends StatelessWidget {
       ..writeln()
       ..writeln('Gastos por categoría:');
     for (final cat in d.expensesByCategory) {
-      buf.writeln(
-          '  ${cat.category.icon} ${cat.category.label}: '
+      buf.writeln('  ${cat.category.icon} ${cat.category.label}: '
           '${CurrencyFormatter.format(cat.amount)} '
           '(${(cat.percentage * 100).toStringAsFixed(0)}%)');
     }
@@ -288,6 +346,25 @@ class _ModeToggle extends StatelessWidget {
         ],
         selected: {mode},
         onSelectionChanged: (s) => onChanged(s.first),
+      ),
+    );
+  }
+}
+
+// ── Shared card wrapper ───────────────────────────────────────────────────────
+
+class _Card extends StatelessWidget {
+  final Widget child;
+  const _Card({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.md),
+        child: child,
       ),
     );
   }
@@ -337,6 +414,168 @@ class _SummaryCard extends StatelessWidget {
           Text(label,
               style: AppTextStyles.bodySmall
                   .copyWith(color: AppColors.grey500, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Highlight Card ────────────────────────────────────────────────────────────
+
+class _HighlightCard extends StatelessWidget {
+  final String label;
+  final CategoryData categoryData;
+  final Color color;
+
+  const _HighlightCard({
+    required this.label,
+    required this.categoryData,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.md, vertical: AppDimensions.sm + 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Text(categoryData.category.icon,
+              style: const TextStyle(fontSize: 24)),
+          const SizedBox(width: AppDimensions.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.grey500, fontSize: 10)),
+                Text(
+                  categoryData.category.label,
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  CurrencyFormatter.format(categoryData.amount,
+                      compact: true),
+                  style: AppTextStyles.monoSmall.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Goal Card ─────────────────────────────────────────────────────────────────
+
+class _GoalCard extends StatelessWidget {
+  final GoalProgressData goal;
+  const _GoalCard({required this.goal});
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (goal.progress * 100).toStringAsFixed(0);
+    final daysLeft = goal.targetDate != null
+        ? goal.targetDate!.difference(DateTime.now()).inDays
+        : null;
+
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.md),
+      decoration: BoxDecoration(
+        color: AppColors.grey50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.grey200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(goal.icon, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: AppDimensions.sm),
+              Expanded(
+                child: Text(
+                  goal.name,
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                '$pct%',
+                style: AppTextStyles.monoSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.sm),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: goal.progress,
+              minHeight: 8,
+              backgroundColor: AppColors.grey200,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                goal.progress >= 0.8
+                    ? AppColors.success
+                    : AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDimensions.xs),
+          Row(
+            children: [
+              Text(
+                '${CurrencyFormatter.format(goal.currentAmount, compact: true)} '
+                'de ${CurrencyFormatter.format(goal.targetAmount, compact: true)}',
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.grey500),
+              ),
+              const Spacer(),
+              if (daysLeft != null)
+                Text(
+                  daysLeft > 0
+                      ? '$daysLeft días restantes'
+                      : daysLeft == 0
+                          ? '¡Vence hoy!'
+                          : 'Vencida',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: daysLeft <= 7
+                        ? AppColors.warning
+                        : AppColors.grey500,
+                    fontWeight: daysLeft <= 7
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                ),
+            ],
+          ),
+          if (goal.remaining > 0) ...[
+            const SizedBox(height: AppDimensions.xs),
+            Text(
+              'Faltan ${CurrencyFormatter.format(goal.remaining, compact: true)} para completar la meta',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.grey400,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ],
       ),
     );

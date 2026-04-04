@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import '../../../goals/data/models/savings_goal_model.dart';
 import '../../../transactions/domain/entities/transaction.dart';
 import '../../domain/models/report_data.dart';
 
@@ -12,6 +13,9 @@ class ReportsDataSource {
 
   CollectionReference<Map<String, dynamic>> _householdTxCol(String householdId) =>
       _firestore.collection('households').doc(householdId).collection('transactions');
+
+  CollectionReference<Map<String, dynamic>> _goalsCol(String userId) =>
+      _firestore.collection('users').doc(userId).collection('goals');
 
   /// Loads [ReportData] for the given month/year plus a 6-month trend.
   Future<ReportData> loadReport(
@@ -35,7 +39,7 @@ class ReportsDataSource {
       final d = doc.data();
       final amount = (d['amount'] as num).toDouble();
       final typeStr = d['type'] as String? ?? 'expense';
-      final catStr  = d['category'] as String? ?? 'other';
+      final catStr  = d['categoryId'] as String? ?? 'other';
       final type = TransactionType.values.firstWhere(
           (e) => e.name == typeStr, orElse: () => TransactionType.expense);
       final cat = TransactionCategory.values.firstWhere(
@@ -106,6 +110,25 @@ class ReportsDataSource {
         ..sort((a, b) => b.amount.compareTo(a.amount));
     }
 
+    // ── Goals progress ────────────────────────────────────────────────────
+    final goalsSnap = await _goalsCol(userId)
+        .where('isCompleted', isEqualTo: false)
+        .get();
+    final goals = goalsSnap.docs.map((doc) {
+      final g = SavingsGoalModel.fromFirestore(doc.data(), doc.id);
+      return GoalProgressData(
+        id: g.id,
+        name: g.name,
+        icon: g.icon,
+        currentAmount: g.currentAmount,
+        targetAmount: g.targetAmount,
+        progress: g.progress,
+        remaining: g.remaining,
+        targetDate: g.targetDate,
+        isCompleted: g.isCompleted,
+      );
+    }).toList();
+
     return ReportData(
       month: month,
       year: year,
@@ -117,6 +140,7 @@ class ReportsDataSource {
         ..sort((a, b) => a.year != b.year
             ? a.year.compareTo(b.year)
             : a.month.compareTo(b.month)),
+      goals: goals,
     );
   }
 
@@ -141,7 +165,7 @@ class ReportsDataSource {
       final d = doc.data();
       final amount = (d['amount'] as num).toDouble();
       final typeStr = d['type'] as String? ?? 'expense';
-      final catStr = d['category'] as String? ?? 'other';
+      final catStr = d['categoryId'] as String? ?? 'other';
       final type = TransactionType.values.firstWhere(
           (e) => e.name == typeStr, orElse: () => TransactionType.expense);
       final cat = TransactionCategory.values.firstWhere(
