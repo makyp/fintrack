@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -156,41 +156,7 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (photoUrl != null && photoUrl!.isNotEmpty) {
-      return CircleAvatar(
-        radius: 44,
-        backgroundColor: AppColors.primary,
-        child: ClipOval(
-          child: CachedNetworkImage(
-            imageUrl: photoUrl!,
-            width: 88,
-            height: 88,
-            fit: BoxFit.cover,
-            placeholder: (_, __) => const CircularProgressIndicator(),
-            errorWidget: (_, __, ___) => _Initials(displayName: displayName),
-          ),
-        ),
-      );
-    }
-    return CircleAvatar(
-      radius: 44,
-      backgroundColor: AppColors.primary,
-      child: _Initials(displayName: displayName),
-    );
+    return AppAvatar(photoUrl: photoUrl, displayName: displayName, radius: 44);
   }
 }
 
-class _Initials extends StatelessWidget {
-  final String? displayName;
-  const _Initials({this.displayName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      displayName?.isNotEmpty == true
-          ? displayName![0].toUpperCase()
-          : '?',
-      style: AppTextStyles.displaySmall.copyWith(color: AppColors.white),
-    );
-  }
-}

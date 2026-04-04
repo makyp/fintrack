@@ -34,9 +34,9 @@ class _TrendLineChartState extends State<TrendLineChart> {
         const SizedBox(height: AppDimensions.sm),
         Row(
           children: [
-            _LegendDot(color: AppColors.success, label: 'Ingresos'),
+            _LegendDot(color: AppColors.income, label: 'Ingresos'),
             const SizedBox(width: AppDimensions.md),
-            _LegendDot(color: AppColors.danger, label: 'Gastos'),
+            _LegendDot(color: AppColors.expense, label: 'Gastos'),
             const SizedBox(width: AppDimensions.md),
             _LegendDot(color: AppColors.primary, label: 'Neto'),
           ],
@@ -54,8 +54,8 @@ class _TrendLineChartState extends State<TrendLineChart> {
                     return spots.map((spot) {
                       final labels = ['Ing', 'Gas', 'Neto'];
                       final colors = [
-                        AppColors.success,
-                        AppColors.danger,
+                        AppColors.income,
+                        AppColors.expense,
                         AppColors.primary
                       ];
                       return LineTooltipItem(
@@ -137,14 +137,14 @@ class _TrendLineChartState extends State<TrendLineChart> {
                       .map((e) =>
                           FlSpot(e.key.toDouble(), e.value.income))
                       .toList(),
-                  color: AppColors.success,
+                  color: AppColors.income,
                 ),
                 _buildLine(
                   spots: widget.trend.asMap().entries
                       .map((e) =>
                           FlSpot(e.key.toDouble(), e.value.expenses))
                       .toList(),
-                  color: AppColors.danger,
+                  color: AppColors.expense,
                 ),
                 _buildLine(
                   spots: widget.trend.asMap().entries

@@ -132,7 +132,7 @@ class _ReportsView extends StatelessWidget {
                   categories: data.expensesByCategory,
                   total: data.totalExpenses,
                   title: 'Gastos por categoría',
-                  barColor: AppColors.danger,
+                  barColor: AppColors.expense,
                 ),
               ),
               const SizedBox(height: AppDimensions.md),
@@ -144,7 +144,7 @@ class _ReportsView extends StatelessWidget {
                     categories: data.incomeByCategory,
                     total: data.totalIncome,
                     title: 'Ingresos por categoría',
-                    barColor: AppColors.success,
+                    barColor: AppColors.income,
                   ),
                 ),
                 const SizedBox(height: AppDimensions.md),
@@ -214,14 +214,14 @@ class _ReportsView extends StatelessWidget {
 
   Widget _buildSummaryCards(ReportData data) {
     final net = data.netBalance;
-    final netColor = net >= 0 ? AppColors.success : AppColors.danger;
+    final netColor = net >= 0 ? AppColors.income : AppColors.expense;
     return Row(
       children: [
         Expanded(
             child: _SummaryCard(
           label: 'Ingresos',
           amount: data.totalIncome,
-          color: AppColors.success,
+          color: AppColors.income,
           icon: Icons.trending_up,
         )),
         const SizedBox(width: AppDimensions.sm),
@@ -229,7 +229,7 @@ class _ReportsView extends StatelessWidget {
             child: _SummaryCard(
           label: 'Gastos',
           amount: data.totalExpenses,
-          color: AppColors.danger,
+          color: AppColors.expense,
           icon: Icons.trending_down,
         )),
         const SizedBox(width: AppDimensions.sm),
@@ -255,7 +255,7 @@ class _ReportsView extends StatelessWidget {
             child: _HighlightCard(
               label: 'Mayor gasto',
               categoryData: data.topExpense!,
-              color: AppColors.danger,
+              color: AppColors.expense,
             ),
           ),
         if (data.topExpense != null && data.topIncome != null)
@@ -265,7 +265,7 @@ class _ReportsView extends StatelessWidget {
             child: _HighlightCard(
               label: 'Mayor ingreso',
               categoryData: data.topIncome!,
-              color: AppColors.success,
+              color: AppColors.income,
             ),
           ),
       ],
@@ -533,7 +533,7 @@ class _GoalCard extends StatelessWidget {
               backgroundColor: AppColors.grey200,
               valueColor: AlwaysStoppedAnimation<Color>(
                 goal.progress >= 0.8
-                    ? AppColors.success
+                    ? AppColors.income
                     : AppColors.primary,
               ),
             ),

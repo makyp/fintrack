@@ -28,9 +28,9 @@ class MonthlyBarChart extends StatelessWidget {
         // Legend
         Row(
           children: [
-            _LegendDot(color: AppColors.success, label: 'Ingresos'),
+            _LegendDot(color: AppColors.income, label: 'Ingresos'),
             const SizedBox(width: AppDimensions.md),
-            _LegendDot(color: AppColors.danger, label: 'Gastos'),
+            _LegendDot(color: AppColors.expense, label: 'Gastos'),
           ],
         ),
         const SizedBox(height: AppDimensions.md),
@@ -117,14 +117,14 @@ class MonthlyBarChart extends StatelessWidget {
                   barRods: [
                     BarChartRodData(
                       toY: m.income,
-                      color: AppColors.success,
+                      color: AppColors.income,
                       width: 10,
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4)),
                     ),
                     BarChartRodData(
                       toY: m.expenses,
-                      color: AppColors.danger,
+                      color: AppColors.expense,
                       width: 10,
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4)),

@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -152,32 +152,10 @@ class _DashboardViewState extends State<_DashboardView> {
               padding: const EdgeInsets.only(right: 12),
               child: GestureDetector(
                 onTap: () => context.go('/profile'),
-                child: CircleAvatar(
+                child: AppAvatar(
+                  photoUrl: user?.photoUrl,
+                  displayName: user?.displayName,
                   radius: 18,
-                  backgroundColor: AppColors.primary.withOpacity(0.15),
-                  child: user?.photoUrl != null && user!.photoUrl!.isNotEmpty
-                      ? ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: user.photoUrl!,
-                            width: 36,
-                            height: 36,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Text(
-                              user.displayName.isNotEmpty
-                                  ? user.displayName[0].toUpperCase()
-                                  : 'U',
-                              style: AppTextStyles.labelLarge
-                                  .copyWith(color: AppColors.primary),
-                            ),
-                          ),
-                        )
-                      : Text(
-                          (user?.displayName.isNotEmpty == true)
-                              ? user!.displayName[0].toUpperCase()
-                              : 'U',
-                          style: AppTextStyles.labelLarge
-                              .copyWith(color: AppColors.primary),
-                        ),
                 ),
               ),
             );

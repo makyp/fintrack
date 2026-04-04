@@ -106,9 +106,31 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
                     : t == TransactionType.income
                         ? 'Ingreso'
                         : 'Transferencia';
+                final color = t == TransactionType.expense
+                    ? AppColors.expense
+                    : t == TransactionType.income
+                        ? AppColors.income
+                        : AppColors.secondary;
+                final isSelected = _type == t;
                 return ChoiceChip(
-                  label: Text(label),
-                  selected: _type == t,
+                  label: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? AppColors.white : AppColors.grey700,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                      fontSize: 13,
+                    ),
+                  ),
+                  selected: isSelected,
+                  selectedColor: color,
+                  backgroundColor: AppColors.grey100,
+                  side: BorderSide(
+                    color: isSelected ? color : AppColors.grey200,
+                  ),
+                  checkmarkColor: AppColors.white,
+                  showCheckmark: false,
                   onSelected: (_) => setState(() {
                     _type = _type == t ? null : t;
                     _category = null;
@@ -125,17 +147,38 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
               spacing: AppDimensions.sm,
               runSpacing: AppDimensions.sm,
               children: _availableCategories.map((cat) {
+                final isSelected = _category == cat;
                 return FilterChip(
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(cat.icon, style: const TextStyle(fontSize: 12)),
                       const SizedBox(width: 4),
-                      Text(cat.label, style: AppTextStyles.bodySmall),
+                      Text(
+                        cat.label,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isSelected
+                              ? AppColors.white
+                              : AppColors.grey700,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ],
                   ),
-                  selected: _category == cat,
-                  onSelected: (_) => setState(() => _category = _category == cat ? null : cat),
+                  selected: isSelected,
+                  selectedColor: AppColors.primary,
+                  backgroundColor: AppColors.grey100,
+                  checkmarkColor: AppColors.white,
+                  showCheckmark: false,
+                  side: BorderSide(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.grey200,
+                  ),
+                  onSelected: (_) => setState(
+                      () => _category = _category == cat ? null : cat),
                 );
               }).toList(),
             ),
@@ -233,16 +276,31 @@ class _AccountFilterChips extends StatelessWidget {
       spacing: AppDimensions.sm,
       runSpacing: AppDimensions.sm,
       children: accounts.map((a) {
+        final isSelected = selectedId == a.id;
         return FilterChip(
           label: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(a.icon, style: const TextStyle(fontSize: 14)),
               const SizedBox(width: 4),
-              Text(a.name, style: AppTextStyles.bodySmall),
+              Text(
+                a.name,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isSelected ? AppColors.white : AppColors.grey700,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
             ],
           ),
-          selected: selectedId == a.id,
+          selected: isSelected,
+          selectedColor: AppColors.secondary,
+          backgroundColor: AppColors.grey100,
+          checkmarkColor: AppColors.white,
+          showCheckmark: false,
+          side: BorderSide(
+            color: isSelected ? AppColors.secondary : AppColors.grey200,
+          ),
           onSelected: (_) => onSelected(a.id),
         );
       }).toList(),

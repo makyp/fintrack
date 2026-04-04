@@ -8,6 +8,10 @@ abstract class AppColors {
   static const danger = Color(0xFFDC2626);
   static const warning = Color(0xFFD97706);
 
+  // Semantic finance colors (blue-based palette, no harsh reds)
+  static const income  = Color(0xFF10B981);   // emerald / verde menta
+  static const expense = Color(0xFF6366F1);   // indigo / azul-violeta
+
   // Neutral
   static const white = Color(0xFFFFFFFF);
   static const black = Color(0xFF000000);
