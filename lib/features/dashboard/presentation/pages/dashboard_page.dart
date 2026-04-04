@@ -66,9 +66,31 @@ class _DashboardViewState extends State<_DashboardView> {
           body: CustomScrollView(
             slivers: [
               _buildAppBar(context, state),
-              if (state.isLoading)
+              if (state.status == DashboardStatus.loading)
                 const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
+                )
+              else if (state.status == DashboardStatus.error)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off_outlined, size: 48, color: AppColors.grey400),
+                        const SizedBox(height: 12),
+                        Text('No se pudo cargar la información',
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey600)),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () {
+                            final uid = context.read<AuthBloc>().state.user?.uid ?? '';
+                            if (uid.isNotEmpty) context.read<DashboardCubit>().load(uid);
+                          },
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  ),
                 )
               else ...[
                 _buildBalanceCard(context, state),
