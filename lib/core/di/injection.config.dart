@@ -24,6 +24,13 @@ import '../../features/transactions/domain/usecases/add_transaction.dart' as _i9
 import '../../features/transactions/domain/usecases/get_transactions.dart' as _i907;
 import '../../features/transactions/domain/usecases/update_transaction.dart' as _i908;
 import '../../features/transactions/presentation/bloc/transactions_bloc.dart' as _i909;
+import '../../features/transactions/data/datasources/recurring_transaction_datasource.dart' as _i910;
+import '../../features/transactions/data/repositories/recurring_transaction_repository_impl.dart' as _i911;
+import '../../features/transactions/domain/repositories/recurring_transaction_repository.dart' as _i912;
+import '../../features/transactions/domain/usecases/get_recurring_transactions.dart' as _i913;
+import '../../features/transactions/domain/usecases/add_recurring_transaction.dart' as _i914;
+import '../../features/transactions/domain/usecases/update_recurring_transaction.dart' as _i915;
+import '../../features/transactions/presentation/cubit/recurring_cubit.dart' as _i916;
 import '../../features/auth/data/datasources/auth_remote_datasource.dart' as _i441;
 import '../../features/auth/data/datasources/google_sign_in_module.dart' as _i860;
 import '../../features/auth/data/repositories/auth_repository_impl.dart' as _i738;
@@ -139,6 +146,32 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i907.GetTransactions>(),
         gh<_i906.AddTransaction>(),
         gh<_i908.UpdateTransaction>(),
+      ),
+    );
+
+    // ── Recurring Transactions ───────────────────────────
+    gh.lazySingleton<_i910.RecurringTransactionDataSource>(
+      () => _i910.RecurringTransactionDataSourceImpl(
+        gh<_i974.FirebaseFirestore>(),
+        gh<_i706.Uuid>(),
+      ),
+    );
+    gh.lazySingleton<_i912.RecurringTransactionRepository>(
+      () => _i911.RecurringTransactionRepositoryImpl(
+        gh<_i910.RecurringTransactionDataSource>(),
+      ),
+    );
+    gh.lazySingleton<_i913.GetRecurringTransactions>(
+        () => _i913.GetRecurringTransactions(gh<_i912.RecurringTransactionRepository>()));
+    gh.lazySingleton<_i914.AddRecurringTransaction>(
+        () => _i914.AddRecurringTransaction(gh<_i912.RecurringTransactionRepository>()));
+    gh.lazySingleton<_i915.UpdateRecurringTransaction>(
+        () => _i915.UpdateRecurringTransaction(gh<_i912.RecurringTransactionRepository>()));
+    gh.factory<_i916.RecurringCubit>(
+      () => _i916.RecurringCubit(
+        gh<_i913.GetRecurringTransactions>(),
+        gh<_i914.AddRecurringTransaction>(),
+        gh<_i915.UpdateRecurringTransaction>(),
       ),
     );
 

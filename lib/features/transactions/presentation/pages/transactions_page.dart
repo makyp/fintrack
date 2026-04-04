@@ -13,6 +13,7 @@ import '../bloc/transactions_event.dart';
 import '../bloc/transactions_state.dart';
 import '../widgets/transaction_filter_bar.dart';
 import 'transaction_form_page.dart';
+import 'recurring_transactions_page.dart';
 
 class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});
@@ -92,6 +93,13 @@ class _TransactionsViewState extends State<_TransactionsView> {
                     context.read<TransactionsBloc>().add(TransactionsWatchStarted(userId));
                   }
                 },
+              ),
+              IconButton(
+                icon: const Icon(Icons.repeat),
+                tooltip: 'Recurrentes',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const RecurringTransactionsPage()),
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.filter_list),
