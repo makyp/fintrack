@@ -16,6 +16,9 @@ import '../../../transactions/presentation/bloc/transactions_state.dart';
 import '../../../transactions/domain/entities/transaction.dart';
 import '../../../transactions/presentation/pages/transaction_form_page.dart';
 import '../../../../core/utils/currency_formatter.dart' as cf;
+import '../../../gamification/presentation/cubit/gamification_cubit.dart';
+import '../../../gamification/presentation/widgets/streak_card.dart';
+import '../../../gamification/presentation/widgets/activity_calendar.dart';
 import '../cubit/dashboard_cubit.dart';
 import '../cubit/dashboard_state.dart';
 
@@ -29,6 +32,7 @@ class DashboardPage extends StatelessWidget {
         BlocProvider(create: (_) => getIt<DashboardCubit>()),
         BlocProvider(create: (_) => getIt<AccountsCubit>()),
         BlocProvider(create: (_) => getIt<TransactionsBloc>()),
+        BlocProvider(create: (_) => getIt<GamificationCubit>()),
       ],
       child: const _DashboardView(),
     );
@@ -53,6 +57,7 @@ class _DashboardViewState extends State<_DashboardView> {
         context.read<DashboardCubit>().load(uid);
         context.read<AccountsCubit>().watchAccounts(uid);
         context.read<TransactionsBloc>().add(TransactionsWatchStarted(uid));
+        context.read<GamificationCubit>().watch(uid);
       }
     });
   }
@@ -94,8 +99,10 @@ class _DashboardViewState extends State<_DashboardView> {
                 )
               else ...[
                 _buildBalanceCard(context, state),
+                const SliverToBoxAdapter(child: StreakCard()),
                 _buildAccountsSection(context, state),
                 _buildQuickActions(context),
+                _buildActivityCalendar(context),
                 _buildRecentTransactions(context),
               ],
             ],
@@ -435,6 +442,18 @@ class _DashboardViewState extends State<_DashboardView> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildActivityCalendar(BuildContext context) {
+    final userId = context.read<AuthBloc>().state.user?.uid ?? '';
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppDimensions.pagePadding, 0,
+            AppDimensions.pagePadding, AppDimensions.lg),
+        child: ActivityCalendar(userId: userId),
       ),
     );
   }

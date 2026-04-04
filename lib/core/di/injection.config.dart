@@ -31,6 +31,10 @@ import '../../features/transactions/domain/usecases/get_recurring_transactions.d
 import '../../features/transactions/domain/usecases/add_recurring_transaction.dart' as _i914;
 import '../../features/transactions/domain/usecases/update_recurring_transaction.dart' as _i915;
 import '../../features/transactions/presentation/cubit/recurring_cubit.dart' as _i916;
+import '../../features/gamification/data/datasources/gamification_datasource.dart' as _i930;
+import '../../features/gamification/data/repositories/gamification_repository_impl.dart' as _i931;
+import '../../features/gamification/domain/repositories/gamification_repository.dart' as _i932;
+import '../../features/gamification/presentation/cubit/gamification_cubit.dart' as _i933;
 import '../../features/goals/data/datasources/goal_remote_datasource.dart' as _i920;
 import '../../features/goals/data/repositories/goal_repository_impl.dart' as _i921;
 import '../../features/goals/domain/repositories/goal_repository.dart' as _i922;
@@ -182,6 +186,17 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i914.AddRecurringTransaction>(),
         gh<_i915.UpdateRecurringTransaction>(),
       ),
+    );
+
+    // ── Gamification ─────────────────────────────────────
+    gh.lazySingleton<_i930.GamificationDataSource>(
+      () => _i930.GamificationDataSourceImpl(gh<_i974.FirebaseFirestore>()),
+    );
+    gh.lazySingleton<_i932.GamificationRepository>(
+      () => _i931.GamificationRepositoryImpl(gh<_i930.GamificationDataSource>()),
+    );
+    gh.factory<_i933.GamificationCubit>(
+      () => _i933.GamificationCubit(gh<_i932.GamificationRepository>()),
     );
 
     // ── Goals ────────────────────────────────────────────

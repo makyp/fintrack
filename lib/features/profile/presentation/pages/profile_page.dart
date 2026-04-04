@@ -5,6 +5,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../gamification/presentation/pages/badges_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -44,6 +45,16 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
+              const Divider(),
+
+              ListTile(
+                leading: const Icon(Icons.emoji_events_outlined,
+                    color: AppColors.warning),
+                title: const Text('Logros y racha'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const BadgesPage())),
+              ),
               const Divider(),
 
               // Más opciones — Sprint 10
