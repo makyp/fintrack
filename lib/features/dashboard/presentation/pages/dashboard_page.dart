@@ -101,7 +101,7 @@ class _DashboardViewState extends State<_DashboardView> {
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => context.push('/transactions/new'),
+            onPressed: () => _openTransactionForm(context),
             backgroundColor: AppColors.primary,
             foregroundColor: AppColors.white,
             icon: const Icon(Icons.add),
@@ -351,6 +351,19 @@ class _DashboardViewState extends State<_DashboardView> {
     );
   }
 
+  void _openTransactionForm(BuildContext context, {TransactionType? type}) {
+    final userId = context.read<AuthBloc>().state.user?.uid ?? '';
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => BlocProvider.value(
+          value: context.read<TransactionsBloc>(),
+          child: TransactionFormPage(userId: userId, initialType: type),
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickActions(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
@@ -367,7 +380,7 @@ class _DashboardViewState extends State<_DashboardView> {
                   icon: Icons.remove_circle_outline,
                   label: 'Gasto',
                   color: AppColors.danger,
-                  onTap: () => context.push('/transactions/new?type=expense'),
+                  onTap: () => _openTransactionForm(context, type: TransactionType.expense),
                 ),
                 const SizedBox(width: AppDimensions.sm),
                 _buildQuickActionBtn(
@@ -375,7 +388,7 @@ class _DashboardViewState extends State<_DashboardView> {
                   icon: Icons.add_circle_outline,
                   label: 'Ingreso',
                   color: AppColors.success,
-                  onTap: () => context.push('/transactions/new?type=income'),
+                  onTap: () => _openTransactionForm(context, type: TransactionType.income),
                 ),
                 const SizedBox(width: AppDimensions.sm),
                 _buildQuickActionBtn(
@@ -383,7 +396,7 @@ class _DashboardViewState extends State<_DashboardView> {
                   icon: Icons.swap_horiz,
                   label: 'Transferir',
                   color: AppColors.secondary,
-                  onTap: () => context.push('/transactions/new?type=transfer'),
+                  onTap: () => _openTransactionForm(context, type: TransactionType.transfer),
                 ),
               ],
             ),
