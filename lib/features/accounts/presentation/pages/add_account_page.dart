@@ -9,6 +9,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/account.dart';
 import '../cubit/accounts_cubit.dart';
+import '../cubit/accounts_state.dart';
 
 class AddAccountPage extends StatefulWidget {
   final Account? editAccount;
@@ -23,6 +24,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _balanceCtrl = TextEditingController();
+  late final AccountsCubit _cubit;
 
   AccountType _selectedType = AccountType.checking;
   int _selectedColor = 0xFF2563EB;
@@ -44,6 +46,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
   @override
   void initState() {
     super.initState();
+    _cubit = getIt<AccountsCubit>();
     if (_isEditing) {
       final a = widget.editAccount!;
       _nameCtrl.text = a.name;
@@ -55,6 +58,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
 
   @override
   void dispose() {
+    _cubit.close();
     _nameCtrl.dispose();
     _balanceCtrl.dispose();
     super.dispose();
@@ -62,50 +66,74 @@ class _AddAccountPageState extends State<AddAccountPage> {
 
   Future<void> _save(String userId) async {
     if (!_formKey.currentState!.validate()) return;
+    if (userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sesión no disponible, reinicia la app')),
+      );
+      return;
+    }
     setState(() => _isLoading = true);
 
-    final balance = double.tryParse(_balanceCtrl.text.replaceAll(',', '')) ?? 0;
-    final name = _selectedType == AccountType.cash ? 'Efectivo' : _nameCtrl.text.trim();
-    final cubit = context.read<AccountsCubit>();
+    try {
+      final balance = double.tryParse(_balanceCtrl.text.replaceAll(',', '')) ?? 0;
+      final name = _selectedType == AccountType.cash ? 'Efectivo' : _nameCtrl.text.trim();
+      if (_isEditing) {
+        final updated = widget.editAccount!.copyWith(
+          name: name,
+          type: _selectedType,
+          balance: balance,
+          colorValue: _selectedColor,
+          icon: _selectedType.icon,
+        );
+        await _cubit.updateAccount(updated);
+      } else {
+        final account = Account(
+          id: '',
+          userId: userId,
+          name: name,
+          type: _selectedType,
+          balance: balance,
+          colorValue: _selectedColor,
+          icon: _selectedType.icon,
+          createdAt: DateTime.now(),
+        );
+        await _cubit.addAccount(account);
+      }
 
-    if (_isEditing) {
-      final updated = widget.editAccount!.copyWith(
-        name: name,
-        type: _selectedType,
-        balance: balance,
-        colorValue: _selectedColor,
-        icon: _selectedType.icon,
-      );
-      await cubit.updateAccount(updated);
-    } else {
-      final account = Account(
-        id: '',
-        userId: userId,
-        name: name,
-        type: _selectedType,
-        balance: balance,
-        colorValue: _selectedColor,
-        icon: _selectedType.icon,
-        createdAt: DateTime.now(),
-      );
-      await cubit.addAccount(account);
+      if (_cubit.state.status == AccountsStatus.error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage ?? 'Error al guardar'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (mounted) context.pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    if (mounted) context.pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
     final userId = context.read<AuthBloc>().state.user?.uid ?? '';
 
-    return BlocProvider(
-      create: (_) => getIt<AccountsCubit>(),
-      child: _buildScaffold(context, userId),
-    );
-  }
-
-  Widget _buildScaffold(BuildContext context, String userId) {
-    return Scaffold(
+    return BlocProvider.value(
+      value: _cubit,
+      child: Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar cuenta' : 'Nueva cuenta'),
         leading: const BackButton(),
@@ -179,9 +207,9 @@ class _AddAccountPageState extends State<AddAccountPage> {
           ),
         ),
       ),
+      ),
     );
   }
-  // fin _buildScaffold
 
   Widget _buildTypeSelector() {
     return Column(
