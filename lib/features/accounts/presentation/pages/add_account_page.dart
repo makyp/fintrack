@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/account.dart';
 import '../cubit/accounts_cubit.dart';
 
@@ -93,9 +95,15 @@ class _AddAccountPageState extends State<AddAccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    // userId comes from route extra or auth state
-    final userId = GoRouterState.of(context).extra as String? ?? '';
+    final userId = context.read<AuthBloc>().state.user?.uid ?? '';
 
+    return BlocProvider(
+      create: (_) => getIt<AccountsCubit>(),
+      child: _buildScaffold(context, userId),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, String userId) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar cuenta' : 'Nueva cuenta'),
@@ -170,6 +178,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
       ),
     );
   }
+  // fin _buildScaffold
 
   Widget _buildTypeSelector() {
     return Column(
