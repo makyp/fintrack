@@ -128,8 +128,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw AuthException(_mapFirebaseAuthError(e.code));
     } catch (e) {
       if (e is AuthException) rethrow;
-      // popup_closed / user_cancelled = user dismissed the Google picker
       final msg = e.toString().toLowerCase();
+      // User dismissed the Google picker — silent cancel
       if (msg.contains('popup_closed') ||
           msg.contains('popup-closed') ||
           msg.contains('cancelled') ||
@@ -137,7 +137,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           msg.contains('user_cancelled')) {
         throw const AuthException('cancelled');
       }
-      throw AuthException(e.toString());
+      // People API / Google API disabled in Cloud Console
+      if (msg.contains('people api') ||
+          msg.contains('service_disabled') ||
+          msg.contains('permission_denied') ||
+          msg.contains('403')) {
+        throw const AuthException(
+            'Google Sign-In no está configurado correctamente. Contacta al administrador.');
+      }
+      // Network / generic
+      if (msg.contains('network') || msg.contains('failed to fetch')) {
+        throw const AuthException('Sin conexión a internet. Verifica tu red.');
+      }
+      throw const AuthException('No se pudo iniciar sesión con Google. Intenta de nuevo.');
     }
   }
 
