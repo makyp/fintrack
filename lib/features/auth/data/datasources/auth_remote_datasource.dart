@@ -47,12 +47,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       try {
         return await getUserProfile(user.uid);
       } catch (_) {
-        return AppUserModel.fromFirebaseUser(
+        // Doc no existe: lo creamos para que el flujo continúe normalmente
+        final model = AppUserModel.fromFirebaseUser(
           uid: user.uid,
           email: user.email ?? '',
           displayName: user.displayName ?? '',
           photoUrl: user.photoURL,
         );
+        try {
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .set(model.toFirestore());
+        } catch (_) {}
+        return model;
       }
     });
   }
