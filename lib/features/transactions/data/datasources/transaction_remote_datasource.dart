@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../models/transaction_model.dart';
 import '../../domain/entities/transaction.dart';
@@ -91,6 +92,18 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       final batch = _firestore.batch();
       batch.set(_txRef(tx.userId).doc(id), model.toFirestore());
 
+      // Mirror to household collection if shared
+      if (model.householdId != null && model.householdId!.isNotEmpty) {
+        batch.set(
+          _firestore
+              .collection('households')
+              .doc(model.householdId)
+              .collection('transactions')
+              .doc(id),
+          model.toFirestore(),
+        );
+      }
+
       // Update account balance atomically
       if (tx.type == TransactionType.expense) {
         batch.update(_accountRef(tx.userId, tx.accountId), {
@@ -118,6 +131,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
 
       await batch.commit();
+      AnalyticsService.logTransactionCreated(model.type.name, model.amount, 'COP');
       return model;
     } catch (e) {
       throw ServerException(e.toString());
@@ -134,6 +148,18 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
       final batch = _firestore.batch();
       batch.update(_txRef(tx.userId).doc(tx.id), tx.toFirestore());
+
+      // Mirror household doc: update if now shared, delete if no longer shared
+      final householdRef = (hId) => _firestore
+          .collection('households')
+          .doc(hId)
+          .collection('transactions')
+          .doc(tx.id);
+      if (tx.householdId != null && tx.householdId!.isNotEmpty) {
+        batch.set(householdRef(tx.householdId), tx.toFirestore());
+      } else if (old.householdId != null && old.householdId!.isNotEmpty) {
+        batch.delete(householdRef(old.householdId));
+      }
 
       // Reverse old balance effect
       if (old.type == TransactionType.expense) {
@@ -177,8 +203,20 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String accountId, required double amount, required TransactionType type,
   }) async {
     try {
+      // Check if this tx belongs to a household to clean up mirror
+      final txDoc = await _txRef(userId).doc(txId).get();
+      final householdId = txDoc.data()?['householdId'] as String?;
+
       final batch = _firestore.batch();
       batch.delete(_txRef(userId).doc(txId));
+
+      if (householdId != null && householdId.isNotEmpty) {
+        batch.delete(_firestore
+            .collection('households')
+            .doc(householdId)
+            .collection('transactions')
+            .doc(txId));
+      }
 
       if (type == TransactionType.expense) {
         batch.update(_accountRef(userId, accountId), {'balance': FieldValue.increment(amount)});

@@ -8,6 +8,8 @@ import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/entities/transaction.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/transactions_bloc.dart';
 import '../bloc/transactions_event.dart';
 
@@ -38,6 +40,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   String? _selectedToAccountId;
   late DateTime _selectedDate;
   bool _isLoading = false;
+  bool _shareWithHousehold = false;
 
   bool get _isEditing => widget.transaction != null;
   bool get _isTransfer => _type == TransactionType.transfer;
@@ -102,6 +105,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     _selectedAccountId = tx?.accountId;
     _selectedToAccountId = tx?.toAccountId;
     _selectedDate = tx?.date ?? DateTime.now();
+    _shareWithHousehold = tx?.householdId != null;
     if (tx != null) {
       _amountCtrl.text = tx.amount.toStringAsFixed(0);
       _descCtrl.text = tx.description;
@@ -162,6 +166,9 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     setState(() => _isLoading = true);
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '')) ?? 0;
     final now = DateTime.now();
+    final householdId = (!_isTransfer && _shareWithHousehold)
+        ? context.read<AuthBloc>().state.user?.householdId
+        : (_isEditing ? widget.transaction!.householdId : null);
 
     // Build the transaction (whether creating or editing)
     final tx = Transaction(
@@ -175,7 +182,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       description: _descCtrl.text.trim(),
       date: _selectedDate,
       isRecurring: _isEditing ? widget.transaction!.isRecurring : false,
-      householdId: _isEditing ? widget.transaction!.householdId : null,
+      householdId: householdId,
       receiptUrl: _isEditing ? widget.transaction!.receiptUrl : null,
       tags: _isEditing ? widget.transaction!.tags : const [],
       createdAt: _isEditing ? widget.transaction!.createdAt : now,
@@ -259,6 +266,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                 ],
                 const SizedBox(height: AppDimensions.lg),
                 _buildDateSelector(),
+                if (!_isTransfer) _buildHouseholdToggle(context),
                 const SizedBox(height: AppDimensions.xl),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _save,
@@ -529,4 +537,21 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   }
 
   String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
+  Widget _buildHouseholdToggle(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        final householdId = authState.user?.householdId;
+        if (householdId == null) return const SizedBox.shrink();
+        return SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.home_outlined, color: AppColors.grey500),
+          title: const Text('Compartir con hogar'),
+          subtitle: const Text('Aparecerá en el reporte del hogar'),
+          value: _shareWithHousehold,
+          onChanged: (v) => setState(() => _shareWithHousehold = v),
+        );
+      },
+    );
+  }
 }

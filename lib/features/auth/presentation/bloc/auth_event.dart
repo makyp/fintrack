@@ -57,3 +57,25 @@ class AuthSignOutRequested extends AuthEvent {
 class AuthOnboardingCompleted extends AuthEvent {
   const AuthOnboardingCompleted();
 }
+
+class AuthHouseholdIdUpdated extends AuthEvent {
+  final String? householdId;
+  const AuthHouseholdIdUpdated(this.householdId);
+  @override
+  List<Object?> get props => [householdId];
+}
+
+class AuthProfileUpdateRequested extends AuthEvent {
+  final String? displayName;
+  final String? currency;
+  const AuthProfileUpdateRequested({this.displayName, this.currency});
+  @override
+  List<Object?> get props => [displayName, currency];
+}
+
+class AuthDeleteAccountRequested extends AuthEvent {
+  final String password;
+  const AuthDeleteAccountRequested(this.password);
+  @override
+  List<Object> get props => [password];
+}

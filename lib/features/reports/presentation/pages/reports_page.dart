@@ -17,17 +17,20 @@ class ReportsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userId = context.read<AuthBloc>().state.user?.uid ?? '';
+    final user = context.read<AuthBloc>().state.user;
+    final userId = user?.uid ?? '';
+    final householdId = user?.householdId;
     return BlocProvider(
       create: (_) => ReportsCubit(getIt())..load(userId),
-      child: _ReportsView(userId: userId),
+      child: _ReportsView(userId: userId, householdId: householdId),
     );
   }
 }
 
 class _ReportsView extends StatelessWidget {
   final String userId;
-  const _ReportsView({required this.userId});
+  final String? householdId;
+  const _ReportsView({required this.userId, this.householdId});
 
   static const _monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -42,11 +45,23 @@ class _ReportsView extends StatelessWidget {
         actions: [
           BlocBuilder<ReportsCubit, ReportsState>(
             builder: (context, state) {
-              if (state.data == null) return const SizedBox.shrink();
-              return IconButton(
-                icon: const Icon(Icons.copy_outlined),
-                tooltip: 'Copiar resumen',
-                onPressed: () => _copyReport(context, state),
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (householdId != null)
+                    _ModeToggle(
+                      mode: state.mode,
+                      onChanged: (m) => context
+                          .read<ReportsCubit>()
+                          .switchMode(userId, m, householdId),
+                    ),
+                  if (state.data != null)
+                    IconButton(
+                      icon: const Icon(Icons.copy_outlined),
+                      tooltip: 'Copiar resumen',
+                      onPressed: () => _copyReport(context, state),
+                    ),
+                ],
               );
             },
           ),
@@ -71,7 +86,11 @@ class _ReportsView extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () => context
                         .read<ReportsCubit>()
-                        .load(userId, month: state.month, year: state.year),
+                        .load(userId,
+                            month: state.month,
+                            year: state.year,
+                            mode: state.mode,
+                            householdId: householdId),
                     child: const Text('Reintentar'),
                   ),
                 ],
@@ -152,7 +171,11 @@ class _ReportsView extends StatelessWidget {
           icon: const Icon(Icons.chevron_left),
           onPressed: () {
             final prev = DateTime(state.year, state.month - 1);
-            cubit.load(userId, month: prev.month, year: prev.year);
+            cubit.load(userId,
+                month: prev.month,
+                year: prev.year,
+                mode: state.mode,
+                householdId: householdId);
           },
         ),
         Text(
@@ -165,7 +188,11 @@ class _ReportsView extends StatelessWidget {
           onPressed: canGoForward
               ? () {
                   final next = DateTime(state.year, state.month + 1);
-                  cubit.load(userId, month: next.month, year: next.year);
+                  cubit.load(userId,
+                      month: next.month,
+                      year: next.year,
+                      mode: state.mode,
+                      householdId: householdId);
                 }
               : null,
         ),
@@ -226,6 +253,42 @@ class _ReportsView extends StatelessWidget {
     Clipboard.setData(ClipboardData(text: buf.toString()));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Resumen copiado al portapapeles')),
+    );
+  }
+}
+
+// ── Mode Toggle ───────────────────────────────────────────────────────────────
+
+class _ModeToggle extends StatelessWidget {
+  final ReportMode mode;
+  final ValueChanged<ReportMode> onChanged;
+  const _ModeToggle({required this.mode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: SegmentedButton<ReportMode>(
+        style: SegmentedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          textStyle: const TextStyle(fontSize: 11),
+          visualDensity: VisualDensity.compact,
+        ),
+        segments: const [
+          ButtonSegment(
+            value: ReportMode.personal,
+            label: Text('Personal'),
+            icon: Icon(Icons.person_outline, size: 14),
+          ),
+          ButtonSegment(
+            value: ReportMode.household,
+            label: Text('Hogar'),
+            icon: Icon(Icons.home_outlined, size: 14),
+          ),
+        ],
+        selected: {mode},
+        onSelectionChanged: (s) => onChanged(s.first),
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/analytics/analytics_service.dart';
 import '../../domain/entities/app_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/sign_in_with_email.dart';
@@ -37,6 +38,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthPasswordResetRequested>(_onPasswordReset);
     on<AuthSignOutRequested>(_onSignOut);
     on<AuthOnboardingCompleted>(_onOnboardingCompleted);
+    on<AuthHouseholdIdUpdated>(_onHouseholdIdUpdated);
+    on<AuthProfileUpdateRequested>(_onProfileUpdate);
+    on<AuthDeleteAccountRequested>(_onDeleteAccount);
   }
 
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
@@ -65,7 +69,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       (failure) => emit(AuthState.error(failure.message)),
-      (user) => emit(AuthState.authenticated(user)),
+      (user) {
+        AnalyticsService.logLogin('email');
+        emit(AuthState.authenticated(user));
+      },
     );
   }
 
@@ -77,7 +84,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await _signInWithGoogle();
     result.fold(
       (failure) => emit(AuthState.error(failure.message)),
-      (user) => emit(AuthState.authenticated(user)),
+      (user) {
+        AnalyticsService.logLogin('google');
+        emit(AuthState.authenticated(user));
+      },
     );
   }
 
@@ -93,7 +103,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       (failure) => emit(AuthState.error(failure.message)),
-      (user) => emit(AuthState.authenticated(user)),
+      (user) {
+        AnalyticsService.logSignUp('email');
+        emit(AuthState.authenticated(user));
+      },
     );
   }
 
@@ -125,6 +138,45 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (user != null) {
       emit(AuthState.authenticated(user.copyWith(onboardingCompleted: true)));
     }
+  }
+
+  void _onHouseholdIdUpdated(
+    AuthHouseholdIdUpdated event,
+    Emitter<AuthState> emit,
+  ) {
+    final user = state.user;
+    if (user != null) {
+      emit(AuthState.authenticated(user.copyWith(
+        householdId: event.householdId,
+        clearHouseholdId: event.householdId == null,
+      )));
+    }
+  }
+
+  Future<void> _onProfileUpdate(
+    AuthProfileUpdateRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final result = await _repository.updateProfile(
+      displayName: event.displayName,
+      currency: event.currency,
+    );
+    result.fold(
+      (_) {},
+      (user) => emit(AuthState.authenticated(user)),
+    );
+  }
+
+  Future<void> _onDeleteAccount(
+    AuthDeleteAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthState.loading());
+    final result = await _repository.deleteAccount(password: event.password);
+    result.fold(
+      (failure) => emit(AuthState.error(failure.message)),
+      (_) => emit(const AuthState.unauthenticated()),
+    );
   }
 
   @override

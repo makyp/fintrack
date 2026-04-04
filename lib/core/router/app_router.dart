@@ -13,6 +13,7 @@ import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/goals/presentation/pages/goals_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/accounts/presentation/pages/add_account_page.dart';
+import '../../features/household/presentation/pages/household_page.dart';
 import '../di/injection.dart';
 
 class AppRouter {
@@ -99,6 +100,10 @@ class AppRouter {
                   editAccount: extra?['account'],
                 );
               },
+            ),
+            GoRoute(
+              path: '/household',
+              builder: (_, __) => const HouseholdPage(),
             ),
           ],
         ),

@@ -8,6 +8,7 @@ class AppUser extends Equatable {
   final String currency;
   final bool onboardingCompleted;
   final DateTime createdAt;
+  final String? householdId;
 
   const AppUser({
     required this.uid,
@@ -17,6 +18,7 @@ class AppUser extends Equatable {
     this.currency = 'COP',
     this.onboardingCompleted = false,
     required this.createdAt,
+    this.householdId,
   });
 
   AppUser copyWith({
@@ -24,6 +26,8 @@ class AppUser extends Equatable {
     String? photoUrl,
     String? currency,
     bool? onboardingCompleted,
+    String? householdId,
+    bool clearHouseholdId = false,
   }) {
     return AppUser(
       uid: uid,
@@ -33,9 +37,10 @@ class AppUser extends Equatable {
       currency: currency ?? this.currency,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       createdAt: createdAt,
+      householdId: clearHouseholdId ? null : (householdId ?? this.householdId),
     );
   }
 
   @override
-  List<Object?> get props => [uid, email, displayName, photoUrl, currency, onboardingCompleted, createdAt];
+  List<Object?> get props => [uid, email, displayName, photoUrl, currency, onboardingCompleted, createdAt, householdId];
 }
