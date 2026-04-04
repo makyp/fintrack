@@ -27,7 +27,7 @@ class ReportsState extends Equatable {
   const ReportsState.loading(int month, int year)
       : this._(status: ReportsStatus.loading, month: month, year: year);
 
-  const ReportsState.loaded(ReportData data)
+  ReportsState.loaded(ReportData data)
       : this._(
           status: ReportsStatus.loaded,
           month: data.month,
