@@ -104,7 +104,8 @@ class _DebtsViewState extends State<_DebtsView>
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(context),
+        onPressed: () => _openForm(context, initialDirection:
+            _tabController.index == 1 ? DebtDirection.iOweThem : DebtDirection.theyOweMe),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
         icon: const Icon(Icons.add),
@@ -113,13 +114,17 @@ class _DebtsViewState extends State<_DebtsView>
     );
   }
 
-  void _openForm(BuildContext context, [Debt? debt]) {
+  void _openForm(BuildContext context, {Debt? debt, DebtDirection? initialDirection}) {
     final cubit = context.read<DebtsCubit>();
     Navigator.of(context).push(MaterialPageRoute(
       fullscreenDialog: true,
       builder: (_) => BlocProvider.value(
         value: cubit,
-        child: DebtFormPage(userId: widget.userId, debt: debt),
+        child: DebtFormPage(
+          userId: widget.userId,
+          debt: debt,
+          initialDirection: initialDirection,
+        ),
       ),
     ));
   }

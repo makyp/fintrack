@@ -10,8 +10,14 @@ import '../cubit/debts_cubit.dart';
 class DebtFormPage extends StatefulWidget {
   final String userId;
   final Debt? debt;
+  final DebtDirection? initialDirection;
 
-  const DebtFormPage({super.key, required this.userId, this.debt});
+  const DebtFormPage({
+    super.key,
+    required this.userId,
+    this.debt,
+    this.initialDirection,
+  });
 
   @override
   State<DebtFormPage> createState() => _DebtFormPageState();
@@ -24,7 +30,7 @@ class _DebtFormPageState extends State<DebtFormPage> {
   final _amountCtrl = TextEditingController();
   final _interestCtrl = TextEditingController();
 
-  DebtDirection _direction = DebtDirection.theyOweMe;
+  late DebtDirection _direction;
   DateTime _startDate = DateTime.now();
   DateTime? _dueDate;
   bool _hasInterest = false;
@@ -52,6 +58,8 @@ class _DebtFormPageState extends State<DebtFormPage> {
       _interestCtrl.text = d.monthlyInterestRate > 0
           ? d.monthlyInterestRate.toStringAsFixed(1)
           : '';
+    } else {
+      _direction = widget.initialDirection ?? DebtDirection.theyOweMe;
     }
   }
 
