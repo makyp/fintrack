@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
+import '../../../../core/utils/thousands_separator_formatter.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../../../core/di/injection.dart';
@@ -107,7 +108,11 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     _selectedDate = tx?.date ?? DateTime.now();
     _shareWithHousehold = tx?.householdId != null;
     if (tx != null) {
-      _amountCtrl.text = tx.amount.toStringAsFixed(0);
+      // Display with thousands separator
+      _amountCtrl.text = ThousandsSeparatorFormatter().formatEditUpdate(
+        const TextEditingValue(text: ''),
+        TextEditingValue(text: tx.amount.toStringAsFixed(0)),
+      ).text;
       _descCtrl.text = tx.description;
     }
     _descCtrl.addListener(_onDescriptionChanged);
@@ -164,7 +169,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     }
 
     setState(() => _isLoading = true);
-    final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '')) ?? 0;
+    final amount = ThousandsSeparatorFormatter.parse(_amountCtrl.text);
     final now = DateTime.now();
     final householdId = (!_isTransfer && _shareWithHousehold)
         ? context.read<AuthBloc>().state.user?.householdId
@@ -359,8 +364,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     final color = _typeColor(_type);
     return TextFormField(
       controller: _amountCtrl,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
+      keyboardType: TextInputType.number,
+      inputFormatters: [ThousandsSeparatorFormatter()],
       style: AppTextStyles.displaySmall.copyWith(color: color),
       textAlign: TextAlign.center,
       decoration: InputDecoration(
@@ -372,7 +377,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       ),
       validator: (v) {
         if (v == null || v.isEmpty) return 'Ingresa el monto';
-        if ((double.tryParse(v) ?? 0) <= 0) return 'El monto debe ser mayor a 0';
+        if (ThousandsSeparatorFormatter.parse(v) <= 0) return 'El monto debe ser mayor a 0';
         return null;
       },
     );
