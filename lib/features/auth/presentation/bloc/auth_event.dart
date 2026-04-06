@@ -68,9 +68,16 @@ class AuthHouseholdIdUpdated extends AuthEvent {
 class AuthProfileUpdateRequested extends AuthEvent {
   final String? displayName;
   final String? currency;
-  const AuthProfileUpdateRequested({this.displayName, this.currency});
+  final String? photoUrl;
+  final String? reminderTime; // "HH:mm" format
+  const AuthProfileUpdateRequested({
+    this.displayName,
+    this.currency,
+    this.photoUrl,
+    this.reminderTime,
+  });
   @override
-  List<Object?> get props => [displayName, currency];
+  List<Object?> get props => [displayName, currency, photoUrl, reminderTime];
 }
 
 class AuthDeleteAccountRequested extends AuthEvent {

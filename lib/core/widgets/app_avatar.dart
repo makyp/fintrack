@@ -44,6 +44,12 @@ class AppAvatar extends StatelessWidget {
       return _InitialsText(initials: _initials, size: size);
     }
 
+    // Emoji avatar — stored as "emoji://🧑"
+    if (photoUrl!.startsWith('emoji://')) {
+      final emoji = photoUrl!.replaceFirst('emoji://', '');
+      return Text(emoji, style: TextStyle(fontSize: size * 0.5));
+    }
+
     // On web: Image.network lets the browser handle CORS natively.
     // On mobile: CachedNetworkImage for disk caching.
     if (kIsWeb) {

@@ -27,7 +27,12 @@ abstract class AuthRepository {
 
   Future<Either<Failure, AppUser>> getCurrentUserProfile();
 
-  Future<Either<Failure, AppUser>> updateProfile({String? displayName, String? currency});
+  Future<Either<Failure, AppUser>> updateProfile({
+    String? displayName,
+    String? currency,
+    String? photoUrl,
+    String? reminderTime,
+  });
 
   Future<Either<Failure, void>> changePassword({required String currentPassword, required String newPassword});
 }

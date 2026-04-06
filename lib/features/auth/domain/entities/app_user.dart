@@ -9,6 +9,7 @@ class AppUser extends Equatable {
   final bool onboardingCompleted;
   final DateTime createdAt;
   final String? householdId;
+  final String? reminderTime; // "HH:mm" format, e.g. "20:00"
 
   const AppUser({
     required this.uid,
@@ -19,6 +20,7 @@ class AppUser extends Equatable {
     this.onboardingCompleted = false,
     required this.createdAt,
     this.householdId,
+    this.reminderTime,
   });
 
   AppUser copyWith({
@@ -28,6 +30,7 @@ class AppUser extends Equatable {
     bool? onboardingCompleted,
     String? householdId,
     bool clearHouseholdId = false,
+    String? reminderTime,
   }) {
     return AppUser(
       uid: uid,
@@ -38,9 +41,10 @@ class AppUser extends Equatable {
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       createdAt: createdAt,
       householdId: clearHouseholdId ? null : (householdId ?? this.householdId),
+      reminderTime: reminderTime ?? this.reminderTime,
     );
   }
 
   @override
-  List<Object?> get props => [uid, email, displayName, photoUrl, currency, onboardingCompleted, createdAt, householdId];
+  List<Object?> get props => [uid, email, displayName, photoUrl, currency, onboardingCompleted, createdAt, householdId, reminderTime];
 }

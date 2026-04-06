@@ -10,6 +10,7 @@ class AppUserModel extends AppUser {
     super.onboardingCompleted,
     required super.createdAt,
     super.householdId,
+    super.reminderTime,
   });
 
   factory AppUserModel.fromFirestore(Map<String, dynamic> map, String uid) {
@@ -26,6 +27,7 @@ class AppUserModel extends AppUser {
             )
           : DateTime.now(),
       householdId: map['householdId'] as String?,
+      reminderTime: map['reminderTime'] as String?,
     );
   }
 
@@ -38,6 +40,7 @@ class AppUserModel extends AppUser {
       'onboardingCompleted': onboardingCompleted,
       'createdAt': createdAt,
       if (householdId != null) 'householdId': householdId,
+      if (reminderTime != null) 'reminderTime': reminderTime,
     };
   }
 

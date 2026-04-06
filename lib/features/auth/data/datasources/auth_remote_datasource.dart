@@ -26,7 +26,12 @@ abstract class AuthRemoteDataSource {
   Future<void> signOut();
   Future<void> deleteAccount({required String password});
   Future<AppUserModel> getUserProfile(String uid);
-  Future<AppUserModel> updateProfile({String? displayName, String? currency});
+  Future<AppUserModel> updateProfile({
+    String? displayName,
+    String? currency,
+    String? photoUrl,
+    String? reminderTime,
+  });
   Future<void> changePassword({required String currentPassword, required String newPassword});
 }
 
@@ -229,15 +234,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<AppUserModel> updateProfile({String? displayName, String? currency}) async {
+  Future<AppUserModel> updateProfile({
+    String? displayName,
+    String? currency,
+    String? photoUrl,
+    String? reminderTime,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) throw const AuthException('No hay sesión activa');
     final updates = <String, dynamic>{};
     if (displayName != null) updates['displayName'] = displayName;
     if (currency != null) updates['currency'] = currency;
+    if (photoUrl != null) updates['photoUrl'] = photoUrl;
+    if (reminderTime != null) updates['reminderTime'] = reminderTime;
     if (updates.isEmpty) return getUserProfile(user.uid);
     await _firestore.collection('users').doc(user.uid).update(updates);
     if (displayName != null) await user.updateDisplayName(displayName);
+    if (photoUrl != null) await user.updatePhotoURL(photoUrl);
     return getUserProfile(user.uid);
   }
 

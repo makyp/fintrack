@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -29,7 +32,10 @@ class ProfilePage extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    _Avatar(photoUrl: user?.photoUrl, displayName: user?.displayName),
+                    _Avatar(
+                        photoUrl: user?.photoUrl,
+                        displayName: user?.displayName,
+                        userId: user?.uid ?? ''),
                     const SizedBox(height: 12),
                     Text(user?.displayName ?? '—',
                         style: AppTextStyles.headlineMedium),
@@ -149,14 +155,158 @@ class ProfilePage extends StatelessWidget {
 
 // ── Avatar widget ─────────────────────────────────────────────────────────────
 
+const _kAvatarEmojis = [
+  '🧑', '👩', '👨', '🧒', '👦', '👧', '🧓', '👴', '👵',
+  '🐱', '🐶', '🦊', '🐺', '🦁', '🐯', '🐻', '🐼', '🐨',
+  '🚀', '⭐', '🎯', '💎', '🌟', '🔥', '🌈', '🎮', '🎸',
+];
+
 class _Avatar extends StatelessWidget {
   final String? photoUrl;
   final String? displayName;
-  const _Avatar({this.photoUrl, this.displayName});
+  final String userId;
+  const _Avatar({this.photoUrl, this.displayName, required this.userId});
 
   @override
   Widget build(BuildContext context) {
-    return AppAvatar(photoUrl: photoUrl, displayName: displayName, radius: 44);
+    return GestureDetector(
+      onTap: () => _showPhotoOptions(context),
+      child: Stack(
+        children: [
+          AppAvatar(photoUrl: photoUrl, displayName: displayName, radius: 44),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPhotoOptions(BuildContext context) {
+    final authBloc = context.read<AuthBloc>();
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4,
+                decoration: BoxDecoration(
+                    color: AppColors.grey300,
+                    borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 16),
+            const Text('Cambiar foto de perfil',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            const SizedBox(height: 8),
+            if (!kIsWeb)
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined,
+                    color: AppColors.primary),
+                title: const Text('Subir desde galería'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final picker = ImagePicker();
+                  final file = await picker.pickImage(
+                      source: ImageSource.gallery, imageQuality: 80);
+                  if (file == null || !context.mounted) return;
+                  try {
+                    final bytes = await file.readAsBytes();
+                    final ref = FirebaseStorage.instance
+                        .ref('profile_photos/$userId.jpg');
+                    await ref.putData(bytes,
+                        SettableMetadata(contentType: 'image/jpeg'));
+                    final url = await ref.getDownloadURL();
+                    authBloc.add(AuthProfileUpdateRequested(photoUrl: url));
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('Error al subir la foto')));
+                    }
+                  }
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.emoji_emotions_outlined,
+                  color: AppColors.secondary),
+              title: const Text('Elegir ícono'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showEmojiPicker(context, authBloc);
+              },
+            ),
+            if (photoUrl != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline,
+                    color: AppColors.danger),
+                title: const Text('Quitar foto'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  authBloc.add(const AuthProfileUpdateRequested(photoUrl: ''));
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEmojiPicker(BuildContext context, AuthBloc authBloc) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Elige un ícono'),
+        content: SizedBox(
+          width: 300,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 6,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+            ),
+            itemCount: _kAvatarEmojis.length,
+            itemBuilder: (_, i) {
+              final emoji = _kAvatarEmojis[i];
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  authBloc.add(
+                      AuthProfileUpdateRequested(photoUrl: 'emoji://$emoji'));
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.grey100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(emoji,
+                        style: const TextStyle(fontSize: 22)),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar')),
+        ],
+      ),
+    );
   }
 }
 

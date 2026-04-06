@@ -167,6 +167,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await _repository.updateProfile(
       displayName: event.displayName,
       currency: event.currency,
+      photoUrl: event.photoUrl,
+      reminderTime: event.reminderTime,
     );
     result.fold(
       (_) {},

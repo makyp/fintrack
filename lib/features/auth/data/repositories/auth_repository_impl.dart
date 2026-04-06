@@ -104,9 +104,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, AppUser>> updateProfile({String? displayName, String? currency}) async {
+  Future<Either<Failure, AppUser>> updateProfile({
+    String? displayName,
+    String? currency,
+    String? photoUrl,
+    String? reminderTime,
+  }) async {
     try {
-      final user = await _dataSource.updateProfile(displayName: displayName, currency: currency);
+      final user = await _dataSource.updateProfile(
+        displayName: displayName,
+        currency: currency,
+        photoUrl: photoUrl,
+        reminderTime: reminderTime,
+      );
       return Either.right(user);
     } on AuthException catch (e) {
       return Either.left(AuthFailure(e.message));

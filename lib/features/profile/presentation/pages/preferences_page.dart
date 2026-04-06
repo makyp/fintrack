@@ -18,6 +18,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameCtrl;
   late String _currency;
+  TimeOfDay? _reminderTime;
   bool _isLoading = false;
 
   static const _currencies = ['COP', 'USD', 'EUR', 'MXN', 'ARS', 'BRL', 'PEN', 'CLP'];
@@ -28,6 +29,16 @@ class _PreferencesPageState extends State<PreferencesPage> {
     final user = context.read<AuthBloc>().state.user;
     _nameCtrl = TextEditingController(text: user?.displayName ?? '');
     _currency = user?.currency ?? 'COP';
+    final rt = user?.reminderTime;
+    if (rt != null) {
+      final parts = rt.split(':');
+      if (parts.length == 2) {
+        _reminderTime = TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 20,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }
+    }
   }
 
   @override
@@ -42,9 +53,14 @@ class _PreferencesPageState extends State<PreferencesPage> {
 
     final user = context.read<AuthBloc>().state.user;
     final newName = _nameCtrl.text.trim();
+    final reminderStr = _reminderTime != null
+        ? '${_reminderTime!.hour.toString().padLeft(2, '0')}:${_reminderTime!.minute.toString().padLeft(2, '0')}'
+        : null;
+
     context.read<AuthBloc>().add(AuthProfileUpdateRequested(
           displayName: newName != user?.displayName ? newName : null,
           currency: _currency != user?.currency ? _currency : null,
+          reminderTime: reminderStr,
         ));
 
     if (mounted) {
@@ -105,6 +121,50 @@ class _PreferencesPageState extends State<PreferencesPage> {
                         ),
                       );
                     }).toList(),
+                  ),
+                  const SizedBox(height: AppDimensions.xl),
+                  Text('Recordatorios', style: AppTextStyles.labelLarge),
+                  const SizedBox(height: AppDimensions.sm),
+                  Text(
+                    'Configura a qué hora quieres recibir el recordatorio diario para registrar tus gastos.',
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
+                  ),
+                  const SizedBox(height: AppDimensions.md),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.notifications_outlined,
+                        color: AppColors.primary),
+                    title: const Text('Hora del recordatorio'),
+                    subtitle: Text(
+                      _reminderTime != null
+                          ? _reminderTime!.format(context)
+                          : 'Sin recordatorio',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.grey500),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_reminderTime != null)
+                          IconButton(
+                            icon: const Icon(Icons.close,
+                                size: 18, color: AppColors.grey400),
+                            onPressed: () =>
+                                setState(() => _reminderTime = null),
+                          ),
+                        const Icon(Icons.chevron_right,
+                            color: AppColors.grey400),
+                      ],
+                    ),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: _reminderTime ?? const TimeOfDay(hour: 20, minute: 0),
+                      );
+                      if (picked != null) {
+                        setState(() => _reminderTime = picked);
+                      }
+                    },
                   ),
                   const SizedBox(height: AppDimensions.xl),
                   ElevatedButton(
