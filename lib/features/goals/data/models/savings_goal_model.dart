@@ -38,7 +38,9 @@ class SavingsGoalModel extends SavingsGoal {
         'icon': icon,
         'targetAmount': targetAmount,
         'currentAmount': currentAmount,
-        if (targetDate != null) 'targetDate': Timestamp.fromDate(targetDate!),
+        'targetDate': targetDate != null
+            ? Timestamp.fromDate(targetDate!)
+            : FieldValue.delete(),
         if (linkedAccountId != null) 'linkedAccountId': linkedAccountId,
         'isCompleted': isCompleted,
         'createdAt': Timestamp.fromDate(createdAt),

@@ -237,13 +237,18 @@ class _GoalCard extends StatelessWidget {
 
   void _showOptions(BuildContext context) {
     final userId = this.userId;
+    final cubit = context.read<GoalsCubit>();
+    final nav = Navigator.of(context);
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => BlocProvider.value(
-        value: context.read<GoalsCubit>(),
-        child: _GoalOptionsSheet(goal: goal, userId: userId),
+      builder: (ctx) => _GoalOptionsSheet(
+        goal: goal,
+        userId: userId,
+        cubit: cubit,
+        parentNavigator: nav,
       ),
     );
   }
@@ -254,8 +259,15 @@ class _GoalCard extends StatelessWidget {
 class _GoalOptionsSheet extends StatelessWidget {
   final SavingsGoal goal;
   final String userId;
+  final GoalsCubit cubit;
+  final NavigatorState parentNavigator;
 
-  const _GoalOptionsSheet({required this.goal, required this.userId});
+  const _GoalOptionsSheet({
+    required this.goal,
+    required this.userId,
+    required this.cubit,
+    required this.parentNavigator,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -284,8 +296,7 @@ class _GoalOptionsSheet extends StatelessWidget {
           const SizedBox(height: AppDimensions.sm),
           if (!goal.isCompleted) ...[
             ListTile(
-              leading: const Icon(Icons.add_circle_outline,
-                  color: AppColors.success),
+              leading: const Icon(Icons.add_circle_outline, color: AppColors.success),
               title: const Text('Agregar aportación'),
               onTap: () {
                 Navigator.pop(context);
@@ -293,15 +304,14 @@ class _GoalOptionsSheet extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.edit_outlined,
-                  color: AppColors.primary),
+              leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
               title: const Text('Editar'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.of(context).push(MaterialPageRoute(
+                parentNavigator.push(MaterialPageRoute(
                   fullscreenDialog: true,
                   builder: (_) => BlocProvider.value(
-                    value: context.read<GoalsCubit>(),
+                    value: cubit,
                     child: GoalFormPage(userId: userId, goal: goal),
                   ),
                 ));
@@ -325,8 +335,8 @@ class _GoalOptionsSheet extends StatelessWidget {
   void _showContributionDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => BlocProvider.value(
-        value: context.read<GoalsCubit>(),
+      builder: (_) => BlocProvider.value(
+        value: cubit,
         child: _ContributionDialog(goal: goal, userId: userId),
       ),
     );
@@ -345,7 +355,7 @@ class _GoalOptionsSheet extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await context.read<GoalsCubit>().delete(userId, goal.id);
+              await cubit.delete(userId, goal.id);
             },
             child: const Text('Eliminar',
                 style: TextStyle(color: AppColors.danger)),
@@ -424,7 +434,7 @@ class _ContributionDialogState extends State<_ContributionDialog> {
   }
 
   Future<void> _submit() async {
-    final amount = double.tryParse(_ctrl.text) ?? 0;
+    final amount = double.tryParse(_ctrl.text.replaceAll('.', '')) ?? 0;
     if (amount <= 0) return;
     setState(() => _loading = true);
     try {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
+import '../../../../core/utils/thousands_separator_formatter.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../cubit/goals_cubit.dart';
 
@@ -38,7 +38,10 @@ class _GoalFormPageState extends State<GoalFormPage> {
     final g = widget.goal;
     if (g != null) {
       _nameCtrl.text = g.name;
-      _targetCtrl.text = g.targetAmount.toStringAsFixed(0);
+      _targetCtrl.text = ThousandsSeparatorFormatter().formatEditUpdate(
+        const TextEditingValue(text: ''),
+        TextEditingValue(text: g.targetAmount.toStringAsFixed(0)),
+      ).text;
       _icon = g.icon;
       _targetDate = g.targetDate;
     }
@@ -56,7 +59,7 @@ class _GoalFormPageState extends State<GoalFormPage> {
     setState(() => _isLoading = true);
     try {
       final cubit = context.read<GoalsCubit>();
-      final target = double.tryParse(_targetCtrl.text) ?? 0;
+      final target = ThousandsSeparatorFormatter.parse(_targetCtrl.text);
 
       bool ok;
       if (_isEditing) {
@@ -152,11 +155,8 @@ class _GoalFormPageState extends State<GoalFormPage> {
               // Target amount
               TextFormField(
                 controller: _targetCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))
-                ],
+                keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsSeparatorFormatter()],
                 decoration: const InputDecoration(
                   labelText: 'Monto objetivo',
                   prefixIcon: Icon(Icons.attach_money),
@@ -164,7 +164,7 @@ class _GoalFormPageState extends State<GoalFormPage> {
                 ),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Ingresa el monto';
-                  if ((double.tryParse(v) ?? 0) <= 0) return 'Monto inválido';
+                  if (ThousandsSeparatorFormatter.parse(v) <= 0) return 'Monto inválido';
                   return null;
                 },
               ),
