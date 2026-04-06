@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -12,6 +14,7 @@ import '../cubit/reports_cubit.dart';
 import '../widgets/expense_donut_chart.dart';
 import '../widgets/category_horizontal_bars.dart';
 import '../widgets/trend_line_chart.dart';
+import '../widgets/daily_bar_chart.dart';
 
 class ReportsPage extends StatelessWidget {
   const ReportsPage({super.key});
@@ -58,9 +61,9 @@ class _ReportsView extends StatelessWidget {
                     ),
                   if (state.data != null)
                     IconButton(
-                      icon: const Icon(Icons.copy_outlined),
-                      tooltip: 'Copiar resumen',
-                      onPressed: () => _copyReport(context, state),
+                      icon: const Icon(Icons.download_outlined),
+                      tooltip: 'Descargar reporte',
+                      onPressed: () => _shareReport(context, state),
                     ),
                 ],
               );
@@ -149,6 +152,21 @@ class _ReportsView extends StatelessWidget {
                 ),
                 const SizedBox(height: AppDimensions.md),
               ],
+
+              // ── Daily bar chart ──────────────────────────────────────────
+              if (data.daily.isNotEmpty)
+                _Card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Actividad diaria',
+                          style: AppTextStyles.headlineSmall),
+                      const SizedBox(height: AppDimensions.sm),
+                      DailyBarChart(data: data.daily),
+                    ],
+                  ),
+                ),
+              if (data.daily.isNotEmpty) const SizedBox(height: AppDimensions.md),
 
               // ── Trend line chart ─────────────────────────────────────────
               _Card(
@@ -292,11 +310,11 @@ class _ReportsView extends StatelessWidget {
     );
   }
 
-  void _copyReport(BuildContext context, ReportsState state) {
+  void _shareReport(BuildContext context, ReportsState state) {
     final d = state.data!;
     final buf = StringBuffer()
       ..writeln(
-          '📊 Reporte FinTrack — ${_monthNames[state.month - 1]} ${state.year}')
+          'Reporte FinTrack — ${_monthNames[state.month - 1]} ${state.year}')
       ..writeln('─────────────────────────')
       ..writeln('Ingresos:  ${CurrencyFormatter.format(d.totalIncome)}')
       ..writeln('Gastos:    ${CurrencyFormatter.format(d.totalExpenses)}')
@@ -308,10 +326,26 @@ class _ReportsView extends StatelessWidget {
           '${CurrencyFormatter.format(cat.amount)} '
           '(${(cat.percentage * 100).toStringAsFixed(0)}%)');
     }
-    Clipboard.setData(ClipboardData(text: buf.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Resumen copiado al portapapeles')),
-    );
+    if (d.incomeByCategory.isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln('Ingresos por categoría:');
+      for (final cat in d.incomeByCategory) {
+        buf.writeln('  ${cat.category.icon} ${cat.category.label}: '
+            '${CurrencyFormatter.format(cat.amount)} '
+            '(${(cat.percentage * 100).toStringAsFixed(0)}%)');
+      }
+    }
+    final text = buf.toString();
+
+    if (kIsWeb) {
+      Clipboard.setData(ClipboardData(text: text));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reporte copiado al portapapeles')),
+      );
+    } else {
+      Share.share(text, subject: 'Reporte FinTrack');
+    }
   }
 }
 

@@ -34,6 +34,9 @@ class ReportsDataSource {
     double totalExpenses = 0;
     final expMap = <TransactionCategory, double>{};
     final incMap = <TransactionCategory, double>{};
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final dailyIncome = List<double>.filled(daysInMonth + 1, 0);
+    final dailyExpenses = List<double>.filled(daysInMonth + 1, 0);
 
     for (final doc in monthSnap.docs) {
       final d = doc.data();
@@ -44,15 +47,23 @@ class ReportsDataSource {
           (e) => e.name == typeStr, orElse: () => TransactionType.expense);
       final cat = TransactionCategory.values.firstWhere(
           (e) => e.name == catStr, orElse: () => TransactionCategory.other);
+      final day = (d['date'] as Timestamp).toDate().day;
 
       if (type == TransactionType.expense) {
         totalExpenses += amount;
         expMap[cat] = (expMap[cat] ?? 0) + amount;
+        if (day >= 1 && day <= daysInMonth) dailyExpenses[day] += amount;
       } else if (type == TransactionType.income) {
         totalIncome += amount;
         incMap[cat] = (incMap[cat] ?? 0) + amount;
+        if (day >= 1 && day <= daysInMonth) dailyIncome[day] += amount;
       }
     }
+
+    final daily = List.generate(daysInMonth, (i) {
+      final d = i + 1;
+      return DailyData(day: d, income: dailyIncome[d], expenses: dailyExpenses[d]);
+    });
 
     // ── 6-month trend ────────────────────────────────────────────────────────
     final trendStart = Timestamp.fromDate(DateTime(year, month - 5, 1));
@@ -140,6 +151,7 @@ class ReportsDataSource {
         ..sort((a, b) => a.year != b.year
             ? a.year.compareTo(b.year)
             : a.month.compareTo(b.month)),
+      daily: daily,
       goals: goals,
     );
   }

@@ -59,6 +59,20 @@ class GoalProgressData {
   });
 }
 
+class DailyData {
+  final int day;
+  final double income;
+  final double expenses;
+
+  const DailyData({
+    required this.day,
+    required this.income,
+    required this.expenses,
+  });
+
+  double get net => income - expenses;
+}
+
 class ReportData {
   final int month;
   final int year;
@@ -67,6 +81,7 @@ class ReportData {
   final List<CategoryData> expensesByCategory;
   final List<CategoryData> incomeByCategory;
   final List<MonthlyData> trend;
+  final List<DailyData> daily;
   final List<GoalProgressData> goals;
 
   const ReportData({
@@ -77,6 +92,7 @@ class ReportData {
     required this.expensesByCategory,
     required this.incomeByCategory,
     required this.trend,
+    this.daily = const [],
     this.goals = const [],
   });
 
@@ -96,6 +112,7 @@ class ReportData {
         expensesByCategory: const [],
         incomeByCategory: const [],
         trend: const [],
+        daily: const [],
         goals: const [],
       );
 }
