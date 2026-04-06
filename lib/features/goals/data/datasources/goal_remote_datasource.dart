@@ -59,7 +59,12 @@ class GoalRemoteDataSourceImpl implements GoalRemoteDataSource {
   @override
   Future<SavingsGoal> update(SavingsGoal goal) async {
     final model = SavingsGoalModel.fromEntity(goal);
-    await _col(goal.userId).doc(goal.id).update(model.toFirestore());
+    final data = model.toFirestore();
+    // If targetDate was cleared, explicitly delete the field
+    if (goal.targetDate == null) {
+      data['targetDate'] = FieldValue.delete();
+    }
+    await _col(goal.userId).doc(goal.id).update(data);
     return model;
   }
 
