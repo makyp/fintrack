@@ -203,24 +203,26 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   }
 
   void _confirmDelete() {
+    final bloc = context.read<TransactionsBloc>();
+    final nav = Navigator.of(context);
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Eliminar transacción'),
         content: const Text('¿Estás seguro? Esta acción no se puede deshacer.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              context.read<TransactionsBloc>().add(TransactionDeleted(
-                    userId: widget.userId,
-                    transactionId: widget.transaction!.id,
-                    accountId: widget.transaction!.accountId,
-                    amount: widget.transaction!.amount,
-                    transactionType: widget.transaction!.type,
-                  ));
-              Navigator.of(context).pop();
+              Navigator.pop(ctx);
+              bloc.add(TransactionDeleted(
+                userId: widget.userId,
+                transactionId: widget.transaction!.id,
+                accountId: widget.transaction!.accountId,
+                amount: widget.transaction!.amount,
+                transactionType: widget.transaction!.type,
+              ));
+              nav.pop();
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: const Text('Eliminar'),

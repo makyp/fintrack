@@ -242,10 +242,19 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
             .doc(txId));
       }
 
+      final accSnap = await _accountRef(userId, accountId).get();
+      final accType = accSnap.data()?['type'] as String? ?? 'cash';
+      final isCredit = accType == 'credit';
+
+      // Reverse the balance change applied when the transaction was created.
+      // Credit card: expense increased debt (+amount), so reversal is -amount.
+      // Regular account: expense decreased balance (-amount), so reversal is +amount.
       if (type == TransactionType.expense) {
-        batch.update(_accountRef(userId, accountId), {'balance': FieldValue.increment(amount)});
+        batch.update(_accountRef(userId, accountId),
+            {'balance': FieldValue.increment(isCredit ? -amount : amount)});
       } else if (type == TransactionType.income) {
-        batch.update(_accountRef(userId, accountId), {'balance': FieldValue.increment(-amount)});
+        batch.update(_accountRef(userId, accountId),
+            {'balance': FieldValue.increment(isCredit ? amount : -amount)});
       }
 
       await batch.commit();
