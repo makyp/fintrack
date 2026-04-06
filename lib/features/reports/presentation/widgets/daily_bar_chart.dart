@@ -19,7 +19,11 @@ class _DailyBarChartState extends State<DailyBarChart> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.data.isEmpty) {
+    final active = widget.data
+        .where((d) => d.income > 0 || d.expenses > 0)
+        .toList();
+
+    if (active.isEmpty) {
       return const SizedBox(
         height: 160,
         child: Center(
@@ -29,7 +33,7 @@ class _DailyBarChartState extends State<DailyBarChart> {
       );
     }
 
-    final maxVal = widget.data
+    final maxVal = active
         .map((d) => d.income > d.expenses ? d.income : d.expenses)
         .reduce((a, b) => a > b ? a : b);
     final safeMax = maxVal > 0 ? maxVal * 1.2 : 1000.0;
@@ -58,7 +62,7 @@ class _DailyBarChartState extends State<DailyBarChart> {
                   tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 6),
                   getTooltipItem: (group, _, rod, rodIndex) {
-                    final d = widget.data[group.x];
+                    final d = active[group.x];
                     final label = rodIndex == 0 ? 'Ing' : 'Gas';
                     final amount = rodIndex == 0 ? d.income : d.expenses;
                     return BarTooltipItem(
@@ -91,13 +95,12 @@ class _DailyBarChartState extends State<DailyBarChart> {
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
-                      final day = value.toInt() + 1;
-                      // Show every 5th day
-                      if (day % 5 != 0 && day != 1) {
+                      final idx = value.toInt();
+                      if (idx < 0 || idx >= active.length) {
                         return const SizedBox.shrink();
                       }
                       return Text(
-                        '$day',
+                        '${active[idx].day}',
                         style: AppTextStyles.bodySmall.copyWith(
                           fontSize: 10,
                           color: AppColors.grey400,
@@ -118,8 +121,8 @@ class _DailyBarChartState extends State<DailyBarChart> {
                 ),
               ),
               borderData: FlBorderData(show: false),
-              barGroups: List.generate(widget.data.length, (i) {
-                final d = widget.data[i];
+              barGroups: List.generate(active.length, (i) {
+                final d = active[i];
                 final isTouched = _touchedIndex == i;
                 return BarChartGroupData(
                   x: i,
