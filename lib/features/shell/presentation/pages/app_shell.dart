@@ -121,6 +121,7 @@ class _Sidebar extends StatelessWidget {
     _NavItem(Icons.receipt_long_outlined, Icons.receipt_long, 'Transacciones'),
     _NavItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Reportes'),
     _NavItem(Icons.savings_outlined, Icons.savings, 'Metas'),
+    _NavItem(Icons.handshake_outlined, Icons.handshake, 'Deudas'),
     _NavItem(Icons.person_outline, Icons.person, 'Perfil'),
   ];
 
@@ -282,7 +283,7 @@ class _NavItem {
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
-const _navRoutes = ['/', '/transactions', '/reports', '/goals', '/profile'];
+const _navRoutes = ['/', '/transactions', '/reports', '/goals', '/debts', '/profile'];
 
 int _indexFromLocation(String location) {
   for (int i = 0; i < _navRoutes.length; i++) {
@@ -318,6 +319,11 @@ const _destinations = [
     icon: Icon(Icons.savings_outlined),
     selectedIcon: Icon(Icons.savings),
     label: 'Metas',
+  ),
+  NavigationDestination(
+    icon: Icon(Icons.handshake_outlined),
+    selectedIcon: Icon(Icons.handshake),
+    label: 'Deudas',
   ),
   NavigationDestination(
     icon: Icon(Icons.person_outline),

@@ -37,6 +37,7 @@ import '../../features/household/data/datasources/household_datasource.dart' as 
 import '../../features/household/data/repositories/household_repository_impl.dart' as _i951;
 import '../../features/household/domain/repositories/household_repository.dart' as _i952;
 import '../../features/household/presentation/cubit/household_cubit.dart' as _i953;
+import '../../features/debts/data/datasources/debt_datasource.dart' as _i960;
 import '../../features/gamification/data/datasources/gamification_datasource.dart' as _i930;
 import '../../features/gamification/data/repositories/gamification_repository_impl.dart' as _i931;
 import '../../features/gamification/domain/repositories/gamification_repository.dart' as _i932;
@@ -252,6 +253,14 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i953.HouseholdCubit>(
       () => _i953.HouseholdCubit(gh<_i952.HouseholdRepository>()),
+    );
+
+    // ── Debts ─────────────────────────────────────────────
+    gh.lazySingleton<_i960.DebtDataSource>(
+      () => _i960.DebtDataSource(
+        gh<_i974.FirebaseFirestore>(),
+        gh<_i706.Uuid>(),
+      ),
     );
 
     // ── Onboarding ────────────────────────────────────────

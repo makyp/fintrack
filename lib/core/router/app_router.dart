@@ -14,6 +14,8 @@ import '../../features/goals/presentation/pages/goals_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/accounts/presentation/pages/add_account_page.dart';
 import '../../features/household/presentation/pages/household_page.dart';
+import '../../features/debts/presentation/pages/debts_page.dart';
+import '../widgets/splash_screen.dart';
 import '../di/injection.dart';
 
 class AppRouter {
@@ -21,20 +23,20 @@ class AppRouter {
     final authBloc = getIt<AuthBloc>();
 
     return GoRouter(
-      initialLocation: '/login',
+      initialLocation: '/splash',
       redirect: (context, state) {
         final authState = authBloc.state;
+        final isSplash = state.matchedLocation == '/splash';
         final isAuthRoute = state.matchedLocation.startsWith('/login') ||
             state.matchedLocation.startsWith('/register') ||
             state.matchedLocation.startsWith('/forgot-password');
         final isOnboarding = state.matchedLocation.startsWith('/onboarding');
 
-        if (authState.status == AuthStatus.initial ||
-            authState.status == AuthStatus.loading) {
-          return null;
+        if (authState.status == AuthStatus.initial) {
+          return isSplash ? null : '/splash';
         }
 
-        if (authState.isUnauthenticated && !isAuthRoute) {
+        if (authState.isUnauthenticated && (!isAuthRoute || isSplash)) {
           return '/login';
         }
 
@@ -42,7 +44,7 @@ class AppRouter {
           if (authState.user?.onboardingCompleted == false && !isOnboarding) {
             return '/onboarding';
           }
-          if (isAuthRoute ||
+          if (isAuthRoute || isSplash ||
               (isOnboarding && authState.user?.onboardingCompleted == true)) {
             return '/';
           }
@@ -51,6 +53,7 @@ class AppRouter {
       },
       refreshListenable: _AuthStateNotifier(authBloc),
       routes: [
+        GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
         GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
         GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
         GoRoute(
@@ -104,6 +107,10 @@ class AppRouter {
             GoRoute(
               path: '/household',
               builder: (_, __) => const HouseholdPage(),
+            ),
+            GoRoute(
+              path: '/debts',
+              builder: (_, __) => const DebtsPage(),
             ),
           ],
         ),
