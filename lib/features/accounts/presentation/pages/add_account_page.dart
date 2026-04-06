@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/thousands_separator_formatter.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -50,7 +50,12 @@ class _AddAccountPageState extends State<AddAccountPage> {
     if (_isEditing) {
       final a = widget.editAccount!;
       _nameCtrl.text = a.name;
-      _balanceCtrl.text = a.balance.toStringAsFixed(0);
+      _balanceCtrl.text = ThousandsSeparatorFormatter()
+          .formatEditUpdate(
+            const TextEditingValue(text: ''),
+            TextEditingValue(text: a.balance.toStringAsFixed(0)),
+          )
+          .text;
       _selectedType = a.type;
       _selectedColor = a.colorValue;
     }
@@ -75,7 +80,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
     setState(() => _isLoading = true);
 
     try {
-      final balance = double.tryParse(_balanceCtrl.text.replaceAll(',', '')) ?? 0;
+      final balance = ThousandsSeparatorFormatter.parse(_balanceCtrl.text);
       final name = _selectedType == AccountType.cash ? 'Efectivo' : _nameCtrl.text.trim();
       if (_isEditing) {
         final updated = widget.editAccount!.copyWith(
@@ -163,11 +168,8 @@ class _AddAccountPageState extends State<AddAccountPage> {
               const SizedBox(height: AppDimensions.md),
               TextFormField(
                 controller: _balanceCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))
-                ],
+                keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsSeparatorFormatter()],
                 decoration: InputDecoration(
                   labelText: _isEditing ? 'Saldo actual' : 'Saldo inicial',
                   hintText: '0',
