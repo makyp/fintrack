@@ -85,8 +85,23 @@ class _DailyBarChartState extends State<DailyBarChart> {
                 },
               ),
               titlesData: FlTitlesData(
-                leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 48,
+                    interval: safeMax / 4,
+                    getTitlesWidget: (value, meta) {
+                      if (value == 0) return const SizedBox.shrink();
+                      return Text(
+                        CurrencyFormatter.format(value, compact: true),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 9,
+                          color: AppColors.grey400,
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 rightTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false)),
                 topTitles: const AxisTitles(
@@ -116,8 +131,9 @@ class _DailyBarChartState extends State<DailyBarChart> {
                 drawVerticalLine: false,
                 horizontalInterval: safeMax / 4,
                 getDrawingHorizontalLine: (_) => FlLine(
-                  color: AppColors.grey100,
-                  strokeWidth: 1,
+                  color: AppColors.grey300,
+                  strokeWidth: 0.8,
+                  dashArray: [4, 4],
                 ),
               ),
               borderData: FlBorderData(show: false),
