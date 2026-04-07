@@ -39,6 +39,7 @@ import '../../features/household/domain/repositories/household_repository.dart' 
 import '../../features/household/presentation/cubit/household_cubit.dart' as _i953;
 import '../../features/debts/data/datasources/debt_datasource.dart' as _i960;
 import '../../features/gamification/data/datasources/gamification_datasource.dart' as _i930;
+import '../../features/gamification/data/services/badge_service.dart' as _i961;
 import '../../features/gamification/data/repositories/gamification_repository_impl.dart' as _i931;
 import '../../features/gamification/domain/repositories/gamification_repository.dart' as _i932;
 import '../../features/gamification/presentation/cubit/gamification_cubit.dart' as _i933;
@@ -150,6 +151,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i903.TransactionRemoteDataSourceImpl(
         gh<_i974.FirebaseFirestore>(),
         gh<_i706.Uuid>(),
+        gh<_i961.BadgeService>(),
       ),
     );
     gh.lazySingleton<_i905.TransactionRepository>(
@@ -201,6 +203,11 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i941.ReportsCubit>(
       () => _i941.ReportsCubit(gh<_i940.ReportsDataSource>()),
+    );
+
+    // ── Badge Service ─────────────────────────────────────
+    gh.lazySingleton<_i961.BadgeService>(
+      () => _i961.BadgeService(gh<_i974.FirebaseFirestore>()),
     );
 
     // ── Gamification ─────────────────────────────────────
