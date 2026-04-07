@@ -15,6 +15,7 @@ import '../widgets/expense_donut_chart.dart';
 import '../widgets/category_horizontal_bars.dart';
 import '../widgets/trend_line_chart.dart';
 import '../widgets/daily_bar_chart.dart';
+import '../utils/report_pdf_generator.dart';
 
 class ReportsPage extends StatelessWidget {
   const ReportsPage({super.key});
@@ -59,12 +60,18 @@ class _ReportsView extends StatelessWidget {
                           .read<ReportsCubit>()
                           .switchMode(userId, m, householdId),
                     ),
-                  if (state.data != null)
+                  if (state.data != null) ...[
+                    IconButton(
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      tooltip: 'Generar PDF',
+                      onPressed: () => ReportPdfGenerator.shareReport(state.data!),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.download_outlined),
-                      tooltip: 'Descargar reporte',
+                      tooltip: 'Exportar texto',
                       onPressed: () => _shareReport(context, state),
                     ),
+                  ],
                 ],
               );
             },

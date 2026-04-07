@@ -47,6 +47,8 @@ dependencies:
   logger: ^2.4.0
   share_plus: ^10.1.4
   image_picker: ^1.1.2
+  pdf: ^3.11.1
+  printing: ^5.13.1
 
   # Fonts
   google_fonts: ^6.2.1
