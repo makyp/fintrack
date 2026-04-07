@@ -75,7 +75,11 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     ],
     TransactionCategory.clothing: [
       'ropa', 'zapatos', 'camisa', 'pantalón', 'pantalon', 'vestido', 'moda',
-      'tenis', 'zapatillas', 'chaqueta', 'abrigo', 'temu', 'shein', 'zara',
+      'tenis', 'zapatillas', 'chaqueta', 'abrigo', 'zara',
+    ],
+    TransactionCategory.shopping: [
+      'temu', 'shein', 'amazon', 'aliexpress', 'mercado libre', 'mercadolibre',
+      'linio', 'falabella', 'exito', 'éxito', 'jumbo', 'compra', 'pedido',
     ],
     TransactionCategory.technology: [
       'celular', 'laptop', 'computador', 'tablet', 'auriculares', 'teclado',

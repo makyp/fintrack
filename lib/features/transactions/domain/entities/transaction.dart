@@ -11,6 +11,7 @@ enum TransactionCategory {
   education,
   home,
   clothing,
+  shopping,
   technology,
   services,
   other,
@@ -33,6 +34,7 @@ enum TransactionCategory {
       case TransactionCategory.education: return 'Educación';
       case TransactionCategory.home: return 'Hogar';
       case TransactionCategory.clothing: return 'Ropa';
+      case TransactionCategory.shopping: return 'Compras online';
       case TransactionCategory.technology: return 'Tecnología';
       case TransactionCategory.services: return 'Servicios';
       case TransactionCategory.salary: return 'Salario';
@@ -55,6 +57,7 @@ enum TransactionCategory {
       case TransactionCategory.education: return '📚';
       case TransactionCategory.home: return '🏠';
       case TransactionCategory.clothing: return '👕';
+      case TransactionCategory.shopping: return '🛒';
       case TransactionCategory.technology: return '💻';
       case TransactionCategory.services: return '⚡';
       case TransactionCategory.salary: return '💼';
@@ -71,7 +74,7 @@ enum TransactionCategory {
   static List<TransactionCategory> forType(TransactionType type) {
     switch (type) {
       case TransactionType.expense:
-        return [food, transport, entertainment, health, education, home, clothing, technology, services, other];
+        return [food, transport, entertainment, health, education, home, clothing, shopping, technology, services, other];
       case TransactionType.income:
         return [salary, freelance, investment, sale, gift, bonus, other];
       case TransactionType.transfer:
