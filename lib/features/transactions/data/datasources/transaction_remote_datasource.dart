@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../features/gamification/data/services/badge_service.dart';
 import '../models/transaction_model.dart';
 import '../../domain/entities/transaction.dart';
 
@@ -25,8 +27,9 @@ abstract class TransactionRemoteDataSource {
 class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   final FirebaseFirestore _firestore;
   final Uuid _uuid;
+  final BadgeService _badgeService;
 
-  TransactionRemoteDataSourceImpl(this._firestore, this._uuid);
+  TransactionRemoteDataSourceImpl(this._firestore, this._uuid, this._badgeService);
 
   CollectionReference<Map<String, dynamic>> _txRef(String userId) =>
       _firestore.collection('users').doc(userId).collection('transactions');
@@ -58,8 +61,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       if (from != null) query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(from));
       if (to != null) query = query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(to));
       if (type != null) query = query.where('type', isEqualTo: type.name);
-      if (category != null) query = query.where('categoryId', isEqualTo: category.name);
-      if (accountId != null) query = query.where('accountId', isEqualTo: accountId);
+      // category and accountId are filtered in memory to avoid requiring composite indexes
       if (lastDocId != null) {
         final lastDoc = await _txRef(userId).doc(lastDocId).get();
         query = query.startAfterDocument(lastDoc);
@@ -67,6 +69,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       query = query.limit(limit);
       final snap = await query.get();
       var results = snap.docs.map((d) => TransactionModel.fromFirestore(d.data(), d.id)).toList();
+      if (category != null) {
+        results = results.where((t) => t.category == category).toList();
+      }
+      if (accountId != null) {
+        results = results.where((t) => t.accountId == accountId).toList();
+      }
       if (searchQuery != null && searchQuery.isNotEmpty) {
         final q = searchQuery.toLowerCase();
         results = results.where((t) => t.description.toLowerCase().contains(q)).toList();
@@ -140,6 +148,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
       await batch.commit();
       AnalyticsService.logTransactionCreated(model.type.name, model.amount, 'COP');
+      unawaited(_badgeService.onTransactionAdded(tx.userId));
       return model;
     } catch (e) {
       throw ServerException(e.toString());
