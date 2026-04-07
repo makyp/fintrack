@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
@@ -6,7 +7,12 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/thousands_separator_formatter.dart';
+import '../../../accounts/domain/entities/account.dart';
+import '../../../accounts/presentation/cubit/accounts_cubit.dart';
+import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../transactions/domain/entities/transaction.dart';
+import '../../../transactions/domain/usecases/add_transaction.dart';
 import '../../data/datasources/debt_datasource.dart';
 import '../../domain/entities/debt.dart';
 import '../cubit/debts_cubit.dart';
@@ -453,56 +459,141 @@ class _DebtCard extends StatelessWidget {
   void _showPaymentDialog(BuildContext context, DebtsCubit cubit) {
     final ctrl = TextEditingController();
     final noteCtrl = TextEditingController();
+    final accountsCubit = getIt<AccountsCubit>()..watchAccounts(userId);
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Abono a ${debt.personName}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Pendiente: ${CurrencyFormatter.format(debt.pendingAmount)}',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
-            ),
-            const SizedBox(height: AppDimensions.sm),
-            TextField(
-              controller: ctrl,
-              autofocus: true,
-              keyboardType: TextInputType.number,
-              inputFormatters: [ThousandsSeparatorFormatter()],
-              decoration: const InputDecoration(
-                labelText: 'Monto del abono',
-                prefixText: '\$ ',
+      builder: (ctx) {
+        String? selectedAccountId;
+        return BlocProvider.value(
+          value: accountsCubit,
+          child: StatefulBuilder(
+            builder: (ctx2, setS) => AlertDialog(
+              title: Text('Abono a ${debt.personName}'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pendiente: ${CurrencyFormatter.format(debt.pendingAmount)}',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.grey500),
+                    ),
+                    const SizedBox(height: AppDimensions.sm),
+                    TextField(
+                      controller: ctrl,
+                      autofocus: true,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [ThousandsSeparatorFormatter()],
+                      decoration: const InputDecoration(
+                        labelText: 'Monto del abono',
+                        prefixText: '\$ ',
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.sm),
+                    TextField(
+                      controller: noteCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nota (opcional)',
+                        prefixIcon: Icon(Icons.notes),
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.md),
+                    Text('Registrar en cuenta (opcional)',
+                        style: AppTextStyles.labelLarge),
+                    const SizedBox(height: AppDimensions.xs),
+                    BlocBuilder<AccountsCubit, AccountsState>(
+                      builder: (_, accState) {
+                        final accounts = accState.activeAccounts;
+                        if (accounts.isEmpty) {
+                          return Text('Sin cuentas activas',
+                              style: AppTextStyles.bodySmall
+                                  .copyWith(color: AppColors.grey400));
+                        }
+                        return Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: accounts.map((a) {
+                            final sel = selectedAccountId == a.id;
+                            return ChoiceChip(
+                              label: Text('${a.icon} ${a.name}',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                      color: sel
+                                          ? AppColors.white
+                                          : AppColors.grey700)),
+                              selected: sel,
+                              selectedColor: AppColors.primary,
+                              backgroundColor: AppColors.grey100,
+                              showCheckmark: false,
+                              side: BorderSide(
+                                  color: sel
+                                      ? AppColors.primary
+                                      : AppColors.grey200),
+                              onSelected: (_) => setS(() =>
+                                  selectedAccountId =
+                                      sel ? null : a.id),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      accountsCubit.close();
+                      Navigator.pop(ctx);
+                    },
+                    child: const Text('Cancelar')),
+                ElevatedButton(
+                  onPressed: () async {
+                    final amount =
+                        ThousandsSeparatorFormatter.parse(ctrl.text);
+                    if (amount <= 0) return;
+                    final note = noteCtrl.text.trim().isEmpty
+                        ? null
+                        : noteCtrl.text.trim();
+                    accountsCubit.close();
+                    Navigator.pop(ctx);
+
+                    // Register payment in debt
+                    await cubit.addPayment(userId, debt.id, amount,
+                        note: note);
+
+                    // Register automatic transaction in selected account
+                    if (selectedAccountId != null) {
+                      // "theyOweMe" → they pay me → income
+                      // "iOweThem"  → I pay them → expense
+                      final txType = debt.direction == DebtDirection.theyOweMe
+                          ? TransactionType.income
+                          : TransactionType.expense;
+                      final tx = Transaction(
+                        id: '',
+                        userId: userId,
+                        amount: amount,
+                        type: txType,
+                        category: TransactionCategory.other,
+                        accountId: selectedAccountId!,
+                        description: note ??
+                            (debt.direction == DebtDirection.theyOweMe
+                                ? 'Cobro a ${debt.personName}'
+                                : 'Pago a ${debt.personName}'),
+                        date: DateTime.now(),
+                        createdAt: DateTime.now(),
+                      );
+                      unawaited(getIt<AddTransaction>()(tx));
+                    }
+                  },
+                  child: const Text('Registrar'),
+                ),
+              ],
             ),
-            const SizedBox(height: AppDimensions.sm),
-            TextField(
-              controller: noteCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Nota (opcional)',
-                prefixIcon: Icon(Icons.notes),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () async {
-              final amount = ThousandsSeparatorFormatter.parse(ctrl.text);
-              if (amount <= 0) return;
-              Navigator.pop(ctx);
-              await cubit.addPayment(userId, debt.id, amount,
-                  note: noteCtrl.text.trim().isEmpty
-                      ? null
-                      : noteCtrl.text.trim());
-            },
-            child: const Text('Registrar'),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
