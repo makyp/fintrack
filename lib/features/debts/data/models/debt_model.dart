@@ -80,9 +80,7 @@ class DebtModel extends Debt {
             ? 'theyOweMe'
             : 'iOweThem',
         'startDate': Timestamp.fromDate(startDate),
-        'dueDate': dueDate != null
-            ? Timestamp.fromDate(dueDate!)
-            : FieldValue.delete(),
+        if (dueDate != null) 'dueDate': Timestamp.fromDate(dueDate!),
         'hasInterest': hasInterest,
         'monthlyInterestRate': monthlyInterestRate,
         'isClosed': isClosed,

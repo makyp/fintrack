@@ -44,7 +44,9 @@ class DebtDataSource {
 
   Future<Debt> update(Debt debt) async {
     final model = DebtModel.fromEntity(debt);
-    await _col(debt.userId).doc(debt.id).update(model.toFirestore());
+    final data = model.toFirestore();
+    if (debt.dueDate == null) data['dueDate'] = FieldValue.delete();
+    await _col(debt.userId).doc(debt.id).update(data);
     return model;
   }
 
