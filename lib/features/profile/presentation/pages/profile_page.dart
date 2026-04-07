@@ -1,9 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -219,20 +219,22 @@ class _Avatar extends StatelessWidget {
                   Navigator.pop(ctx);
                   final picker = ImagePicker();
                   final file = await picker.pickImage(
-                      source: ImageSource.gallery, imageQuality: 80);
+                      source: ImageSource.gallery,
+                      imageQuality: 60,
+                      maxWidth: 300,
+                      maxHeight: 300);
                   if (file == null || !context.mounted) return;
                   try {
                     final bytes = await file.readAsBytes();
-                    final ref = FirebaseStorage.instance
-                        .ref('profile_photos/$userId.jpg');
-                    await ref.putData(bytes,
-                        SettableMetadata(contentType: 'image/jpeg'));
-                    final url = await ref.getDownloadURL();
-                    authBloc.add(AuthProfileUpdateRequested(photoUrl: url));
+                    // Resize to keep Firestore document small (~50KB limit)
+                    // Store as data URI: "data:image/jpeg;base64,..."
+                    final b64 = base64Encode(bytes);
+                    final dataUri = 'data:image/jpeg;base64,$b64';
+                    authBloc.add(AuthProfileUpdateRequested(photoUrl: dataUri));
                   } catch (_) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                          content: Text('Error al subir la foto')));
+                          content: Text('Error al procesar la foto')));
                     }
                   }
                 },

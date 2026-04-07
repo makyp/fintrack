@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -50,8 +51,27 @@ class AppAvatar extends StatelessWidget {
       return Text(emoji, style: TextStyle(fontSize: size * 0.5));
     }
 
-    // On web: Image.network lets the browser handle CORS natively.
-    // On mobile: CachedNetworkImage for disk caching.
+    // Base64 data URI — stored as "data:image/jpeg;base64,..."
+    if (photoUrl!.startsWith('data:')) {
+      try {
+        final comma = photoUrl!.indexOf(',');
+        final bytes = base64Decode(photoUrl!.substring(comma + 1));
+        return ClipOval(
+          child: Image.memory(
+            bytes,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                _InitialsText(initials: _initials, size: size),
+          ),
+        );
+      } catch (_) {
+        return _InitialsText(initials: _initials, size: size);
+      }
+    }
+
+    // Remote URL — On web: Image.network. On mobile: CachedNetworkImage.
     if (kIsWeb) {
       return ClipOval(
         child: Image.network(
