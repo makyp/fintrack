@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
@@ -177,14 +178,155 @@ class _StatPill extends StatelessWidget {
   }
 }
 
-class _BadgeTile extends StatelessWidget {
+class _BadgeTile extends StatefulWidget {
   final AppBadge badge;
   final bool locked;
 
   const _BadgeTile({required this.badge, this.locked = false});
 
   @override
+  State<_BadgeTile> createState() => _BadgeTileState();
+}
+
+class _BadgeTileState extends State<_BadgeTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    if (_ctrl.isCompleted) {
+      _ctrl.reverse();
+    } else {
+      _ctrl.forward();
+    }
+  }
+
+  String _earnedLabel(DateTime? dt) {
+    if (dt == null) return '';
+    return 'Ganado ${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (widget.locked) {
+      return _buildLockedCard();
+    }
+    return GestureDetector(
+      onTap: _toggle,
+      child: AnimatedBuilder(
+        animation: _anim,
+        builder: (_, __) {
+          final angle = _anim.value * math.pi;
+          final showBack = _anim.value > 0.5;
+          return Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(angle),
+            child: showBack ? _buildBack() : _buildFront(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFront() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.sm),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(widget.badge.icon, style: const TextStyle(fontSize: 28)),
+            const SizedBox(height: 4),
+            Text(
+              widget.badge.name,
+              style: AppTextStyles.labelMedium.copyWith(
+                color: AppColors.grey800,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              _earnedLabel(widget.badge.earnedAt),
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.grey500,
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Toca para ver',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.primary.withOpacity(0.6),
+                fontSize: 9,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBack() {
+    // Must counter-rotate so the text reads correctly on the back face
+    return Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()..rotateY(math.pi),
+      child: Card(
+        color: AppColors.primary.withOpacity(0.08),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.sm),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('✅', style: TextStyle(fontSize: 20)),
+              const SizedBox(height: 4),
+              Text(
+                widget.badge.description,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLockedCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -193,25 +335,22 @@ class _BadgeTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ColorFiltered(
-              colorFilter: locked
-                  ? const ColorFilter.matrix([
-                      0.2126, 0.7152, 0.0722, 0, 0,
-                      0.2126, 0.7152, 0.0722, 0, 0,
-                      0.2126, 0.7152, 0.0722, 0, 0,
-                      0,      0,      0,      1, 0,
-                    ])
-                  : const ColorFilter.mode(
-                      Colors.transparent, BlendMode.dst),
+              colorFilter: const ColorFilter.matrix([
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0,      0,      0,      1, 0,
+              ]),
               child: Text(
-                badge.icon,
-                style: TextStyle(fontSize: locked ? 24 : 28),
+                widget.badge.icon,
+                style: const TextStyle(fontSize: 24),
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              badge.name,
+              widget.badge.name,
               style: AppTextStyles.labelMedium.copyWith(
-                color: locked ? AppColors.grey400 : AppColors.grey800,
+                color: AppColors.grey400,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
@@ -219,10 +358,11 @@ class _BadgeTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             Text(
-              locked ? badge.description : _earnedLabel(badge.earnedAt),
+              widget.badge.description,
               style: AppTextStyles.bodySmall.copyWith(
-                  color: locked ? AppColors.grey400 : AppColors.grey500,
-                  fontSize: 10),
+                color: AppColors.grey400,
+                fontSize: 10,
+              ),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -231,10 +371,5 @@ class _BadgeTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _earnedLabel(DateTime? dt) {
-    if (dt == null) return '';
-    return 'Ganado ${dt.day}/${dt.month}/${dt.year}';
   }
 }
