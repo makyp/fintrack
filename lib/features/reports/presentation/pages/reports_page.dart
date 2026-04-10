@@ -321,7 +321,7 @@ class _ReportsView extends StatelessWidget {
     final d = state.data!;
     final buf = StringBuffer()
       ..writeln(
-          'Reporte FinTrack — ${_monthNames[state.month - 1]} ${state.year}')
+          'Reporte Fimakyp — ${_monthNames[state.month - 1]} ${state.year}')
       ..writeln('─────────────────────────')
       ..writeln('Ingresos:  ${CurrencyFormatter.format(d.totalIncome)}')
       ..writeln('Gastos:    ${CurrencyFormatter.format(d.totalExpenses)}')
@@ -351,7 +351,7 @@ class _ReportsView extends StatelessWidget {
         const SnackBar(content: Text('Reporte copiado al portapapeles')),
       );
     } else {
-      Share.share(text, subject: 'Reporte FinTrack');
+      Share.share(text, subject: 'Reporte Fimakyp');
     }
   }
 }
