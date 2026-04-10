@@ -222,6 +222,12 @@ class _DebtFormPageState extends State<DebtFormPage> {
                     initialDate: _startDate,
                     firstDate: DateTime(2000),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
+                    builder: (ctx, child) => Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+                        child: child!,
+                      ),
+                    ),
                   );
                   if (d != null) setState(() => _startDate = d);
                 },
@@ -237,6 +243,12 @@ class _DebtFormPageState extends State<DebtFormPage> {
                         DateTime.now().add(const Duration(days: 30)),
                     firstDate: DateTime.now(),
                     lastDate: DateTime(2035),
+                    builder: (ctx, child) => Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+                        child: child!,
+                      ),
+                    ),
                   );
                   if (d != null) setState(() => _dueDate = d);
                 },

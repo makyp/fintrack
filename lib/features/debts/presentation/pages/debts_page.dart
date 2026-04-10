@@ -151,6 +151,43 @@ class _DebtList extends StatelessWidget {
     required this.emptyIcon,
   });
 
+  /// Groups by personName (case-insensitive, trimmed). Preserves insertion order.
+  Map<String, List<Debt>> _groupByPerson(List<Debt> list) {
+    final map = <String, List<Debt>>{};
+    for (final d in list) {
+      final key = d.personName.trim().toLowerCase();
+      map.putIfAbsent(key, () => []).add(d);
+    }
+    return map;
+  }
+
+  List<Widget> _buildGroups(Map<String, List<Debt>> groups) {
+    final widgets = <Widget>[];
+    for (final entry in groups.entries) {
+      final groupDebts = entry.value;
+      if (groupDebts.length == 1) {
+        widgets.add(_DebtCard(debt: groupDebts.first, userId: userId));
+      } else {
+        final total =
+            groupDebts.fold(0.0, (s, d) => s + d.pendingAmount);
+        widgets.add(_PersonGroupHeader(
+          name: groupDebts.first.personName,
+          total: total,
+          count: groupDebts.length,
+        ));
+        widgets.add(const SizedBox(height: 4));
+        for (final d in groupDebts) {
+          widgets.add(Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: _DebtCard(debt: d, userId: userId),
+          ));
+        }
+        widgets.add(const SizedBox(height: 4));
+      }
+    }
+    return widgets;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (debts.isEmpty) {
@@ -170,26 +207,88 @@ class _DebtList extends StatelessWidget {
 
     final active = debts.where((d) => !d.isClosed).toList();
     final closed = debts.where((d) => d.isClosed).toList();
+    final activeGroups = _groupByPerson(active);
+    final closedGroups = _groupByPerson(closed);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
           AppDimensions.pagePadding, AppDimensions.md,
           AppDimensions.pagePadding, 100),
       children: [
-        // Summary row
         if (active.isNotEmpty) ...[
           _SummaryBar(debts: active),
           const SizedBox(height: AppDimensions.md),
+          ..._buildGroups(activeGroups),
         ],
-        ...active.map((d) => _DebtCard(debt: d, userId: userId)),
         if (closed.isNotEmpty) ...[
           const SizedBox(height: AppDimensions.md),
           Text('Cerradas',
-              style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey500)),
+              style: AppTextStyles.labelLarge
+                  .copyWith(color: AppColors.grey500)),
           const SizedBox(height: AppDimensions.sm),
-          ...closed.map((d) => _DebtCard(debt: d, userId: userId)),
+          ..._buildGroups(closedGroups),
         ],
       ],
+    );
+  }
+}
+
+// ── Person group header ───────────────────────────────────────────────────────
+
+class _PersonGroupHeader extends StatelessWidget {
+  final String name;
+  final double total;
+  final int count;
+
+  const _PersonGroupHeader({
+    required this.name,
+    required this.total,
+    required this.count,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.primary.withOpacity(0.15),
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : '?',
+              style: const TextStyle(
+                  color: AppColors.primary, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  '$count préstamos · Total pendiente',
+                  style: AppTextStyles.bodySmall
+                      .copyWith(color: AppColors.grey500, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            CurrencyFormatter.format(total),
+            style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.primary, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -225,6 +324,14 @@ class _SummaryBar extends StatelessWidget {
 }
 
 // ── Debt card ─────────────────────────────────────────────────────────────────
+
+const _kMonths = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
+
+String _fmtDate(DateTime d) =>
+    '${d.day} ${_kMonths[d.month - 1]} ${d.year}';
 
 class _DebtCard extends StatelessWidget {
   final Debt debt;
@@ -279,6 +386,20 @@ class _DebtCard extends StatelessWidget {
                                   .copyWith(color: AppColors.grey500),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_outlined,
+                                size: 10,
+                                color: AppColors.grey400),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Desde ${_fmtDate(debt.startDate)}',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.grey400, fontSize: 10),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
