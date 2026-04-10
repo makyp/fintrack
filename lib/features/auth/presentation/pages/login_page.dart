@@ -107,7 +107,7 @@ class _LoginForm extends StatelessWidget {
           ],
           // Header
           Text(
-            isWeb ? 'Inicia sesión' : 'Bienvenido a FinTrack',
+            isWeb ? 'Inicia sesión' : 'Bienvenido a Fimakyp',
             style: isWeb
                 ? AppTextStyles.headlineLarge
                 : AppTextStyles.displaySmall,

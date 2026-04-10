@@ -117,7 +117,7 @@ class ProfilePage extends StatelessWidget {
               const SizedBox(height: AppDimensions.xl),
               Center(
                 child: Text(
-                  'FinTrack v1.0.0',
+                  'Fimakyp v1.0.0',
                   style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey300),
                 ),
               ),

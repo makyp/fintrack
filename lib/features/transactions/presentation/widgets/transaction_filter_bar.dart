@@ -220,6 +220,12 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
                         initialDate: _from ?? DateTime.now(),
                         firstDate: DateTime(2020),
                         lastDate: DateTime.now(),
+                        builder: (ctx, child) => Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+                            child: child!,
+                          ),
+                        ),
                       );
                       if (d != null) setState(() => _from = d);
                     },
@@ -238,6 +244,12 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
                         initialDate: _to ?? DateTime.now(),
                         firstDate: DateTime(2020),
                         lastDate: DateTime.now(),
+                        builder: (ctx, child) => Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+                            child: child!,
+                          ),
+                        ),
                       );
                       if (d != null) setState(() => _to = d);
                     },

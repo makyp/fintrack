@@ -254,32 +254,32 @@ class _Footer extends StatelessWidget {
 
 const _termsDocument = _LegalDocument(
   title: 'Términos de Servicio',
-  subtitle: 'FinTrack — Gestión de finanzas personales',
+  subtitle: 'Fimakyp — Gestión de finanzas personales',
   lastUpdated: '1 de abril de 2025',
   sections: [
     _LegalSection(
       'Aceptación de los términos',
-      'Al registrarse y utilizar FinTrack, usted acepta de manera libre, '
+      'Al registrarse y utilizar Fimakyp, usted acepta de manera libre, '
           'expresa e informada los presentes Términos de Servicio. Si no está '
           'de acuerdo con alguna de las condiciones aquí establecidas, le '
           'pedimos abstenerse de usar la aplicación. El uso continuado de '
-          'FinTrack después de cualquier modificación implica la aceptación '
+          'Fimakyp después de cualquier modificación implica la aceptación '
           'de los términos actualizados.',
     ),
     _LegalSection(
       'Descripción del servicio',
-      'FinTrack es una aplicación de gestión de finanzas personales que '
+      'Fimakyp es una aplicación de gestión de finanzas personales que '
           'permite registrar transacciones (ingresos, gastos y transferencias), '
           'administrar cuentas bancarias y de efectivo, definir metas de '
           'ahorro, visualizar reportes gráficos del comportamiento financiero, '
           'colaborar en un hogar compartido y recibir logros de gamificación. '
-          'FinTrack NO constituye asesoría financiera, bancaria ni de '
+          'Fimakyp NO constituye asesoría financiera, bancaria ni de '
           'inversión. La información presentada es de carácter informativo y '
           'referencial.',
     ),
     _LegalSection(
       'Registro y cuenta de usuario',
-      'Para usar FinTrack debe crear una cuenta con correo electrónico y '
+      'Para usar Fimakyp debe crear una cuenta con correo electrónico y '
           'contraseña o a través de Google Sign-In. Usted es responsable de '
           'mantener la confidencialidad de sus credenciales y de todas las '
           'actividades realizadas desde su cuenta. Debe notificarnos '
@@ -288,7 +288,7 @@ const _termsDocument = _LegalDocument(
     ),
     _LegalSection(
       'Uso permitido y restricciones',
-      'Usted se compromete a utilizar FinTrack únicamente para fines lícitos '
+      'Usted se compromete a utilizar Fimakyp únicamente para fines lícitos '
           'y personales. Queda prohibido: (i) intentar vulnerar la seguridad '
           'de la aplicación o acceder a datos de otros usuarios; (ii) usar la '
           'plataforma para actividades fraudulentas o ilegales según la '
@@ -308,7 +308,7 @@ const _termsDocument = _LegalDocument(
     ),
     _LegalSection(
       'Propiedad intelectual',
-      'Todos los derechos sobre FinTrack, incluyendo el diseño, código '
+      'Todos los derechos sobre Fimakyp, incluyendo el diseño, código '
           'fuente, logotipos, gráficos y contenidos, son propiedad exclusiva '
           'de sus creadores y están protegidos por la Ley 23 de 1982 sobre '
           'derechos de autor en Colombia. Se concede al usuario una licencia '
@@ -317,7 +317,7 @@ const _termsDocument = _LegalDocument(
     ),
     _LegalSection(
       'Limitación de responsabilidad',
-      'FinTrack se proporciona "tal cual" sin garantías de ningún tipo. No '
+      'Fimakyp se proporciona "tal cual" sin garantías de ningún tipo. No '
           'somos responsables por: (i) pérdidas económicas derivadas de '
           'decisiones financieras basadas en la información de la app; '
           '(ii) interrupciones del servicio por mantenimiento o causas de '
@@ -328,7 +328,7 @@ const _termsDocument = _LegalDocument(
     _LegalSection(
       'Modificaciones del servicio',
       'Nos reservamos el derecho de modificar, suspender o discontinuar '
-          'cualquier funcionalidad de FinTrack en cualquier momento, con '
+          'cualquier funcionalidad de Fimakyp en cualquier momento, con '
           'o sin previo aviso. Las modificaciones sustanciales a estos '
           'Términos se notificarán mediante la aplicación con al menos '
           '15 días de anticipación. El uso continuo del servicio después '
@@ -362,7 +362,7 @@ const _privacyDocument = _LegalDocument(
   sections: [
     _LegalSection(
       'Responsable del tratamiento',
-      'FinTrack actúa como responsable del tratamiento de los datos '
+      'Fimakyp actúa como responsable del tratamiento de los datos '
           'personales recolectados a través de la aplicación. De conformidad '
           'con la Ley 1581 de 2012 y el Decreto 1377 de 2013, nos comprometemos '
           'a proteger la información personal de nuestros usuarios y a '
@@ -400,7 +400,7 @@ const _privacyDocument = _LegalDocument(
       'El tratamiento de sus datos se fundamenta en: (i) Su consentimiento '
           'libre, previo, expreso e informado otorgado al aceptar esta '
           'política durante el registro; (ii) La ejecución del contrato de '
-          'prestación del servicio FinTrack; (iii) El interés legítimo para '
+          'prestación del servicio Fimakyp; (iii) El interés legítimo para '
           'garantizar la seguridad e integridad de la plataforma. En '
           'cualquier momento puede revocar su autorización eliminando su '
           'cuenta desde Perfil → Seguridad → Eliminar cuenta.',

@@ -176,6 +176,12 @@ class _RecurringTransactionFormPageState
                       initialDate: _startDate,
                       firstDate: DateTime(2020),
                       lastDate: DateTime(2030),
+                      builder: (ctx, child) => Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+                          child: child!,
+                        ),
+                      ),
                     );
                     if (d != null) setState(() => _startDate = d);
                   },

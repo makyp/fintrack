@@ -145,7 +145,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 const Text(
-                  'FinTrack',
+                  'Fimakyp',
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w700,
@@ -193,7 +193,7 @@ class _Sidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'FinTrack v1.0',
+              'Fimakyp v1.0',
               style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.grey300, fontSize: 11),
             ),

@@ -17,10 +17,10 @@ public class MainActivity extends FlutterActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                 "fintrack_default",
-                "FinTrack Notificaciones",
+                "Fimakyp Notificaciones",
                 NotificationManager.IMPORTANCE_HIGH
             );
-            channel.setDescription("Recordatorios y alertas de FinTrack");
+            channel.setDescription("Recordatorios y alertas de Fimakyp");
             channel.enableVibration(true);
             channel.enableLights(true);
             NotificationManager manager = getSystemService(NotificationManager.class);

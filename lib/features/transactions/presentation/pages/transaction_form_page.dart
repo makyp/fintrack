@@ -541,6 +541,12 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
           initialDate: _selectedDate,
           firstDate: DateTime(2020),
           lastDate: DateTime.now(),
+          builder: (ctx, child) => Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+              child: child!,
+            ),
+          ),
         );
         if (picked != null) setState(() => _selectedDate = picked);
       },

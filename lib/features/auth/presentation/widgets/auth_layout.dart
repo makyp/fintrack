@@ -145,7 +145,7 @@ class _BrandPanel extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     const Text(
-                      'FinTrack',
+                      'Fimakyp',
                       style: TextStyle(
                         fontFamily: 'Montserrat',
                         fontWeight: FontWeight.w700,
@@ -219,7 +219,7 @@ class _BrandPanel extends StatelessWidget {
 
                 // Footer
                 Text(
-                  '© 2025 FinTrack · Finanzas inteligentes',
+                  '© 2025 Fimakyp · Finanzas inteligentes',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withOpacity(0.4),

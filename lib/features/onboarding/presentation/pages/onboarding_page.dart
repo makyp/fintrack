@@ -172,7 +172,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               const SizedBox(width: 10),
               const Text(
-                'FinTrack',
+                'Fimakyp',
                 style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontWeight: FontWeight.w700,
