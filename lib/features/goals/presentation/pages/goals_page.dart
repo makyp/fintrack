@@ -7,7 +7,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/utils/thousands_separator_formatter.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../gamification/data/services/badge_service.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../cubit/goals_cubit.dart';
 import 'goal_form_page.dart';
@@ -404,14 +406,13 @@ class _ContributionDialogState extends State<_ContributionDialog> {
           TextField(
             controller: _ctrl,
             autofocus: true,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))
-            ],
-            decoration: const InputDecoration(
+            keyboardType: TextInputType.number,
+            inputFormatters: [ThousandsSeparatorFormatter()],
+            decoration: InputDecoration(
               labelText: 'Monto',
               prefixText: '\$ ',
+              helperText:
+                  'Máximo: ${CurrencyFormatter.format(widget.goal.remaining)}',
             ),
           ),
         ],
@@ -434,8 +435,12 @@ class _ContributionDialogState extends State<_ContributionDialog> {
   }
 
   Future<void> _submit() async {
-    final amount = double.tryParse(_ctrl.text.replaceAll('.', '')) ?? 0;
+    var amount = ThousandsSeparatorFormatter.parse(_ctrl.text);
     if (amount <= 0) return;
+    // Cap at remaining amount
+    if (amount > widget.goal.remaining) {
+      amount = widget.goal.remaining;
+    }
     setState(() => _loading = true);
     try {
       final updated = await context
@@ -444,6 +449,7 @@ class _ContributionDialogState extends State<_ContributionDialog> {
       if (!mounted) return;
       Navigator.pop(context);
       if (updated != null && updated.isReached) {
+        getIt<BadgeService>().onGoalCompleted(widget.userId);
         _showCelebration(context, updated);
       }
     } finally {

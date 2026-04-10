@@ -249,8 +249,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (reminderTime != null) updates['reminderTime'] = reminderTime;
     if (updates.isEmpty) return getUserProfile(user.uid);
     await _firestore.collection('users').doc(user.uid).update(updates);
-    if (displayName != null) await user.updateDisplayName(displayName);
-    if (photoUrl != null) await user.updatePhotoURL(photoUrl);
+    if (displayName != null) {
+      try { await user.updateDisplayName(displayName); } catch (_) {}
+    }
+    // Skip Firebase Auth photoURL update for base64 data URIs and emoji URIs —
+    // they exceed Firebase Auth limits and are stored only in Firestore.
+    if (photoUrl != null &&
+        !photoUrl.startsWith('data:') &&
+        !photoUrl.startsWith('emoji://')) {
+      try { await user.updatePhotoURL(photoUrl); } catch (_) {}
+    }
     return getUserProfile(user.uid);
   }
 

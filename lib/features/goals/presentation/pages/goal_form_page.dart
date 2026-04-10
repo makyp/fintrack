@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/thousands_separator_formatter.dart';
+import '../../../gamification/data/services/badge_service.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../cubit/goals_cubit.dart';
 
@@ -81,6 +84,9 @@ class _GoalFormPageState extends State<GoalFormPage> {
           targetDate: _targetDate,
           createdAt: DateTime.now(),
         ));
+        if (ok) {
+          unawaited(getIt<BadgeService>().onGoalCreated(widget.userId));
+        }
       }
       if (ok && mounted) Navigator.of(context).pop(true);
     } finally {
@@ -201,6 +207,12 @@ class _GoalFormPageState extends State<GoalFormPage> {
                         DateTime.now().add(const Duration(days: 30)),
                     firstDate: DateTime.now(),
                     lastDate: DateTime(2035),
+                    builder: (ctx, child) => Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+                        child: child!,
+                      ),
+                    ),
                   );
                   if (d != null) setState(() => _targetDate = d);
                 },
