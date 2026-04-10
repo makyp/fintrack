@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -5,6 +6,7 @@ import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
+import '../../features/landing/presentation/pages/landing_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/shell/presentation/pages/app_shell.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
@@ -31,20 +33,21 @@ class AppRouter {
             state.matchedLocation.startsWith('/register') ||
             state.matchedLocation.startsWith('/forgot-password');
         final isOnboarding = state.matchedLocation.startsWith('/onboarding');
+        final isLanding = state.matchedLocation == '/landing';
 
         if (authState.status == AuthStatus.initial) {
           return isSplash ? null : '/splash';
         }
 
-        if (authState.isUnauthenticated && (!isAuthRoute || isSplash)) {
-          return '/login';
+        if (authState.isUnauthenticated && (!isAuthRoute && !isLanding || isSplash)) {
+          return kIsWeb ? '/landing' : '/login';
         }
 
         if (authState.isAuthenticated) {
           if (authState.user?.onboardingCompleted == false && !isOnboarding) {
             return '/onboarding';
           }
-          if (isAuthRoute || isSplash ||
+          if (isAuthRoute || isSplash || isLanding ||
               (isOnboarding && authState.user?.onboardingCompleted == true)) {
             return '/';
           }
@@ -54,6 +57,7 @@ class AppRouter {
       refreshListenable: _AuthStateNotifier(authBloc),
       routes: [
         GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
+        GoRoute(path: '/landing', builder: (_, __) => const LandingPage()),
         GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
         GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
         GoRoute(
