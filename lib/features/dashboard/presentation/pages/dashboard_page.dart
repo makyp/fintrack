@@ -20,6 +20,7 @@ import '../../../../core/utils/currency_formatter.dart' as cf;
 import '../../../gamification/presentation/cubit/gamification_cubit.dart';
 import '../../../gamification/presentation/widgets/streak_card.dart';
 import '../../../gamification/presentation/widgets/activity_calendar.dart';
+import '../../../notifications/presentation/cubit/notifications_cubit.dart';
 import '../cubit/dashboard_cubit.dart';
 import '../cubit/dashboard_state.dart';
 
@@ -34,6 +35,7 @@ class DashboardPage extends StatelessWidget {
         BlocProvider(create: (_) => getIt<AccountsCubit>()),
         BlocProvider(create: (_) => getIt<TransactionsBloc>()),
         BlocProvider(create: (_) => getIt<GamificationCubit>()),
+        BlocProvider(create: (_) => getIt<NotificationsCubit>()),
       ],
       child: const _DashboardView(),
     );
@@ -59,6 +61,7 @@ class _DashboardViewState extends State<_DashboardView> {
         context.read<AccountsCubit>().watchAccounts(uid);
         context.read<TransactionsBloc>().add(TransactionsWatchStarted(uid));
         context.read<GamificationCubit>().watch(uid);
+        context.read<NotificationsCubit>().watch(uid);
       }
     });
   }
@@ -141,9 +144,43 @@ class _DashboardViewState extends State<_DashboardView> {
         },
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined),
-          onPressed: () {},
+        BlocBuilder<NotificationsCubit, NotificationsState>(
+          builder: (context, notifState) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () => context.push('/notifications'),
+                ),
+                if (notifState.unreadCount > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      constraints:
+                          const BoxConstraints(minWidth: 16, minHeight: 16),
+                      decoration: const BoxDecoration(
+                        color: AppColors.danger,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        notifState.unreadCount > 9
+                            ? '9+'
+                            : '${notifState.unreadCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
         BlocBuilder<AuthBloc, AuthState>(
           builder: (context, authState) {

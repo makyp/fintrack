@@ -162,6 +162,18 @@ exports.onBadgeCreated = onDocumentCreated(
     const label = BADGE_LABELS[badgeId];
     if (!label) return;
 
+    // Write in-app notification
+    await db.collection("users").doc(userId)
+      .collection("notifications").add({
+        title: label.title,
+        body: label.body,
+        type: "badge",
+        data: { badgeId },
+        read: false,
+        createdAt: Timestamp.now(),
+      });
+
+    // Push notification
     const tokensSnap = await db.collection("users").doc(userId)
       .collection("fcm_tokens").get();
     const tokens = tokensSnap.docs.map((d) => d.id).filter(Boolean);
@@ -279,18 +291,97 @@ exports.sendDueDateNotifications = onSchedule(
       for (const rtDoc of rtsSnap.docs) {
         const rt = rtDoc.data();
         const label = rt.type === "expense" ? "Gasto recurrente" : "Ingreso recurrente";
+        const title = `${label} próximo a vencer`;
+        const body = `"${rt.description}" vence en 3 días — $${rt.amount.toLocaleString()}`;
 
+        // In-app notification
+        await db.collection("users").doc(userId)
+          .collection("notifications").add({
+            title,
+            body,
+            type: "recurring",
+            data: { recurringId: rtDoc.id, rtType: rt.type },
+            read: false,
+            createdAt: Timestamp.now(),
+          });
+
+        // Push notification
         await getMessaging().sendEachForMulticast({
           tokens,
-          notification: {
-            title: `${label} próximo a vencer`,
-            body: `"${rt.description}" vence en 3 días — $${rt.amount.toLocaleString()}`,
-          },
+          notification: { title, body },
           data: { recurringId: rtDoc.id, type: rt.type },
         });
       }
     }
 
     console.log("sendDueDateNotifications: done");
+  }
+);
+
+// ─── Alto rendimiento: acreditar interés diario (00:01 UTC) ───────────────────
+// Calcula interés diario = saldo * (tasaEA / 365) y crea una transacción
+// de tipo ingreso en la cuenta de alto rendimiento una vez al día.
+exports.creditHighYieldInterest = onSchedule(
+  { schedule: "1 0 * * *", timeZone: "UTC", region: "us-central1" },
+  async () => {
+    const { FieldValue } = require("firebase-admin/firestore");
+    const today = startOfDay(new Date());
+    const todayTs = Timestamp.fromDate(today);
+
+    const usersSnap = await db.collection("users").get();
+
+    for (const userDoc of usersSnap.docs) {
+      const userId = userDoc.id;
+      const accountsSnap = await db
+        .collection("users").doc(userId)
+        .collection("accounts")
+        .where("type", "==", "highYield")
+        .where("isArchived", "==", false)
+        .get();
+
+      if (accountsSnap.empty) continue;
+
+      const batch = db.batch();
+
+      for (const accDoc of accountsSnap.docs) {
+        const acc = accDoc.data();
+        const annualRate = acc.interestRate;
+        if (!annualRate || annualRate <= 0) continue;
+
+        const balance = acc.balance || 0;
+        if (balance <= 0) continue;
+
+        // Interés diario = saldo * (tasa EA / 365)
+        const dailyInterest = Math.round(balance * (annualRate / 365));
+        if (dailyInterest < 1) continue;
+
+        // Crear transacción de ingreso
+        const txRef = db
+          .collection("users").doc(userId)
+          .collection("transactions").doc();
+
+        batch.set(txRef, {
+          userId,
+          amount: dailyInterest,
+          type: "income",
+          category: "investment",
+          accountId: accDoc.id,
+          description: `Interés diario 🏆 ${acc.name}`,
+          date: todayTs,
+          isRecurring: false,
+          tags: ["interes", "alto-rendimiento"],
+          createdAt: Timestamp.now(),
+        });
+
+        // Actualizar saldo de la cuenta
+        batch.update(accDoc.ref, {
+          balance: FieldValue.increment(dailyInterest),
+        });
+      }
+
+      await batch.commit();
+    }
+
+    console.log("creditHighYieldInterest: done");
   }
 );

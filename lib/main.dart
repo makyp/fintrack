@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'core/analytics/analytics_service.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
@@ -21,6 +22,7 @@ void main() async {
   await configureDependencies();
   // Initialize Spanish locale data for DateFormat
   await initializeDateFormatting('es', null);
+  Intl.defaultLocale = 'es';
   // Initialize local notifications
   await LocalNotificationService.initialize();
 

@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/di/injection.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -212,6 +214,12 @@ class _HouseholdContent extends StatelessWidget {
           const SizedBox(height: AppDimensions.lg),
         ],
 
+        // ── Spending this month ───────────────────────────────────────
+        Text('Gastos del mes por miembro', style: AppTextStyles.labelLarge),
+        const SizedBox(height: AppDimensions.sm),
+        _MemberSpendingSection(members: household.members),
+        const SizedBox(height: AppDimensions.lg),
+
         // ── Members ───────────────────────────────────────────────────
         Text('Miembros', style: AppTextStyles.labelLarge),
         const SizedBox(height: AppDimensions.sm),
@@ -259,6 +267,146 @@ class _HouseholdContent extends StatelessWidget {
     );
   }
 }
+
+// ── Member spending this month ─────────────────────────────────────────────────
+
+class _MemberSpendingSection extends StatefulWidget {
+  final List<HouseholdMember> members;
+  const _MemberSpendingSection({required this.members});
+
+  @override
+  State<_MemberSpendingSection> createState() => _MemberSpendingSectionState();
+}
+
+class _MemberSpendingSectionState extends State<_MemberSpendingSection> {
+  late Future<Map<String, double>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _fetchSpending();
+  }
+
+  Future<Map<String, double>> _fetchSpending() async {
+    final db = FirebaseFirestore.instance;
+    final now = DateTime.now();
+    final start = Timestamp.fromDate(DateTime(now.year, now.month, 1));
+    final end   = Timestamp.fromDate(DateTime(now.year, now.month + 1, 1));
+
+    final result = <String, double>{};
+    await Future.wait(widget.members.map((m) async {
+      final snap = await db
+          .collection('users').doc(m.uid)
+          .collection('transactions')
+          .where('type', isEqualTo: 'expense')
+          .where('date', isGreaterThanOrEqualTo: start)
+          .where('date', isLessThan: end)
+          .get();
+      result[m.uid] = snap.docs.fold(
+        0.0, (s, d) => s + ((d.data()['amount'] as num?)?.toDouble() ?? 0));
+    }));
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, double>>(
+      future: _future,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+        final spending = snap.data ?? {};
+        final total = spending.values.fold(0.0, (a, b) => a + b);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.grey50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.grey200),
+          ),
+          padding: const EdgeInsets.all(AppDimensions.md),
+          child: Column(
+            children: [
+              ...widget.members.map((m) {
+                final amount = spending[m.uid] ?? 0;
+                final pct = total > 0 ? amount / total : 0.0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: AppColors.primary.withOpacity(0.15),
+                            child: Text(
+                              m.displayName.isNotEmpty ? m.displayName[0].toUpperCase() : '?',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                  color: AppColors.primary, fontSize: 11),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(m.displayName, style: AppTextStyles.bodySmall),
+                          ),
+                          Text(
+                            CurrencyFormatter.format(amount),
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.expense,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${(pct * 100).toStringAsFixed(0)}%',
+                            style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.grey400, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: pct.toDouble(),
+                          minHeight: 5,
+                          backgroundColor: AppColors.grey200,
+                          valueColor: const AlwaysStoppedAnimation(AppColors.expense),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              if (total > 0) ...[
+                const Divider(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total del hogar',
+                        style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600)),
+                    Text(CurrencyFormatter.format(total),
+                        style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.expense)),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Member tile ────────────────────────────────────────────────────────────────
 
 class _MemberTile extends StatelessWidget {
   final HouseholdMember member;

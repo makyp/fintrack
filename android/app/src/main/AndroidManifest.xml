@@ -37,6 +37,18 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Fimakyp home screen widget -->
+        <receiver
+            android:name=".FimakypWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/fimakyp_appwidget_info" />
+        </receiver>
+
         <!-- flutter_local_notifications receivers -->
         <receiver
             android:exported="false"

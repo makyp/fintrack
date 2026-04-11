@@ -1,20 +1,33 @@
 import 'package:intl/intl.dart';
 
 class DateFormatter {
-  static String formatDate(DateTime date, {String locale = 'es'}) {
-    return DateFormat('d MMM yyyy', locale).format(date);
+  static const _locale = 'es';
+
+  /// Creates a DateFormat with the Spanish locale, falling back to no-locale
+  /// if locale data has not been initialized (e.g. when the app is launched via
+  /// a notification before main() finishes setting up the locale).
+  static DateFormat _fmt(String pattern) {
+    try {
+      return DateFormat(pattern, _locale);
+    } catch (_) {
+      return DateFormat(pattern);
+    }
   }
 
-  static String formatShortDate(DateTime date, {String locale = 'es'}) {
-    return DateFormat('d MMM', locale).format(date);
+  static String formatDate(DateTime date) {
+    return _fmt('d MMM yyyy').format(date);
   }
 
-  static String formatMonthYear(DateTime date, {String locale = 'es'}) {
-    return DateFormat('MMMM yyyy', locale).format(date);
+  static String formatShortDate(DateTime date) {
+    return _fmt('d MMM').format(date);
   }
 
-  static String formatMonth(DateTime date, {String locale = 'es'}) {
-    return DateFormat('MMMM', locale).format(date);
+  static String formatMonthYear(DateTime date) {
+    return _fmt('MMMM yyyy').format(date);
+  }
+
+  static String formatMonth(DateTime date) {
+    return _fmt('MMMM').format(date);
   }
 
   static String formatRelative(DateTime date) {
@@ -25,7 +38,7 @@ class DateFormatter {
 
     if (diff == 0) return 'Hoy';
     if (diff == 1) return 'Ayer';
-    if (diff < 7) return 'Hace $diff días';
+    if (diff < 4) return 'Hace $diff días';
     return DateFormatter.formatDate(date);
   }
 

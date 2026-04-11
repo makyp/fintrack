@@ -4,6 +4,7 @@ import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/services/widget_service.dart';
 import '../../../../features/gamification/data/services/badge_service.dart';
 import '../models/transaction_model.dart';
 import '../../domain/entities/transaction.dart';
@@ -149,6 +150,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       await batch.commit();
       AnalyticsService.logTransactionCreated(model.type.name, model.amount, 'COP');
       unawaited(_badgeService.onTransactionAdded(tx.userId));
+      unawaited(WidgetService.update(tx.userId));
       return model;
     } catch (e) {
       throw ServerException(e.toString());

@@ -17,6 +17,7 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/accounts/presentation/pages/add_account_page.dart';
 import '../../features/household/presentation/pages/household_page.dart';
 import '../../features/debts/presentation/pages/debts_page.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../widgets/splash_screen.dart';
 import '../di/injection.dart';
 
@@ -115,6 +116,10 @@ class AppRouter {
             GoRoute(
               path: '/debts',
               builder: (_, __) => const DebtsPage(),
+            ),
+            GoRoute(
+              path: '/notifications',
+              builder: (_, __) => const NotificationsPage(),
             ),
           ],
         ),

@@ -13,6 +13,7 @@ class AccountModel extends Account {
     required super.icon,
     super.isArchived,
     required super.createdAt,
+    super.interestRate,
   });
 
   factory AccountModel.fromFirestore(Map<String, dynamic> map, String id) {
@@ -32,6 +33,7 @@ class AccountModel extends Account {
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      interestRate: (map['interestRate'] as num?)?.toDouble(),
     );
   }
 
@@ -46,6 +48,7 @@ class AccountModel extends Account {
       'icon': icon,
       'isArchived': isArchived,
       'createdAt': Timestamp.fromDate(createdAt),
+      if (interestRate != null) 'interestRate': interestRate,
     };
   }
 
@@ -61,6 +64,7 @@ class AccountModel extends Account {
       icon: account.icon,
       isArchived: account.isArchived,
       createdAt: account.createdAt,
+      interestRate: account.interestRate,
     );
   }
 }

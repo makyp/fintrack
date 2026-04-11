@@ -7,6 +7,9 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../accounts/domain/entities/account.dart';
+import '../../../accounts/presentation/cubit/accounts_cubit.dart';
+import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/transactions_bloc.dart';
 import '../bloc/transactions_event.dart';
@@ -20,8 +23,11 @@ class TransactionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => getIt<TransactionsBloc>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<TransactionsBloc>()),
+        BlocProvider(create: (_) => getIt<AccountsCubit>()),
+      ],
       child: const _TransactionsView(),
     );
   }
@@ -44,6 +50,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = context.read<AuthBloc>().state.user?.uid ?? '';
       context.read<TransactionsBloc>().add(TransactionsWatchStarted(userId));
+      context.read<AccountsCubit>().watchAccounts(userId);
     });
   }
 
@@ -127,6 +134,10 @@ class _TransactionsViewState extends State<_TransactionsView> {
   Widget _buildList(BuildContext context, TransactionsState state) {
     final grouped = state.groupedByDate;
     final dateKeys = grouped.keys.toList();
+    final accountsById = {
+      for (final a in context.watch<AccountsCubit>().state.accounts ?? <Account>[])
+        a.id: a,
+    };
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 100),
@@ -146,6 +157,8 @@ class _TransactionsViewState extends State<_TransactionsView> {
             ),
             ...txs.map((tx) => _TransactionTile(
                   transaction: tx,
+                  account: accountsById[tx.accountId],
+                  toAccount: tx.toAccountId != null ? accountsById[tx.toAccountId] : null,
                   onTap: () => _openForm(context, transaction: tx),
                 )),
           ],
@@ -200,9 +213,16 @@ class _TransactionsViewState extends State<_TransactionsView> {
 
 class _TransactionTile extends StatelessWidget {
   final Transaction transaction;
+  final Account? account;
+  final Account? toAccount;
   final VoidCallback onTap;
 
-  const _TransactionTile({required this.transaction, required this.onTap});
+  const _TransactionTile({
+    required this.transaction,
+    required this.onTap,
+    this.account,
+    this.toAccount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -247,6 +267,14 @@ class _TransactionTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (account != null) ...[
+                    const SizedBox(height: 3),
+                    _AccountChip(
+                      account: account!,
+                      toAccount: isTransfer ? toAccount : null,
+                    ),
+                  ],
+                  const SizedBox(height: 2),
                   Text(
                     '${transaction.category.label} · ${DateFormatter.formatTime(transaction.date)}',
                     style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
@@ -254,6 +282,7 @@ class _TransactionTile extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: AppDimensions.sm),
             Text(
               '$sign${CurrencyFormatter.format(transaction.amount)}',
               style: AppTextStyles.monoMedium.copyWith(
@@ -263,6 +292,40 @@ class _TransactionTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AccountChip extends StatelessWidget {
+  final Account account;
+  final Account? toAccount;
+
+  const _AccountChip({required this.account, this.toAccount});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Color(account.colorValue);
+    final label = toAccount != null
+        ? '${account.icon} → ${toAccount!.icon}'
+        : '${account.icon} ${account.name}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.bodySmall.copyWith(
+          color: color.withOpacity(0.9),
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

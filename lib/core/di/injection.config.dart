@@ -37,6 +37,7 @@ import '../../features/household/data/datasources/household_datasource.dart' as 
 import '../../features/household/data/repositories/household_repository_impl.dart' as _i951;
 import '../../features/household/domain/repositories/household_repository.dart' as _i952;
 import '../../features/household/presentation/cubit/household_cubit.dart' as _i953;
+import '../../features/notifications/presentation/cubit/notifications_cubit.dart' as _i954;
 import '../../features/debts/data/datasources/debt_datasource.dart' as _i960;
 import '../../features/gamification/data/datasources/gamification_datasource.dart' as _i930;
 import '../../features/gamification/data/services/badge_service.dart' as _i961;
@@ -260,6 +261,11 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i953.HouseholdCubit>(
       () => _i953.HouseholdCubit(gh<_i952.HouseholdRepository>()),
+    );
+
+    // ── Notifications ─────────────────────────────────────
+    gh.factory<_i954.NotificationsCubit>(
+      () => _i954.NotificationsCubit(gh<_i974.FirebaseFirestore>()),
     );
 
     // ── Debts ─────────────────────────────────────────────

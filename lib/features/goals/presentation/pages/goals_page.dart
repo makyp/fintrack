@@ -302,7 +302,7 @@ class _GoalOptionsSheet extends StatelessWidget {
               title: const Text('Agregar aportación'),
               onTap: () {
                 Navigator.pop(context);
-                _showContributionDialog(context);
+                _showContributionDialog(parentNavigator.context);
               },
             ),
             ListTile(
@@ -325,7 +325,7 @@ class _GoalOptionsSheet extends StatelessWidget {
             title: const Text('Eliminar'),
             onTap: () {
               Navigator.pop(context);
-              _confirmDelete(context);
+              _confirmDelete(parentNavigator.context);
             },
           ),
           const SizedBox(height: AppDimensions.sm),

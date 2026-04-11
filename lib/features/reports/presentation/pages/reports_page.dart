@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -63,13 +61,13 @@ class _ReportsView extends StatelessWidget {
                   if (state.data != null) ...[
                     IconButton(
                       icon: const Icon(Icons.picture_as_pdf_outlined),
-                      tooltip: 'Generar PDF',
+                      tooltip: 'Descargar PDF',
                       onPressed: () => ReportPdfGenerator.shareReport(state.data!),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.download_outlined),
-                      tooltip: 'Exportar texto',
-                      onPressed: () => _shareReport(context, state),
+                      icon: const Icon(Icons.copy_outlined),
+                      tooltip: 'Copiar resumen',
+                      onPressed: () => _copyReport(context, state),
                     ),
                   ],
                 ],
@@ -317,7 +315,7 @@ class _ReportsView extends StatelessWidget {
     );
   }
 
-  void _shareReport(BuildContext context, ReportsState state) {
+  Future<void> _copyReport(BuildContext context, ReportsState state) async {
     final d = state.data!;
     final buf = StringBuffer()
       ..writeln(
@@ -343,15 +341,11 @@ class _ReportsView extends StatelessWidget {
             '(${(cat.percentage * 100).toStringAsFixed(0)}%)');
       }
     }
-    final text = buf.toString();
-
-    if (kIsWeb) {
-      Clipboard.setData(ClipboardData(text: text));
+    await Clipboard.setData(ClipboardData(text: buf.toString()));
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reporte copiado al portapapeles')),
+        const SnackBar(content: Text('Resumen copiado al portapapeles')),
       );
-    } else {
-      Share.share(text, subject: 'Reporte Fimakyp');
     }
   }
 }

@@ -24,6 +24,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _balanceCtrl = TextEditingController();
+  final _rateCtrl = TextEditingController();
   late final AccountsCubit _cubit;
 
   AccountType _selectedType = AccountType.checking;
@@ -58,6 +59,9 @@ class _AddAccountPageState extends State<AddAccountPage> {
           .text;
       _selectedType = a.type;
       _selectedColor = a.colorValue;
+      if (a.interestRate != null) {
+        _rateCtrl.text = (a.interestRate! * 100).toStringAsFixed(2);
+      }
     }
   }
 
@@ -66,6 +70,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
     _cubit.close();
     _nameCtrl.dispose();
     _balanceCtrl.dispose();
+    _rateCtrl.dispose();
     super.dispose();
   }
 
@@ -82,6 +87,9 @@ class _AddAccountPageState extends State<AddAccountPage> {
     try {
       final balance = ThousandsSeparatorFormatter.parse(_balanceCtrl.text);
       final name = _selectedType == AccountType.cash ? 'Efectivo' : _nameCtrl.text.trim();
+      final interestRate = _selectedType == AccountType.highYield
+          ? (double.tryParse(_rateCtrl.text.replaceAll(',', '.')) ?? 0) / 100
+          : null;
       if (_isEditing) {
         final updated = widget.editAccount!.copyWith(
           name: name,
@@ -89,6 +97,8 @@ class _AddAccountPageState extends State<AddAccountPage> {
           balance: balance,
           colorValue: _selectedColor,
           icon: _selectedType.icon,
+          interestRate: interestRate,
+          clearInterestRate: _selectedType != AccountType.highYield,
         );
         await _cubit.updateAccount(updated);
       } else {
@@ -101,6 +111,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
           colorValue: _selectedColor,
           icon: _selectedType.icon,
           createdAt: DateTime.now(),
+          interestRate: interestRate,
         );
         await _cubit.addAccount(account);
       }
@@ -163,6 +174,25 @@ class _AddAccountPageState extends State<AddAccountPage> {
                   ),
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'Ingresa un nombre' : null,
+                ),
+              ],
+              if (_selectedType == AccountType.highYield) ...[
+                const SizedBox(height: AppDimensions.md),
+                TextFormField(
+                  controller: _rateCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Tasa de interés efectivo anual (EA)',
+                    hintText: 'Ej: 12.5',
+                    prefixIcon: Icon(Icons.percent),
+                    suffixText: '% EA',
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Ingresa la tasa de interés';
+                    final n = double.tryParse(v.replaceAll(',', '.'));
+                    if (n == null || n <= 0 || n > 100) return 'Ingresa un valor entre 0 y 100';
+                    return null;
+                  },
                 ),
               ],
               const SizedBox(height: AppDimensions.md),

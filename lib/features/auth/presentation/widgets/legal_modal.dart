@@ -42,8 +42,7 @@ void _showLegalModal(BuildContext context, _LegalDocument doc) {
       context: context,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        insetPadding:
-            const EdgeInsets.symmetric(horizontal: 80, vertical: 40),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 80, vertical: 40),
         child: _LegalContent(doc: doc),
       ),
     );
@@ -160,8 +159,8 @@ class _Header extends StatelessWidget {
                         .copyWith(color: AppColors.grey500)),
                 const SizedBox(height: 2),
                 Text('Última actualización: ${doc.lastUpdated}',
-                    style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.grey400, fontSize: 11)),
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.grey400, fontSize: 11)),
               ],
             ),
           ),

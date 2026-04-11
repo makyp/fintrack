@@ -5,7 +5,8 @@ enum AccountType {
   checking,
   savings,
   credit,
-  investment;
+  investment,
+  highYield;
 
   String get label {
     switch (this) {
@@ -19,6 +20,8 @@ enum AccountType {
         return 'Tarjeta de crédito';
       case AccountType.investment:
         return 'Inversiones';
+      case AccountType.highYield:
+        return 'Alto rendimiento';
     }
   }
 
@@ -34,6 +37,8 @@ enum AccountType {
         return '💳';
       case AccountType.investment:
         return '📈';
+      case AccountType.highYield:
+        return '🏆';
     }
   }
 
@@ -52,6 +57,9 @@ class Account extends Equatable {
   final String icon;
   final bool isArchived;
   final DateTime createdAt;
+  /// Annual effective interest rate (e.g. 0.12 = 12% EA).
+  /// Only meaningful for [AccountType.highYield].
+  final double? interestRate;
 
   const Account({
     required this.id,
@@ -64,6 +72,7 @@ class Account extends Equatable {
     required this.icon,
     this.isArchived = false,
     required this.createdAt,
+    this.interestRate,
   });
 
   /// For net worth: credit balance is subtracted (it's debt)
@@ -77,6 +86,8 @@ class Account extends Equatable {
     int? colorValue,
     String? icon,
     bool? isArchived,
+    double? interestRate,
+    bool clearInterestRate = false,
   }) {
     return Account(
       id: id,
@@ -89,9 +100,10 @@ class Account extends Equatable {
       icon: icon ?? this.icon,
       isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt,
+      interestRate: clearInterestRate ? null : (interestRate ?? this.interestRate),
     );
   }
 
   @override
-  List<Object?> get props => [id, userId, name, type, balance, currency, colorValue, icon, isArchived];
+  List<Object?> get props => [id, userId, name, type, balance, currency, colorValue, icon, isArchived, interestRate];
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
@@ -120,6 +121,10 @@ class AuthRepositoryImpl implements AuthRepository {
       return Either.right(user);
     } on AuthException catch (e) {
       return Either.left(AuthFailure(e.message));
+    } on PlatformException catch (e) {
+      return Either.left(AuthFailure(e.message ?? 'Error al actualizar perfil'));
+    } catch (e) {
+      return Either.left(AuthFailure(e.toString()));
     }
   }
 

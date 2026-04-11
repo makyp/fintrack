@@ -249,15 +249,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (reminderTime != null) updates['reminderTime'] = reminderTime;
     if (updates.isEmpty) return getUserProfile(user.uid);
     await _firestore.collection('users').doc(user.uid).update(updates);
-    if (displayName != null) {
-      try { await user.updateDisplayName(displayName); } catch (_) {}
-    }
-    // Skip Firebase Auth photoURL update for base64 data URIs and emoji URIs —
-    // they exceed Firebase Auth limits and are stored only in Firestore.
-    if (photoUrl != null &&
-        !photoUrl.startsWith('data:') &&
-        !photoUrl.startsWith('emoji://')) {
-      try { await user.updatePhotoURL(photoUrl); } catch (_) {}
+    // Firebase Auth profile update — only send URLs within Auth limits.
+    // data: URIs (base64) and emoji:// URIs are stored in Firestore only.
+    // Using updateProfile() instead of updateDisplayName() to explicitly
+    // pass a safe photoURL, preventing Firebase Auth from validating the
+    // existing photoURL in the user cache on some Android devices.
+    final safeAuthPhotoUrl = _safeFirebaseAuthUrl(
+      photoUrl != null ? photoUrl : user.photoURL,
+    );
+    if (displayName != null || (photoUrl != null && safeAuthPhotoUrl != user.photoURL)) {
+      try {
+        await user.updateProfile(
+          displayName: displayName,
+          photoURL: safeAuthPhotoUrl,
+        );
+      } catch (_) {}
     }
     return getUserProfile(user.uid);
   }
@@ -276,6 +282,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseAuthError(e.code));
     }
+  }
+
+  /// Returns the URL only if it is safe to store in Firebase Auth profile.
+  /// Firebase Auth rejects data URIs (base64), emoji:// URIs, and URLs > 1024 chars.
+  /// Returns null for unsafe URLs so the field is either cleared or left unchanged.
+  String? _safeFirebaseAuthUrl(String? url) {
+    if (url == null || url.isEmpty) return url;
+    if (url.startsWith('data:') || url.startsWith('emoji://')) return null;
+    if (url.length > 1024) return null;
+    return url;
   }
 
   String _mapFirebaseAuthError(String code) {

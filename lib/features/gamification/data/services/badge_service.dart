@@ -116,20 +116,24 @@ class BadgeService {
     final txCount = txSnap.docs.length;
     final txDocs = txSnap.docs.map((d) => d.data()).toList();
 
-    // Per-month income/expense buckets
+    // Use the PREVIOUS complete month for savings-rate badges.
+    // Current month data is partial and would give misleading results
+    // (e.g. 5 days of income looks like 100% savings rate).
     final now = DateTime.now();
+    final prevMonth = DateTime(now.year, now.month - 1);
+
     final thisMonthIncome = txDocs.where((d) {
       final ts = d['date'];
       if (ts is! Timestamp) return false;
       final dt = ts.toDate();
-      return dt.year == now.year && dt.month == now.month && d['type'] == 'income';
+      return dt.year == prevMonth.year && dt.month == prevMonth.month && d['type'] == 'income';
     }).fold(0.0, (s, d) => s + ((d['amount'] as num?)?.toDouble() ?? 0));
 
     final thisMonthExpenses = txDocs.where((d) {
       final ts = d['date'];
       if (ts is! Timestamp) return false;
       final dt = ts.toDate();
-      return dt.year == now.year && dt.month == now.month && d['type'] == 'expense';
+      return dt.year == prevMonth.year && dt.month == prevMonth.month && d['type'] == 'expense';
     }).fold(0.0, (s, d) => s + ((d['amount'] as num?)?.toDouble() ?? 0));
 
     // Total income ever
