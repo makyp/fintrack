@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../../features/transactions/domain/entities/transaction.dart';
+import '../../features/transactions/domain/entities/recurring_transaction.dart';
 
 /// Manages on-device scheduled reminder notifications.
 /// All ops are no-ops on web.
@@ -19,14 +21,22 @@ class LocalNotificationService {
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
     );
 
     await _plugin.initialize(
       const InitializationSettings(android: android, iOS: ios),
     );
+
+    // Request runtime permission on Android 13+
+    final androidImpl = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    await androidImpl?.requestNotificationsPermission();
+    await androidImpl?.requestExactAlarmsPermission();
+
     _initialized = true;
   }
 
@@ -80,13 +90,20 @@ class LocalNotificationService {
           android: AndroidNotificationDetails(
             _channelId,
             _channelName,
-            importance: Importance.high,
-            priority: Priority.high,
+            importance: Importance.max,
+            priority: Priority.max,
             icon: '@mipmap/ic_launcher',
+            playSound: true,
+            enableVibration: true,
+            channelShowBadge: true,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -101,6 +118,66 @@ class LocalNotificationService {
     await initialize();
     for (int i = _baseId; i < _baseId + 20; i++) {
       await _plugin.cancel(i);
+    }
+  }
+
+  // ── Due-date alerts for recurring transactions ────────────────────────────
+
+  static const _dueDateChannelId   = 'fimakyp_due_dates';
+  static const _dueDateChannelName = 'Vencimientos Fimakyp';
+  static const _dueDateBaseId      = 3000; // 3000–3099
+
+  /// Schedules a local notification 3 days before each recurring transaction
+  /// that is due soon. Replaces all previous due-date notifications.
+  static Future<void> scheduleDueDateAlerts(
+      List<RecurringTransaction> recurrings) async {
+    if (kIsWeb) return;
+    await initialize();
+
+    // Cancel old due-date notifications
+    for (int i = _dueDateBaseId; i < _dueDateBaseId + 100; i++) {
+      await _plugin.cancel(i);
+    }
+
+    int notifId = _dueDateBaseId;
+    for (final rt in recurrings) {
+      if (!rt.isActive) continue;
+      final alertTime = rt.nextDueDate.subtract(const Duration(days: 3));
+      if (alertTime.isBefore(DateTime.now())) continue;
+
+      final label =
+          rt.type == TransactionType.expense ? 'Gasto' : 'Ingreso';
+      try {
+        await _plugin.zonedSchedule(
+          notifId++,
+          '⏰ $label próximo a vencer',
+          '"${rt.description}" vence el '
+          '${rt.nextDueDate.day}/${rt.nextDueDate.month}',
+          tz.TZDateTime.from(alertTime, tz.local),
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              _dueDateChannelId,
+              _dueDateChannelName,
+              importance: Importance.max,
+              priority: Priority.max,
+              icon: '@mipmap/ic_launcher',
+              playSound: true,
+              enableVibration: true,
+              channelShowBadge: true,
+            ),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      } catch (_) {}
+
+      if (notifId >= _dueDateBaseId + 100) break;
     }
   }
 }

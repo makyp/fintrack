@@ -48,7 +48,7 @@ class _BadgesView extends StatelessWidget {
                   padding: const EdgeInsets.all(AppDimensions.md),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [AppColors.primary, Color(0xFF2A5298)],
+                      colors: [AppColors.gradientBegin, AppColors.gradientEnd],
                     ),
                     borderRadius: BorderRadius.circular(20),
                   ),

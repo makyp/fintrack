@@ -42,10 +42,10 @@ class _DailyBarChartState extends State<DailyBarChart> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Legend
-        Row(
+        const Row(
           children: [
             _LegendDot(color: AppColors.income, label: 'Ingresos'),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             _LegendDot(color: AppColors.expense, label: 'Gastos'),
           ],
         ),
@@ -130,7 +130,7 @@ class _DailyBarChartState extends State<DailyBarChart> {
                 show: true,
                 drawVerticalLine: false,
                 horizontalInterval: safeMax / 4,
-                getDrawingHorizontalLine: (_) => FlLine(
+                getDrawingHorizontalLine: (_) => const FlLine(
                   color: AppColors.grey300,
                   strokeWidth: 0.8,
                   dashArray: [4, 4],

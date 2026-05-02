@@ -83,12 +83,12 @@ abstract class AppTextStyles {
   static TextStyle incomeAmount({double fontSize = 20}) => GoogleFonts.robotoMono(
         fontWeight: FontWeight.w600,
         fontSize: fontSize,
-        color: AppColors.success,
+        color: AppColors.income,  // teal #2EC4B6
       );
 
   static TextStyle expenseAmount({double fontSize = 20}) => GoogleFonts.robotoMono(
         fontWeight: FontWeight.w600,
         fontSize: fontSize,
-        color: AppColors.danger,
+        color: AppColors.expense, // coral #FF6B6B
       );
 }

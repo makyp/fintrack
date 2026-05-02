@@ -7,7 +7,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/thousands_separator_formatter.dart';
-import '../../../accounts/domain/entities/account.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -389,7 +388,7 @@ class _DebtCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            Icon(Icons.calendar_today_outlined,
+                            const Icon(Icons.calendar_today_outlined,
                                 size: 10,
                                 color: AppColors.grey400),
                             const SizedBox(width: 3),

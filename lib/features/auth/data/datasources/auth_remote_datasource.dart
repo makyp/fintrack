@@ -255,7 +255,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     // pass a safe photoURL, preventing Firebase Auth from validating the
     // existing photoURL in the user cache on some Android devices.
     final safeAuthPhotoUrl = _safeFirebaseAuthUrl(
-      photoUrl != null ? photoUrl : user.photoURL,
+      photoUrl ?? user.photoURL,
     );
     if (displayName != null || (photoUrl != null && safeAuthPhotoUrl != user.photoURL)) {
       try {

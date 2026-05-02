@@ -38,6 +38,7 @@ import '../../features/household/data/repositories/household_repository_impl.dar
 import '../../features/household/domain/repositories/household_repository.dart' as _i952;
 import '../../features/household/presentation/cubit/household_cubit.dart' as _i953;
 import '../../features/notifications/presentation/cubit/notifications_cubit.dart' as _i954;
+import '../../core/services/app_startup_service.dart' as _i955;
 import '../../features/debts/data/datasources/debt_datasource.dart' as _i960;
 import '../../features/gamification/data/datasources/gamification_datasource.dart' as _i930;
 import '../../features/gamification/data/services/badge_service.dart' as _i961;
@@ -266,6 +267,14 @@ extension GetItInjectableX on _i174.GetIt {
     // ── Notifications ─────────────────────────────────────
     gh.factory<_i954.NotificationsCubit>(
       () => _i954.NotificationsCubit(gh<_i974.FirebaseFirestore>()),
+    );
+
+    // ── App Startup Service ───────────────────────────────
+    gh.lazySingleton<_i955.AppStartupService>(
+      () => _i955.AppStartupService(
+        gh<_i974.FirebaseFirestore>(),
+        gh<_i706.Uuid>(),
+      ),
     );
 
     // ── Debts ─────────────────────────────────────────────

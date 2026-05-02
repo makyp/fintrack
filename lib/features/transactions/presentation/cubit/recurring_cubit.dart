@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/services/local_notification_service.dart';
 import '../../domain/entities/recurring_transaction.dart';
 import '../../domain/usecases/get_recurring_transactions.dart';
 import '../../domain/usecases/add_recurring_transaction.dart';
@@ -23,7 +24,10 @@ class RecurringCubit extends Cubit<RecurringState> {
     emit(const RecurringState.loading());
     _sub?.cancel();
     _sub = _get.watch(userId).listen(
-      (list) => emit(RecurringState.loaded(list)),
+      (list) {
+        emit(RecurringState.loaded(list));
+        LocalNotificationService.scheduleDueDateAlerts(list);
+      },
       onError: (e) => emit(RecurringState.error(e.toString())),
     );
   }

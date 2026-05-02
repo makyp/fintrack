@@ -3,36 +3,21 @@ import '../../domain/entities/transaction.dart';
 
 class TransactionModel extends Transaction {
   const TransactionModel({
-    required String id,
-    required String userId,
-    required double amount,
-    required TransactionType type,
-    required TransactionCategory category,
-    required String accountId,
-    String? toAccountId,
-    required String description,
-    required DateTime date,
-    bool isRecurring = false,
-    String? householdId,
-    String? receiptUrl,
-    List<String> tags = const [],
-    required DateTime createdAt,
-  }) : super(
-          id: id,
-          userId: userId,
-          amount: amount,
-          type: type,
-          category: category,
-          accountId: accountId,
-          toAccountId: toAccountId,
-          description: description,
-          date: date,
-          isRecurring: isRecurring,
-          householdId: householdId,
-          receiptUrl: receiptUrl,
-          tags: tags,
-          createdAt: createdAt,
-        );
+    required super.id,
+    required super.userId,
+    required super.amount,
+    required super.type,
+    required super.category,
+    required super.accountId,
+    super.toAccountId,
+    required super.description,
+    required super.date,
+    super.isRecurring = false,
+    super.householdId,
+    super.receiptUrl,
+    super.tags = const [],
+    required super.createdAt,
+  });
 
   factory TransactionModel.fromFirestore(Map<String, dynamic> map, String id) {
     return TransactionModel(

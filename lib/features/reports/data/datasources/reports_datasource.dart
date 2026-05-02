@@ -108,7 +108,7 @@ class ReportsDataSource {
     }
 
     // ── Build CategoryData lists (sorted descending) ──────────────────────
-    List<CategoryData> _buildCats(Map<TransactionCategory, double> map,
+    List<CategoryData> buildCats(Map<TransactionCategory, double> map,
         double total) {
       if (total == 0) return [];
       return map.entries
@@ -145,8 +145,8 @@ class ReportsDataSource {
       year: year,
       totalIncome: totalIncome,
       totalExpenses: totalExpenses,
-      expensesByCategory: _buildCats(expMap, totalExpenses),
-      incomeByCategory: _buildCats(incMap, totalIncome),
+      expensesByCategory: buildCats(expMap, totalExpenses),
+      incomeByCategory: buildCats(incMap, totalIncome),
       trend: trendMap.values.toList()
         ..sort((a, b) => a.year != b.year
             ? a.year.compareTo(b.year)
@@ -235,7 +235,7 @@ class ReportsDataSource {
       }
     }
 
-    List<CategoryData> _buildCats(
+    List<CategoryData> buildCats(
         Map<TransactionCategory, double> map, double total) {
       if (total == 0) return [];
       return map.entries
@@ -250,8 +250,8 @@ class ReportsDataSource {
       year: year,
       totalIncome: totalIncome,
       totalExpenses: totalExpenses,
-      expensesByCategory: _buildCats(expMap, totalExpenses),
-      incomeByCategory: _buildCats(incMap, totalIncome),
+      expensesByCategory: buildCats(expMap, totalExpenses),
+      incomeByCategory: buildCats(incMap, totalIncome),
       trend: trendMap.values.toList()
         ..sort((a, b) => a.year != b.year
             ? a.year.compareTo(b.year)

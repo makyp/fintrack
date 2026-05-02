@@ -26,10 +26,10 @@ class MonthlyBarChart extends StatelessWidget {
         Text('Tendencia mensual', style: AppTextStyles.headlineSmall),
         const SizedBox(height: AppDimensions.sm),
         // Legend
-        Row(
+        const Row(
           children: [
             _LegendDot(color: AppColors.income, label: 'Ingresos'),
-            const SizedBox(width: AppDimensions.md),
+            SizedBox(width: AppDimensions.md),
             _LegendDot(color: AppColors.expense, label: 'Gastos'),
           ],
         ),
@@ -42,7 +42,6 @@ class MonthlyBarChart extends StatelessWidget {
               barTouchData: BarTouchData(
                 touchTooltipData: BarTouchTooltipData(
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final m = trend[group.x.toInt()];
                     final isIncome = rodIndex == 0;
                     return BarTooltipItem(
                       '${isIncome ? 'Ing' : 'Gas'}: ${CurrencyFormatter.format(rod.toY, compact: true)}',
@@ -102,7 +101,7 @@ class MonthlyBarChart extends StatelessWidget {
                 show: true,
                 drawVerticalLine: false,
                 horizontalInterval: yInterval,
-                getDrawingHorizontalLine: (_) => FlLine(
+                getDrawingHorizontalLine: (_) => const FlLine(
                   color: AppColors.grey100,
                   strokeWidth: 1,
                 ),
@@ -144,7 +143,7 @@ class MonthlyBarChart extends StatelessWidget {
     if (maxY <= 0) return 1;
     final raw = maxY / 4;
     double magnitude = 1;
-    while (magnitude * 10 < raw) magnitude *= 10;
+    while (magnitude * 10 < raw) { magnitude *= 10; }
     final normalized = raw / magnitude;
     final nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
     return nice * magnitude;

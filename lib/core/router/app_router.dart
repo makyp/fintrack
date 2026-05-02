@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
@@ -98,7 +97,7 @@ class AppRouter {
             GoRoute(
               path: '/accounts/new',
               builder: (_, state) =>
-                  AddAccountPage(editAccount: null),
+                  const AddAccountPage(editAccount: null),
             ),
             GoRoute(
               path: '/accounts/:id/edit',

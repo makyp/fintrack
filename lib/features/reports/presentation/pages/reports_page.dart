@@ -523,9 +523,7 @@ class _GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = (goal.progress * 100).toStringAsFixed(0);
-    final daysLeft = goal.targetDate != null
-        ? goal.targetDate!.difference(DateTime.now()).inDays
-        : null;
+    final daysLeft = goal.targetDate?.difference(DateTime.now()).inDays;
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.md),

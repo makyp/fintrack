@@ -1,110 +1,397 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-// ── Brand palette ──────────────────────────────────────────────────────────────
-class _C {
-  static const blue = Color(0xFF2563EB);
-  static const blueDark = Color(0xFF1D4ED8);
-  static const aqua = Color(0xFF06B6D4);
-  static const aquaLight = Color(0xFFCFFAFE);
-  static const white = Colors.white;
-  static const bg = Color(0xFFF0F9FF);
-  static const grey = Color(0xFF6B7280);
-  static const greyLight = Color(0xFF9CA3AF);
-  static const dark = Color(0xFF0F172A);
-  static const darkCard = Color(0xFF1E293B);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Scroll-reveal widget
-// Parent must call _Reveal.checkAll() from NotificationListener<ScrollNotification>
-// ─────────────────────────────────────────────────────────────────────────────
-class _Reveal extends StatefulWidget {
-  final Widget child;
-  final Duration delay;
-  final double dy;
-
-  const _Reveal({
-    required this.child,
-    this.delay = Duration.zero,
-    this.dy = 40,
-  });
-
-  static final _all = <_RevealState>[];
-  static void checkAll() {
-    for (final s in List.of(_all)) {
-      s._check();
-    }
-  }
-
+// ── Scroll behavior para Flutter Web ─────────────────────────────────────────
+class _WebBehavior extends MaterialScrollBehavior {
   @override
-  State<_Reveal> createState() => _RevealState();
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.unknown,
+      };
 }
 
-class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  bool _done = false;
+// ── Paleta ────────────────────────────────────────────────────────────────────
+const _blue = Color(0xFF2F5BFF);
+const _purple = Color(0xFF7A5CFA);
+const _aqua = Color(0xFF2EC4B6);
+const _aquaDk = Color(0xFF1DA89B);
+const _aquaLt = Color(0xFFE6FAF8);
+const _dark = Color(0xFF0F1830);
+const _darkAlt = Color(0xFF1A2B50);
+const _grey = Color(0xFF6B7A9A);
+const _greyLt = Color(0xFF9AAABF);
+const _bg = Color(0xFFF7F9FC);
+const _bgAlt = Color(0xFFEEF2FF);
+const _border = Color(0xFFE5E7EB);
+const _circle = Color(0xFFCDD9FF);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LandingPage
+// ─────────────────────────────────────────────────────────────────────────────
+class LandingPage extends StatefulWidget {
+  const LandingPage({super.key});
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  final _scroll = ScrollController();
+  final _importanceKey = GlobalKey();
+  final _functionsKey = GlobalKey();
+  final _howItWorksKey = GlobalKey();
+  final _aboutKey = GlobalKey();
+  bool _shadowed = false;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    );
-    _Reveal._all.add(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _check());
+    _scroll.addListener(_onScroll);
   }
 
-  void _check() {
-    if (_done || !mounted) return;
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final pos = box.localToGlobal(Offset.zero);
-    final screenH = MediaQuery.of(context).size.height;
-    if (pos.dy < screenH * 0.94) {
-      _done = true;
-      Future.delayed(widget.delay, () {
-        if (mounted) _ctrl.forward();
-      });
-    }
+  void _onScroll() {
+    final s = _scroll.offset > 10;
+    if (s != _shadowed) setState(() => _shadowed = s);
+  }
+
+  void _go(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(ctx,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic);
   }
 
   @override
   void dispose() {
-    _Reveal._all.remove(this);
-    _ctrl.dispose();
+    _scroll
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, child) => Opacity(
-        opacity: _ctrl.value,
-        child: Transform.translate(
-          offset: Offset(0, widget.dy * (1 - _ctrl.value)),
-          child: child,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: _Navbar(
+          shadowed: _shadowed,
+          onStart: () {},
+          onImportance: () => _go(_importanceKey),
+          onFunctions: () => _go(_functionsKey),
+          onHowItWorks: () => _go(_howItWorksKey),
+          onAbout: () => _go(_aboutKey),
         ),
       ),
-      child: widget.child,
+      body: ScrollConfiguration(
+        behavior: _WebBehavior(),
+        child: SingleChildScrollView(
+          controller: _scroll,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _HeroSection(),
+              _ImportanceSection(key: _importanceKey),
+              _FunctionsSection(key: _functionsKey),
+              _HowItWorksSection(key: _howItWorksKey),
+              _StatsSection(),
+              _AboutSection(key: _aboutKey),
+              _CtaSection(),
+              const _Footer(),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Float animation (loops up/down — used for hero visual)
+// Navbar
 // ─────────────────────────────────────────────────────────────────────────────
-class _Float extends StatefulWidget {
-  final Widget child;
-  const _Float({required this.child});
+class _Navbar extends StatelessWidget {
+  final bool shadowed;
+  final VoidCallback onStart, onImportance, onFunctions, onHowItWorks, onAbout;
+  const _Navbar({
+    required this.shadowed,
+    required this.onStart,
+    required this.onImportance,
+    required this.onFunctions,
+    required this.onHowItWorks,
+    required this.onAbout,
+  });
 
   @override
-  State<_Float> createState() => _FloatState();
+  Widget build(BuildContext context) {
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: shadowed
+            ? [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 3))
+              ]
+            : const [],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 72),
+      child: Row(
+        children: [
+          // Logo
+          Image.asset(
+            'assets/images/LogoFimakyp.png',
+            width: 30,
+            height: 30,
+            errorBuilder: (_, __, ___) => const Icon(
+                Icons.account_balance_wallet_rounded,
+                color: _blue,
+                size: 26),
+          ),
+          const SizedBox(width: 10),
+          const Text('Fimakyp',
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w800, color: _blue)),
+          const SizedBox(width: 36),
+          // Nav links
+          _NavLink('Inicio', onStart),
+          _NavLink('¿Por qué?', onImportance),
+          _NavLink('Funciones', onFunctions),
+          _NavLink('Cómo funciona', onHowItWorks),
+          _NavLink('Nosotros', onAbout),
+          const Spacer(),
+          // Botones
+          OutlinedButton(
+            onPressed: () => context.go('/login'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _blue,
+              minimumSize: const Size(120, 40),
+              side: const BorderSide(color: _blue, width: 1.5),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            ),
+            child: const Text('Iniciar sesión',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _FloatState extends State<_Float> with SingleTickerProviderStateMixin {
+class _NavLink extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _NavLink(this.label, this.onTap);
+  @override
+  State<_NavLink> createState() => _NavLinkState();
+}
+
+class _NavLinkState extends State<_NavLink> {
+  bool _h = false;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _h = true),
+      onExit: (_) => setState(() => _h = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          child: Text(widget.label,
+              style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: _h ? FontWeight.w600 : FontWeight.w500,
+                  color: _h ? _blue : _grey)),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero
+// ─────────────────────────────────────────────────────────────────────────────
+class _HeroSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: _bg,
+      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 80),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // ── Left copy ──────────────────────────────────────────────────
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Badge
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: _aquaLt, borderRadius: BorderRadius.circular(20)),
+                  child: const Text(
+                      '✦  La app de finanzas #1 para latinoamérica',
+                      style: TextStyle(
+                          color: _aquaDk,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: 22),
+                // H1
+                RichText(
+                  text: const TextSpan(
+                    style: TextStyle(
+                        fontSize: 50,
+                        fontWeight: FontWeight.w800,
+                        color: _dark,
+                        height: 1.12),
+                    children: [
+                      TextSpan(text: 'Toma el control\n'),
+                      TextSpan(
+                          text: 'de tu dinero ',
+                          style: TextStyle(color: _blue)),
+                      TextSpan(text: 'hoy.'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Fimakyp transforma la forma en que manejas tus finanzas personales. '
+                  'Registra gastos, crea metas de ahorro y genera reportes PDF con un solo toque.',
+                  style: TextStyle(fontSize: 15.5, color: _grey, height: 1.7),
+                ),
+                const SizedBox(height: 36),
+                // CTAs
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/login'),
+                  icon: const Icon(Icons.login_rounded, size: 16),
+                  label: const Text('Iniciar sesión'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _blue,
+                    minimumSize: const Size(140, 44),
+                    side: const BorderSide(color: _blue, width: 1.5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 22, vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Avatares
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 112,
+                      height: 34,
+                      child: Stack(
+                        children: List.generate(5, (i) {
+                          const colors = [
+                            _blue,
+                            _aqua,
+                            Color(0xFF5B7FFF),
+                            _aquaDk,
+                            _purple
+                          ];
+                          const initials = ['M', 'J', 'A', 'C', 'L'];
+                          return Positioned(
+                            left: i * 20.0,
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                  color: colors[i],
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.white, width: 2)),
+                              alignment: Alignment.center,
+                              child: Text(initials[i],
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700)),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('500+',
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: _dark)),
+                        Text('usuarios activos',
+                            style: TextStyle(fontSize: 11, color: _grey)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Trust pills
+                const Row(
+                  children: [
+                    _TrustPill(Icons.lock_outline_rounded, 'Datos cifrados'),
+                    SizedBox(width: 20),
+                    _TrustPill(Icons.devices_rounded, 'Web y Android'),
+                    SizedBox(width: 20),
+                    _TrustPill(Icons.picture_as_pdf_rounded, 'Reportes PDF'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 48),
+          // ── Right visual ───────────────────────────────────────────────
+          Expanded(flex: 5, child: _HeroVisual()),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrustPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _TrustPill(this.icon, this.label);
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: _aqua, size: 14),
+        const SizedBox(width: 5),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 12.5, color: _grey, fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
+}
+
+class _HeroVisual extends StatefulWidget {
+  @override
+  State<_HeroVisual> createState() => _HeroVisualState();
+}
+
+class _HeroVisualState extends State<_HeroVisual>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _y;
 
@@ -130,41 +417,168 @@ class _FloatState extends State<_Float> with SingleTickerProviderStateMixin {
       animation: _y,
       builder: (_, child) =>
           Transform.translate(offset: Offset(0, _y.value), child: child),
-      child: widget.child,
+      child: SizedBox(
+        height: 440,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // Círculo
+            Container(
+              width: 360,
+              height: 360,
+              decoration:
+                  const BoxDecoration(color: _circle, shape: BoxShape.circle),
+            ),
+            // Teléfono
+            _PhoneMock(),
+            // Balance card
+            Positioned(
+              bottom: 10,
+              right: 0,
+              child: _Card(
+                  child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                        color: _blue.withOpacity(0.12), shape: BoxShape.circle),
+                    child: const Icon(Icons.trending_up_rounded,
+                        color: _blue, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Balance',
+                          style: TextStyle(color: _grey, fontSize: 10)),
+                      Text('\$2,540,000',
+                          style: TextStyle(
+                              color: _dark,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ],
+              )),
+            ),
+            // Streak
+            Positioned(
+              top: 20,
+              left: 0,
+              child: _Card(
+                  child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🔥', style: TextStyle(fontSize: 14)),
+                  SizedBox(width: 6),
+                  Text('Racha: 12 días',
+                      style: TextStyle(
+                          color: _dark,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
+                ],
+              )),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hover card: elevates and scales on mouse-over
-// ─────────────────────────────────────────────────────────────────────────────
-class _HoverCard extends StatefulWidget {
-  final Widget Function(bool hovered) builder;
-  final VoidCallback? onTap;
-  const _HoverCard({required this.builder, this.onTap});
-
-  @override
-  State<_HoverCard> createState() => _HoverCardState();
-}
-
-class _HoverCardState extends State<_HoverCard> {
-  bool _hovered = false;
-
+class _Card extends StatelessWidget {
+  final Widget child;
+  const _Card({required this.child});
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: widget.onTap != null
-          ? SystemMouseCursors.click
-          : MouseCursor.defer,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _hovered ? 1.035 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          child: widget.builder(_hovered),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.10),
+              blurRadius: 20,
+              offset: const Offset(0, 6))
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _PhoneMock extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 210,
+      height: 420,
+      decoration: BoxDecoration(
+        color: _dark,
+        borderRadius: BorderRadius.circular(38),
+        border: Border.all(color: const Color(0xFF374151), width: 2.5),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.20),
+              blurRadius: 48,
+              offset: const Offset(0, 20)),
+        ],
+      ),
+      padding: const EdgeInsets.all(6),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFEFF6FF), Color(0xFFE0F2FE)],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 28,
+                alignment: Alignment.center,
+                child: Container(
+                  width: 58,
+                  height: 14,
+                  decoration: BoxDecoration(
+                      color: _dark, borderRadius: BorderRadius.circular(7)),
+                ),
+              ),
+            ),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                        color: _blue.withOpacity(0.12), shape: BoxShape.circle),
+                    child: const Icon(Icons.smartphone_rounded,
+                        color: _blue, size: 30),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Dashboard',
+                      style: TextStyle(
+                          color: _blue,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -172,690 +586,572 @@ class _HoverCardState extends State<_HoverCard> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hover nav link
+// Importancia
 // ─────────────────────────────────────────────────────────────────────────────
-class _NavLink extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _NavLink(this.label, this.onTap);
+class _ImportanceSection extends StatelessWidget {
+  const _ImportanceSection({super.key});
 
   @override
-  State<_NavLink> createState() => _NavLinkState();
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_dark, _darkAlt],
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 88),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: _aqua.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _aqua.withOpacity(0.3)),
+            ),
+            child: const Text('¿POR QUÉ IMPORTA?',
+                style: TextStyle(
+                    color: _aqua,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2)),
+          ),
+          const SizedBox(height: 18),
+          RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
+              style: TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  height: 1.2),
+              children: [
+                TextSpan(text: 'La importancia de\n'),
+                TextSpan(
+                    text: 'manejar tus finanzas',
+                    style: TextStyle(color: _aqua)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'La mayoría vivimos sin saber realmente a dónde va nuestro dinero.\nEso cambia cuando empiezas a llevar el control.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white60, fontSize: 15, height: 1.7),
+          ),
+          const SizedBox(height: 52),
+
+          // Stats row
+          Row(
+            children: const [
+              Expanded(
+                  child:
+                      _StatBubble('💸', '80%', 'no sabe cuánto gasta al mes')),
+              SizedBox(width: 12),
+              Expanded(
+                  child: _StatBubble(
+                      '📉', '68%', 'no tiene fondo de emergencias')),
+              SizedBox(width: 12),
+              Expanded(
+                  child: _StatBubble(
+                      '🎯', '2.5×', 'más probabilidad de lograr metas')),
+              SizedBox(width: 12),
+              Expanded(
+                  child: _StatBubble(
+                      '⏱️', '3 min', 'al día es suficiente para el control')),
+            ],
+          ),
+
+          const SizedBox(height: 52),
+
+          // Reasons grid — 3 columns × 2 rows con Row
+          Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Expanded(
+                      child: _ReasonCard(
+                          Icons.visibility_rounded,
+                          'Claridad financiera',
+                          'Saber exactamente qué entra y qué sale elimina la ansiedad y te da poder de decisión.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _ReasonCard(
+                          Icons.savings_rounded,
+                          'Construye tu futuro',
+                          'Cada peso registrado es un paso hacia tus metas: viajes, casa, educación o tranquilidad.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _ReasonCard(
+                          Icons.emergency_rounded,
+                          'Prepárate para emergencias',
+                          'Las personas que llevan control financiero responden mejor a imprevistos sin endeudarse.')),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Expanded(
+                      child: _ReasonCard(
+                          Icons.trending_up_rounded,
+                          'Elimina deudas más rápido',
+                          'Identificar gastos innecesarios libera dinero para pagar deudas y salir del ciclo antes.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _ReasonCard(
+                          Icons.psychology_rounded,
+                          'Reduce el estrés',
+                          'El desorden financiero es una de las principales causas de estrés. El control da paz mental.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _ReasonCard(Icons.star_rounded, 'Mejores hábitos',
+                          'Registrar tus finanzas diariamente crea hábitos que se vuelven naturales y transforman tu vida.')),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _NavLinkState extends State<_NavLink> {
-  bool _h = false;
+class _StatBubble extends StatelessWidget {
+  final String emoji, value, desc;
+  const _StatBubble(this.emoji, this.value, this.desc);
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 24)),
+          const SizedBox(height: 10),
+          Text(value,
+              style: const TextStyle(
+                  color: Color(0xFFE6FAF8),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900)),
+          const SizedBox(height: 6),
+          Text(desc,
+              style: const TextStyle(
+                  color: Colors.white54, fontSize: 12.5, height: 1.5)),
+        ],
+      ),
+    );
+  }
+}
 
+class _ReasonCard extends StatelessWidget {
+  final IconData icon;
+  final String title, desc;
+  const _ReasonCard(this.icon, this.title, this.desc);
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+                color: _aqua.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: _aqua, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(title,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(desc,
+              style: const TextStyle(
+                  color: Colors.white54, fontSize: 12, height: 1.5)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Nuestras Funciones
+// ─────────────────────────────────────────────────────────────────────────────
+class _FunctionsSection extends StatelessWidget {
+  const _FunctionsSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: _bg,
+      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 88),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: _blue.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _blue.withOpacity(0.20)),
+            ),
+            child: const Text('NUESTRAS FUNCIONES',
+                style: TextStyle(
+                    color: _blue,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2)),
+          ),
+          const SizedBox(height: 18),
+          RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
+              style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: _dark,
+                  height: 1.2),
+              children: [
+                TextSpan(text: 'Todo lo que necesitas para\n'),
+                TextSpan(
+                    text: 'dominar tus finanzas',
+                    style: TextStyle(color: _blue)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Fimakyp combina herramientas poderosas en una interfaz simple y elegante.',
+            style: TextStyle(color: _grey, fontSize: 15, height: 1.6),
+          ),
+          const SizedBox(height: 52),
+          // 3 × 3 con Row/Column
+          Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.account_balance_wallet_rounded,
+                          _blue,
+                          'Múltiples cuentas',
+                          'Efectivo, débito, crédito e inversiones en una sola vista unificada.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.savings_rounded,
+                          _aqua,
+                          'Metas de ahorro',
+                          'Crea objetivos con montos y fechas. Visualiza tu progreso en tiempo real.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.picture_as_pdf_rounded,
+                          _purple,
+                          'Reportes PDF',
+                          'Genera reportes financieros con gráficas y narrativa inteligente.')),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.repeat_rounded,
+                          _blue,
+                          'Gastos recurrentes',
+                          'Programa cobros automáticos y nunca pierdas un vencimiento.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.notifications_active_rounded,
+                          _aqua,
+                          'Notificaciones',
+                          'Recibe recordatorios diarios personalizados para mantener el hábito.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.emoji_events_rounded,
+                          _purple,
+                          'Gamificación',
+                          'Gana insignias, mantén rachas y mantente motivado con logros.')),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.bar_chart_rounded,
+                          _blue,
+                          'Estadísticas',
+                          'Gráficas con tus patrones de gasto por categoría y mes.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.cloud_sync_rounded,
+                          _aqua,
+                          'Sincronización',
+                          'Tus datos siempre actualizados en todos tus dispositivos al instante.')),
+                  SizedBox(width: 14),
+                  Expanded(
+                      child: _FeatCard(
+                          Icons.lock_rounded,
+                          _purple,
+                          'Seguridad total',
+                          'Firebase Auth + cifrado. Tu información nunca se comparte.')),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatCard extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final String title, desc;
+  const _FeatCard(this.icon, this.color, this.title, this.desc);
+  @override
+  State<_FeatCard> createState() => _FeatCardState();
+}
+
+class _FeatCardState extends State<_FeatCard> {
+  bool _h = false;
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => _h = true),
       onExit: (_) => setState(() => _h = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: _h ? _C.blue : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
-          child: Text(
-            widget.label,
-            style: TextStyle(
-              color: _h ? _C.blue : _C.grey,
-              fontSize: 14,
-              fontWeight: _h ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border:
+              Border.all(color: _h ? widget.color.withOpacity(0.35) : _border),
+          boxShadow: _h
+              ? [
+                  BoxShadow(
+                      color: widget.color.withOpacity(0.12),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6))
+                ]
+              : const [
+                  BoxShadow(
+                      color: Color(0x08000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 2))
+                ],
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Root page
-// ─────────────────────────────────────────────────────────────────────────────
-class LandingPage extends StatefulWidget {
-  const LandingPage({super.key});
-
-  @override
-  State<LandingPage> createState() => _LandingPageState();
-}
-
-class _LandingPageState extends State<LandingPage> {
-  final _scroll = ScrollController();
-  final _featuresKey = GlobalKey();
-  final _curiositiesKey = GlobalKey();
-  final _aboutKey = GlobalKey();
-
-  bool _navShadow = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scroll.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final shadowed = _scroll.offset > 40;
-    if (shadowed != _navShadow) setState(() => _navShadow = shadowed);
-  }
-
-  void _scrollTo(GlobalKey key) {
-    final ctx = key.currentContext;
-    if (ctx != null) {
-      Scrollable.ensureVisible(
-        ctx,
-        duration: const Duration(milliseconds: 700),
-        curve: Curves.easeInOutCubic,
-        alignment: 0.0,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _scroll.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _C.white,
-      body: Stack(
-        children: [
-          // ── Scrollable content ────────────────────────────────────────────
-          NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              _Reveal.checkAll();
-              return false;
-            },
-            child: SingleChildScrollView(
-              controller: _scroll,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  color: widget.color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Icon(widget.icon, color: widget.color, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 72), // navbar space
-                  _HeroSection(),
-                  _BenefitsSection(),
-                  _FeaturesSection(sectionKey: _featuresKey),
-                  _CuriositiesSection(sectionKey: _curiositiesKey),
-                  _AboutSection(sectionKey: _aboutKey),
-                  _CtaSection(),
-                  _Footer(),
+                  Text(widget.title,
+                      style: const TextStyle(
+                          color: _dark,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 5),
+                  Text(widget.desc,
+                      style: const TextStyle(
+                          color: _grey, fontSize: 12.5, height: 1.45)),
                 ],
               ),
             ),
-          ),
-
-          // ── Sticky navbar ─────────────────────────────────────────────────
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _Navbar(
-              shadowed: _navShadow,
-              onFeatures: () => _scrollTo(_featuresKey),
-              onCuriosities: () => _scrollTo(_curiositiesKey),
-              onAbout: () => _scrollTo(_aboutKey),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Navbar
-// ─────────────────────────────────────────────────────────────────────────────
-class _Navbar extends StatelessWidget {
-  final bool shadowed;
-  final VoidCallback onFeatures;
-  final VoidCallback onCuriosities;
-  final VoidCallback onAbout;
-
-  const _Navbar({
-    required this.shadowed,
-    required this.onFeatures,
-    required this.onCuriosities,
-    required this.onAbout,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 700;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      decoration: BoxDecoration(
-        color: _C.white.withOpacity(shadowed ? 0.97 : 1.0),
-        boxShadow: shadowed
-            ? [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 4),
-                )
-              ]
-            : [],
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 80,
-        vertical: 14,
-      ),
-      child: Row(
-        children: [
-          // Logo
-          Image.asset('assets/images/LogoFimakyp.png', width: 34, height: 34),
-          const SizedBox(width: 10),
-          const Text(
-            'Fimakyp',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              color: _C.blue,
-            ),
-          ),
-          const Spacer(),
-          if (!isMobile) ...[
-            _NavLink('Características', onFeatures),
-            _NavLink('Curiosidades', onCuriosities),
-            _NavLink('Nosotros', onAbout),
-            const SizedBox(width: 20),
           ],
-          OutlinedButton(
-            onPressed: () => context.go('/login'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: _C.blue,
-              side: const BorderSide(color: _C.blue, width: 1.5),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-            ),
-            child: const Text('Iniciar sesión',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => context.go('/register'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _C.blue,
-              foregroundColor: _C.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-            ),
-            child: const Text('Registrarse',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hero
+// Cómo funciona
 // ─────────────────────────────────────────────────────────────────────────────
-class _HeroSection extends StatefulWidget {
-  @override
-  State<_HeroSection> createState() => _HeroSectionState();
-}
-
-class _HeroSectionState extends State<_HeroSection>
-    with TickerProviderStateMixin {
-  late final List<AnimationController> _ctrls;
-  late final List<Animation<double>> _anims;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrls = List.generate(
-      5,
-      (_) => AnimationController(
-          vsync: this, duration: const Duration(milliseconds: 650)),
-    );
-    _anims = _ctrls
-        .map((c) =>
-            CurvedAnimation(parent: c, curve: Curves.easeOutCubic))
-        .toList();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      for (var i = 0; i < _ctrls.length; i++) {
-        Future.delayed(Duration(milliseconds: 80 + i * 130), () {
-          if (mounted) _ctrls[i].forward();
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    for (final c in _ctrls) c.dispose();
-    super.dispose();
-  }
-
-  Widget _a(int i, Widget child) => AnimatedBuilder(
-        animation: _anims[i],
-        builder: (_, w) => Opacity(
-          opacity: _anims[i].value,
-          child: Transform.translate(
-            offset: Offset(0, 30 * (1 - _anims[i].value)),
-            child: w,
-          ),
-        ),
-        child: child,
-      );
+class _HowItWorksSection extends StatelessWidget {
+  const _HowItWorksSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    final isMobile = w < 900;
-
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFEFF6FF), Color(0xFFECFEFF)],
-        ),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 24 : 80,
-        vertical: isMobile ? 52 : 88,
-      ),
-      child: isMobile
-          ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _heroText(isMobile),
-              const SizedBox(height: 48),
-              _heroVisual(),
-            ])
-          : Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Expanded(flex: 5, child: _heroText(isMobile)),
-              const SizedBox(width: 64),
-              Expanded(flex: 4, child: _heroVisual()),
-            ]),
-    );
-  }
-
-  Widget _heroText(bool isMobile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _a(
-          0,
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: _C.aquaLight,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              '✦  Finanzas inteligentes para todos',
-              style: TextStyle(
-                color: _C.aqua,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 22),
-        _a(
-          1,
-          const Text(
-            'Controla tu dinero,\nconstruye tu futuro',
-            style: TextStyle(
-              fontSize: 46,
-              fontWeight: FontWeight.w800,
-              color: _C.dark,
-              height: 1.15,
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        _a(
-          2,
-          const Text(
-            'Fimakyp transforma la forma en que manejas tus finanzas. '
-            'Registra gastos, alcanza metas y entiende tu dinero con '
-            'reportes visuales que te hablan claro.',
-            style: TextStyle(fontSize: 16, color: _C.grey, height: 1.65),
-          ),
-        ),
-        const SizedBox(height: 36),
-        _a(
-          3,
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _C.blue,
-                  foregroundColor: _C.white,
-                  elevation: 4,
-                  shadowColor: _C.blue.withOpacity(0.4),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 28, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text('Comenzar ahora',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(width: 14),
-              Builder(builder: (ctx) => TextButton(
-                onPressed: () => ctx.go('/login'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 15),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Iniciar sesión',
-                        style: TextStyle(
-                            color: _C.blue,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600)),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_rounded,
-                        color: _C.blue, size: 16),
-                  ],
-                ),
-              )),
-            ],
-          ),
-        ),
-        const SizedBox(height: 28),
-        _a(
-          4,
-          Wrap(
-            spacing: 20,
-            runSpacing: 8,
-            children: const [
-              _Pill(Icons.lock_outline_rounded, 'Datos cifrados'),
-              _Pill(Icons.devices_rounded, 'Web y Android'),
-              _Pill(Icons.bar_chart_rounded, 'Reportes PDF'),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _heroVisual() {
-    return _Float(
-      child: Container(
-        height: 400,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              _C.blue.withOpacity(0.12),
-              _C.aqua.withOpacity(0.08),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: _C.blue.withOpacity(0.15), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: _C.blue.withOpacity(0.14),
-              blurRadius: 48,
-              offset: const Offset(0, 24),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: _C.blue.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child:
-                  const Icon(Icons.smartphone_rounded, size: 52, color: _C.blue),
-            ),
-            const SizedBox(height: 20),
-            const Text('📱 Imagen de la app aquí',
-                style: TextStyle(
-                    color: _C.blue,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15)),
-            const SizedBox(height: 8),
-            const Text('Reemplaza con un screenshot real',
-                style: TextStyle(color: _C.grey, fontSize: 12)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _Pill(this.icon, this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: _C.aqua, size: 15),
-        const SizedBox(width: 5),
-        Text(label,
-            style: const TextStyle(
-                color: _C.grey, fontSize: 13, fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Benefits — "Por qué Fimakyp"
-// ─────────────────────────────────────────────────────────────────────────────
-class _BenefitsSection extends StatelessWidget {
-  static const _benefits = [
-    (
-      Icons.account_balance_wallet_rounded,
-      _C.blue,
-      'Control total',
-      'Ve exactamente cuánto entra y cuánto sale. Múltiples cuentas, una sola vista.',
-    ),
-    (
-      Icons.bar_chart_rounded,
-      _C.aqua,
-      'Reportes PDF',
-      'Genera reportes con gráficas de actividad y categorías con un solo toque.',
-    ),
-    (
-      Icons.savings_rounded,
-      _C.blue,
-      'Metas de ahorro',
-      'Define objetivos con fecha, haz seguimiento y celebra cuando los alcanzas.',
-    ),
-    (
-      Icons.people_rounded,
-      _C.aqua,
-      'Finanzas compartidas',
-      'Comparte gastos del hogar con tu pareja o familia en tiempo real.',
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 700;
-
-    return Container(
-      color: _C.white,
-      padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 24 : 80, vertical: 72),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 88),
       child: Column(
         children: [
-          _Reveal(
-            child: const Text(
-              'POR QUÉ FIMAKYP',
+          const Text('CÓMO FUNCIONA',
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: _C.aqua,
-                letterSpacing: 2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _Reveal(
-            delay: const Duration(milliseconds: 80),
-            child: const Text(
-              'Todo lo que necesitas\npara manejar tu dinero',
-              textAlign: TextAlign.center,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _aqua,
+                  letterSpacing: 2.5)),
+          const SizedBox(height: 14),
+          RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
               style: TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                color: _C.dark,
-                height: 1.2,
-              ),
+                  fontSize: 32, fontWeight: FontWeight.w800, color: _dark),
+              children: [
+                TextSpan(text: 'Empieza en '),
+                TextSpan(
+                    text: '3 simples pasos', style: TextStyle(color: _blue)),
+              ],
             ),
           ),
           const SizedBox(height: 12),
-          _Reveal(
-            delay: const Duration(milliseconds: 140),
-            child: const Text(
-              'Diseñado para que en 3 minutos al día tengas el control '
-              'que siempre quisiste sobre tus finanzas.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 15, color: _C.grey, height: 1.6),
-            ),
+          const Text('Configurar Fimakyp toma menos de 2 minutos.',
+              style: TextStyle(color: _grey, fontSize: 15)),
+          const SizedBox(height: 52),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Expanded(
+                  child: _StepCard(
+                      '01',
+                      Icons.person_add_rounded,
+                      'Crea tu cuenta',
+                      'Regístrate con tu correo en menos de 30 segundos. Sin tarjeta de crédito.')),
+              SizedBox(width: 8),
+              Padding(
+                padding: EdgeInsets.only(top: 44),
+                child:
+                    Icon(Icons.arrow_forward_rounded, color: _greyLt, size: 22),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _StepCard(
+                      '02',
+                      Icons.account_balance_wallet_rounded,
+                      'Agrega tus cuentas',
+                      'Registra efectivo, débito o crédito con el saldo inicial que tengas hoy.')),
+              SizedBox(width: 8),
+              Padding(
+                padding: EdgeInsets.only(top: 44),
+                child:
+                    Icon(Icons.arrow_forward_rounded, color: _greyLt, size: 22),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                  child: _StepCard(
+                      '03',
+                      Icons.trending_up_rounded,
+                      'Toma el control',
+                      'Registra ingresos y gastos, crea metas y genera reportes PDF.')),
+            ],
           ),
-          const SizedBox(height: 48),
-          isMobile
-              ? Column(
-                  children: _benefits
-                      .asMap()
-                      .entries
-                      .map((e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _Reveal(
-                              delay: Duration(milliseconds: e.key * 80),
-                              child: _BenefitCard(
-                                icon: e.value.$1,
-                                color: e.value.$2,
-                                title: e.value.$3,
-                                desc: e.value.$4,
-                              ),
-                            ),
-                          ))
-                      .toList(),
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _benefits
-                      .asMap()
-                      .entries
-                      .map(
-                        (e) => Expanded(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8),
-                            child: _Reveal(
-                              delay: Duration(milliseconds: e.key * 80),
-                              child: _BenefitCard(
-                                icon: e.value.$1,
-                                color: e.value.$2,
-                                title: e.value.$3,
-                                desc: e.value.$4,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
         ],
       ),
     );
   }
 }
 
-class _BenefitCard extends StatelessWidget {
+class _StepCard extends StatefulWidget {
+  final String number, title, desc;
   final IconData icon;
-  final Color color;
-  final String title;
-  final String desc;
-  const _BenefitCard(
-      {required this.icon,
-      required this.color,
-      required this.title,
-      required this.desc});
+  const _StepCard(this.number, this.icon, this.title, this.desc);
+  @override
+  State<_StepCard> createState() => _StepCardState();
+}
 
+class _StepCardState extends State<_StepCard> {
+  bool _h = false;
   @override
   Widget build(BuildContext context) {
-    return _HoverCard(
-      builder: (hovered) => AnimatedContainer(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _h = true),
+      onExit: (_) => setState(() => _h = false),
+      child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: _C.white,
-          borderRadius: BorderRadius.circular(16),
+          color: _h ? _bgAlt : Colors.white,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: hovered ? color.withOpacity(0.4) : const Color(0xFFE0F2FE),
-          ),
-          boxShadow: hovered
+              color: _h ? _blue.withOpacity(0.30) : const Color(0xFFE0F2FE)),
+          boxShadow: _h
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.12),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  )
+                      color: _blue.withOpacity(0.10),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8))
                 ]
-              : [
-                  const BoxShadow(
-                    color: Color(0x08000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  )
+              : const [
+                  BoxShadow(
+                      color: Color(0x06000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 2))
                 ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(11),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [_blue, _aqua]),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(widget.icon, color: Colors.white, size: 22),
+                ),
+                const Spacer(),
+                Text(widget.number,
+                    style: TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w900,
+                        color: _blue.withOpacity(0.08))),
+              ],
             ),
             const SizedBox(height: 18),
-            Text(title,
+            Text(widget.title,
                 style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: _C.dark)),
-            const SizedBox(height: 8),
-            Text(desc,
+                    color: _dark, fontSize: 17, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            Text(widget.desc,
                 style: const TextStyle(
-                    fontSize: 13, color: _C.grey, height: 1.6)),
+                    color: _grey, fontSize: 13.5, height: 1.65)),
           ],
         ),
       ),
@@ -864,195 +1160,102 @@ class _BenefitCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Features — "Características"
+// Stats
 // ─────────────────────────────────────────────────────────────────────────────
-class _FeaturesSection extends StatelessWidget {
-  final GlobalKey sectionKey;
-  const _FeaturesSection({required this.sectionKey});
-
-  static const _features = [
-    (
-      Icons.account_balance_wallet_outlined,
-      _C.blue,
-      'Gestión de cuentas',
-      'Maneja efectivo, débito, crédito e inversiones en un solo lugar. '
-          'Fimakyp calcula tu patrimonio neto automáticamente y te muestra '
-          'el estado real de tus finanzas en tiempo real.',
-      '🏦 Imagen de cuentas',
-    ),
-    (
-      Icons.bar_chart_outlined,
-      _C.aqua,
-      'Reportes inteligentes',
-      'Con un clic genera un PDF con tus ingresos, gastos por categoría, '
-          'actividad diaria y métricas clave del mes. Perfecto para entender '
-          'tus patrones de consumo y tomar mejores decisiones.',
-      '📊 Imagen de reportes',
-    ),
-    (
-      Icons.emoji_events_outlined,
-      _C.blue,
-      'Logros y racha diaria',
-      'Mantén una racha de registro diario y desbloquea insignias según '
-          'tus hábitos. Fimakyp hace que manejar dinero sea motivador '
-          'y no una obligación.',
-      '🏆 Imagen de logros',
-    ),
-  ];
+class _StatsSection extends StatelessWidget {
+  const _StatsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 900;
-
     return Container(
-      key: sectionKey,
-      color: _C.bg,
-      padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 24 : 80, vertical: 80),
+      color: _bg,
+      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 88),
       child: Column(
         children: [
-          _Reveal(
-            child: const Text(
-              'CARACTERÍSTICAS',
+          RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: _C.aqua,
-                letterSpacing: 2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _Reveal(
-            delay: const Duration(milliseconds: 80),
-            child: const Text(
-              'Herramientas que\nrealmente necesitas',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 32,
                   fontWeight: FontWeight.w800,
-                  color: _C.dark,
+                  color: _dark,
                   height: 1.2),
+              children: [
+                TextSpan(text: 'Números que\n'),
+                TextSpan(
+                    text: 'nos respaldan.', style: TextStyle(color: _blue)),
+              ],
             ),
           ),
-          const SizedBox(height: 56),
-          ..._features.asMap().entries.map((entry) {
-            final i = entry.key;
-            final f = entry.value;
-            final reversed = !isMobile && i % 2 == 1;
-
-            final textBlock = _Reveal(
-              delay: Duration(milliseconds: i * 60),
-              dy: reversed ? -30 : 30,
-              child: _FeatureText(f.$1, f.$2, f.$3, f.$4),
-            );
-            final mockup = _Reveal(
-              delay: Duration(milliseconds: i * 60 + 80),
-              dy: reversed ? 30 : -30,
-              child: _FeatureMockup(f.$5, f.$2),
-            );
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 72),
-              child: isMobile
-                  ? Column(children: [
-                      textBlock,
-                      const SizedBox(height: 28),
-                      mockup
-                    ])
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: reversed
-                          ? [
-                              Expanded(flex: 5, child: mockup),
-                              const SizedBox(width: 64),
-                              Expanded(flex: 5, child: textBlock)
-                            ]
-                          : [
-                              Expanded(flex: 5, child: textBlock),
-                              const SizedBox(width: 64),
-                              Expanded(flex: 5, child: mockup)
-                            ],
-                    ),
-            );
-          }),
+          const SizedBox(height: 12),
+          const Text(
+            'Fimakyp crece cada día con usuarios que confían en la app para alcanzar sus metas.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _grey, fontSize: 15, height: 1.6),
+          ),
+          const SizedBox(height: 48),
+          Row(
+            children: const [
+              Expanded(
+                  child:
+                      _StatCard(Icons.download_rounded, '10 K+', 'Descargas')),
+              SizedBox(width: 14),
+              Expanded(
+                  child: _StatCard(
+                      Icons.people_rounded, '500+', 'Usuarios activos')),
+              SizedBox(width: 14),
+              Expanded(
+                  child: _StatCard(Icons.star_rounded, '4.9★', 'Calificación')),
+              SizedBox(width: 14),
+              Expanded(
+                  child: _StatCard(Icons.emoji_events_rounded, '50+',
+                      'Insignias disponibles')),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _FeatureText extends StatelessWidget {
+class _StatCard extends StatefulWidget {
   final IconData icon;
-  final Color color;
-  final String title;
-  final String desc;
-  const _FeatureText(this.icon, this.color, this.title, this.desc);
-
+  final String value, label;
+  const _StatCard(this.icon, this.value, this.label);
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: color, size: 28),
-        ),
-        const SizedBox(height: 20),
-        Text(title,
-            style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: _C.dark)),
-        const SizedBox(height: 14),
-        Text(desc,
-            style: const TextStyle(
-                fontSize: 15, color: _C.grey, height: 1.7)),
-      ],
-    );
-  }
+  State<_StatCard> createState() => _StatCardState();
 }
 
-class _FeatureMockup extends StatelessWidget {
-  final String placeholder;
-  final Color color;
-  const _FeatureMockup(this.placeholder, this.color);
-
+class _StatCardState extends State<_StatCard> {
+  bool _h = false;
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 280,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.09),
-            color.withOpacity(0.04),
-          ],
+    return MouseRegion(
+      onEnter: (_) => setState(() => _h = true),
+      onExit: (_) => setState(() => _h = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+        decoration: BoxDecoration(
+          color: _h ? _bgAlt : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _h ? _blue.withOpacity(0.25) : _border),
+          boxShadow: _h
+              ? [BoxShadow(color: _blue.withOpacity(0.08), blurRadius: 16)]
+              : [],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.18)),
-      ),
-      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.image_outlined, size: 36, color: color.withOpacity(0.4)),
+            Icon(widget.icon, color: _blue, size: 28),
             const SizedBox(height: 10),
-            Text(placeholder,
-                style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13)),
+            Text(widget.value,
+                style: const TextStyle(
+                    color: _dark, fontSize: 28, fontWeight: FontWeight.w900)),
             const SizedBox(height: 4),
-            Text('Reemplaza con screenshot',
-                style: TextStyle(
-                    color: color.withOpacity(0.5), fontSize: 11)),
+            Text(widget.label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _grey, fontSize: 12.5)),
           ],
         ),
       ),
@@ -1061,298 +1264,181 @@ class _FeatureMockup extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Curiosities
+// Nosotros
 // ─────────────────────────────────────────────────────────────────────────────
-class _CuriositiesSection extends StatelessWidget {
-  final GlobalKey sectionKey;
-  const _CuriositiesSection({required this.sectionKey});
-
-  static const _items = [
-    ('💸', '80%', 'de las personas no sabe cuánto gasta al mes'),
-    ('⏱️', '3 min', 'es todo lo que necesitas al día para llevar el control'),
-    ('🎯', '2.5×', 'más probabilidad de alcanzar metas con seguimiento activo'),
-    ('🔥', '30 días', 'es la racha máxima que puedes lograr en Fimakyp'),
-  ];
+class _AboutSection extends StatelessWidget {
+  const _AboutSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 700;
-
     return Container(
-      key: sectionKey,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_C.blue, Color(0xFF0369A1)],
-        ),
-      ),
-      padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 24 : 80, vertical: 80),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 88),
       child: Column(
         children: [
-          _Reveal(
-            child: const Text(
-              '¿SABÍAS QUE...?',
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: _aqua.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _aqua.withOpacity(0.20)),
+            ),
+            child: const Text('NOSOTROS',
+                style: TextStyle(
+                    color: _aquaDk,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2)),
+          ),
+          const SizedBox(height: 18),
+          RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
               style: TextStyle(
-                color: Colors.white60,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 2,
-              ),
+                  fontSize: 32, fontWeight: FontWeight.w800, color: _dark),
+              children: [
+                TextSpan(text: 'Construido con '),
+                TextSpan(text: 'propósito', style: TextStyle(color: _aquaDk)),
+                TextSpan(text: ',\npara personas reales'),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          _Reveal(
-            delay: const Duration(milliseconds: 80),
+          const SizedBox(height: 20),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
             child: const Text(
-              'Curiosidades sobre finanzas personales',
+              'Fimakyp nació de una necesidad real: una app de finanzas que funcione en Colombia, '
+              'que hable en pesos y que realmente ayude a construir mejores hábitos con el dinero.\n\n'
+              'No somos un banco ni una startup de millones — somos personas que también estamos aprendiendo '
+              'a manejar mejor nuestras finanzas.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800),
+              style: TextStyle(fontSize: 15, color: _grey, height: 1.8),
             ),
           ),
-          const SizedBox(height: 52),
-          isMobile
-              ? Column(
-                  children: _items
-                      .asMap()
-                      .entries
-                      .map((e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _Reveal(
-                              delay: Duration(milliseconds: e.key * 90),
-                              child: _CuriosityCard(
-                                  e.value.$1, e.value.$2, e.value.$3),
-                            ),
-                          ))
-                      .toList(),
-                )
-              : Row(
-                  children: _items
-                      .asMap()
-                      .entries
-                      .map((e) => Expanded(
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: _Reveal(
-                                delay: Duration(milliseconds: e.key * 90),
-                                child: _CuriosityCard(
-                                    e.value.$1, e.value.$2, e.value.$3),
-                              ),
-                            ),
-                          ))
-                      .toList(),
+          const SizedBox(height: 44),
+          // Quote
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: _bgAlt,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _blue.withOpacity(0.12)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                      color: _blue.withOpacity(0.10), shape: BoxShape.circle),
+                  child: const Icon(Icons.format_quote_rounded,
+                      color: _blue, size: 28),
                 ),
+                const SizedBox(width: 20),
+                const Expanded(
+                  child: Text(
+                    '"El primer paso para manejar bien el dinero\nes saber exactamente a dónde va."',
+                    style: TextStyle(
+                        fontSize: 16,
+                        color: _dark,
+                        fontStyle: FontStyle.italic,
+                        height: 1.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 44),
+          // Values
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Expanded(
+                  child: _ValCard(
+                      Icons.favorite_rounded,
+                      _blue,
+                      'Simple primero',
+                      'Cada función existe porque la necesitas, sin complicaciones.')),
+              SizedBox(width: 14),
+              Expanded(
+                  child: _ValCard(
+                      Icons.security_rounded,
+                      _aqua,
+                      'Datos seguros',
+                      'Nunca vendemos ni compartimos tu información financiera.')),
+              SizedBox(width: 14),
+              Expanded(
+                  child: _ValCard(
+                      Icons.emoji_people_rounded,
+                      _purple,
+                      'Hecho para LATAM',
+                      'Pensado desde Colombia para toda latinoamérica, en pesos.')),
+              SizedBox(width: 14),
+              Expanded(
+                  child: _ValCard(
+                      Icons.trending_up_rounded,
+                      _blue,
+                      'Siempre mejorando',
+                      'Cada actualización nace del feedback de nuestros usuarios.')),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _CuriosityCard extends StatelessWidget {
-  final String emoji;
-  final String stat;
-  final String desc;
-  const _CuriosityCard(this.emoji, this.stat, this.desc);
+class _ValCard extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final String title, desc;
+  const _ValCard(this.icon, this.color, this.title, this.desc);
+  @override
+  State<_ValCard> createState() => _ValCardState();
+}
 
+class _ValCardState extends State<_ValCard> {
+  bool _h = false;
   @override
   Widget build(BuildContext context) {
-    return _HoverCard(
-      builder: (hovered) => AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(24),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _h = true),
+      onExit: (_) => setState(() => _h = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: hovered
-              ? Colors.white.withOpacity(0.18)
-              : Colors.white.withOpacity(0.1),
+          color: _h ? widget.color.withOpacity(0.07) : _bg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: Colors.white.withOpacity(hovered ? 0.35 : 0.2)),
+          border:
+              Border.all(color: _h ? widget.color.withOpacity(0.25) : _border),
+          boxShadow: _h
+              ? [
+                  BoxShadow(
+                      color: widget.color.withOpacity(0.10), blurRadius: 20)
+                ]
+              : [],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 26)),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  color: widget.color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Icon(widget.icon, color: widget.color, size: 22),
+            ),
             const SizedBox(height: 14),
-            Text(stat,
+            Text(widget.title,
                 style: const TextStyle(
-                  color: _C.aquaLight,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
-                )),
+                    color: _dark, fontSize: 14.5, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            Text(desc,
+            Text(widget.desc,
                 style: const TextStyle(
-                    color: Colors.white70, fontSize: 13, height: 1.5)),
+                    color: _grey, fontSize: 12.5, height: 1.55)),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// About — "Nosotros"
-// ─────────────────────────────────────────────────────────────────────────────
-class _AboutSection extends StatelessWidget {
-  final GlobalKey sectionKey;
-  const _AboutSection({required this.sectionKey});
-
-  @override
-  Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 900;
-
-    return Container(
-      key: sectionKey,
-      color: _C.white,
-      padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 24 : 80, vertical: 80),
-      child: Column(
-        children: [
-          _Reveal(
-            child: const Text(
-              'NOSOTROS',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: _C.aqua,
-                letterSpacing: 2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _Reveal(
-            delay: const Duration(milliseconds: 80),
-            child: const Text(
-              'Construido con propósito',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800,
-                  color: _C.dark),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _Reveal(
-            delay: const Duration(milliseconds: 130),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 680),
-              child: const Text(
-                'Fimakyp nació de una necesidad real: tener una app de finanzas '
-                'personales que funcione en Colombia, que hable en pesos, que sea '
-                'simple de usar y que realmente ayude a construir mejores hábitos '
-                'con el dinero. No somos un banco ni una startup de millones — '
-                'somos personas que también estamos aprendiendo a manejar mejor '
-                'nuestras finanzas.',
-                textAlign: TextAlign.center,
-                style:
-                    TextStyle(fontSize: 15, color: _C.grey, height: 1.75),
-              ),
-            ),
-          ),
-          const SizedBox(height: 52),
-          _Reveal(
-            delay: const Duration(milliseconds: 180),
-            child: isMobile
-                ? Column(children: _aboutValues())
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: _aboutValues()
-                        .map((w) => Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              child: w,
-                            ))
-                        .toList(),
-                  ),
-          ),
-          const SizedBox(height: 56),
-          _Reveal(
-            delay: const Duration(milliseconds: 220),
-            child: Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    _C.blue.withOpacity(0.06),
-                    _C.aqua.withOpacity(0.04)
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _C.blue.withOpacity(0.12)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: _C.blue.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.format_quote_rounded,
-                        color: _C.blue, size: 28),
-                  ),
-                  const SizedBox(width: 20),
-                  const Expanded(
-                    child: Text(
-                      '"El primer paso para manejar bien el dinero\n'
-                      'es saber exactamente a dónde va."',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _C.dark,
-                        fontStyle: FontStyle.italic,
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _aboutValues() => [
-        _ValueChip(Icons.favorite_rounded, _C.blue, 'Simple primero'),
-        _ValueChip(Icons.security_rounded, _C.aqua, 'Datos seguros'),
-        _ValueChip(Icons.trending_up_rounded, _C.blue, 'Siempre mejorando'),
-      ];
-}
-
-class _ValueChip extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-  const _ValueChip(this.icon, this.color, this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 8),
-          Text(label,
-              style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14)),
-        ],
       ),
     );
   }
@@ -1364,96 +1450,59 @@ class _ValueChip extends StatelessWidget {
 class _CtaSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 700;
-
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFEFF6FF), Color(0xFFECFEFF)],
+          colors: [_bgAlt, _bg],
         ),
       ),
-      padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 24 : 80, vertical: 88),
+      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 100),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _Reveal(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: _C.blue.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.rocket_launch_rounded,
-                  color: _C.blue, size: 40),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [_blue, _purple]),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.rocket_launch_rounded,
+                color: Colors.white, size: 36),
           ),
           const SizedBox(height: 24),
-          _Reveal(
-            delay: const Duration(milliseconds: 80),
-            child: const Text(
-              '¿Listo para tomar\ncontrol de tu dinero?',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 36,
+          const Text(
+            '¿Listo para tomar\ncontrol de tu dinero?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 38,
                 fontWeight: FontWeight.w800,
-                color: _C.dark,
-                height: 1.15,
-              ),
-            ),
+                color: _dark,
+                height: 1.15),
           ),
           const SizedBox(height: 16),
-          _Reveal(
-            delay: const Duration(milliseconds: 130),
-            child: const Text(
-              'Empieza hoy. Tu yo del futuro te lo va a agradecer.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 16, color: _C.grey, height: 1.6),
-            ),
+          const Text(
+            'Empieza hoy. Tu yo del futuro te lo va a agradecer.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: _grey, height: 1.6),
           ),
           const SizedBox(height: 36),
-          _Reveal(
-            delay: const Duration(milliseconds: 180),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              alignment: WrapAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: () => context.go('/register'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _C.blue,
-                    foregroundColor: Colors.white,
-                    elevation: 6,
-                    shadowColor: _C.blue.withOpacity(0.35),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 36, vertical: 18),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Crear mi cuenta',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700)),
+          OutlinedButton(
+                onPressed: () => context.go('/login'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _blue,
+                  minimumSize: const Size(160, 48),
+                  side: const BorderSide(color: _blue, width: 1.5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
-                OutlinedButton(
-                  onPressed: () => context.go('/login'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _C.blue,
-                    side: const BorderSide(color: _C.blue, width: 1.5),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 36, vertical: 18),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Ya tengo cuenta',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          ),
+                child: const Text('Ya tengo cuenta',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
         ],
       ),
     );
@@ -1464,47 +1513,100 @@ class _CtaSection extends StatelessWidget {
 // Footer
 // ─────────────────────────────────────────────────────────────────────────────
 class _Footer extends StatelessWidget {
+  const _Footer();
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      color: _C.dark,
-      padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 24 : 80, vertical: 28),
-      child: isMobile
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _footerLogo(),
-                const SizedBox(height: 12),
-                _footerCopy(),
-              ],
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _footerLogo(),
-                _footerCopy(),
-              ],
-            ),
+      color: _dark,
+      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 52),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Brand
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Image.asset('assets/images/LogoFimakyp.png',
+                            width: 28,
+                            height: 28,
+                            errorBuilder: (_, __, ___) => const Icon(
+                                Icons.account_balance_wallet_rounded,
+                                color: _blue,
+                                size: 24)),
+                        const SizedBox(width: 10),
+                        const Text('Fimakyp',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                        'La app de finanzas personales\npara latinoamérica.',
+                        style: TextStyle(
+                            color: Colors.white54, fontSize: 13, height: 1.6)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 40),
+              Expanded(
+                  flex: 2,
+                  child: _FCol(
+                      'Producto', ['Funciones', 'Cómo funciona', 'Descargar'])),
+              Expanded(
+                  flex: 2,
+                  child: _FCol('Empresa', ['Nosotros', 'Blog', 'Contacto'])),
+              Expanded(
+                  flex: 2,
+                  child: _FCol(
+                      'Legal', ['Privacidad', 'Términos de uso', 'Cookies'])),
+            ],
+          ),
+          const SizedBox(height: 36),
+          const Divider(color: Color(0xFF1E293B), thickness: 1),
+          const SizedBox(height: 18),
+          const Text(
+              '© 2025 Fimakyp · Finanzas inteligentes para latinoamérica',
+              style: TextStyle(color: Colors.white38, fontSize: 11)),
+        ],
+      ),
     );
   }
+}
 
-  Widget _footerLogo() => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset('assets/images/LogoFimakyp.png', width: 26, height: 26),
-          const SizedBox(width: 8),
-          const Text('Fimakyp',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15)),
-        ],
-      );
-
-  Widget _footerCopy() => const Text(
-        '© 2025 Fimakyp · Finanzas inteligentes',
-        style: TextStyle(color: Colors.white38, fontSize: 12),
-      );
+class _FCol extends StatelessWidget {
+  final String title;
+  final List<String> items;
+  const _FCol(this.title, this.items);
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13.5)),
+        const SizedBox(height: 12),
+        ...items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: Text(item,
+                  style:
+                      const TextStyle(color: Colors.white54, fontSize: 12.5)),
+            )),
+      ],
+    );
+  }
 }

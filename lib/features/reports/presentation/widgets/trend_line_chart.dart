@@ -32,12 +32,12 @@ class _TrendLineChartState extends State<TrendLineChart> {
       children: [
         Text('Evolución 6 meses', style: AppTextStyles.headlineSmall),
         const SizedBox(height: AppDimensions.sm),
-        Row(
+        const Row(
           children: [
             _LegendDot(color: AppColors.income, label: 'Ingresos'),
-            const SizedBox(width: AppDimensions.md),
+            SizedBox(width: AppDimensions.md),
             _LegendDot(color: AppColors.expense, label: 'Gastos'),
-            const SizedBox(width: AppDimensions.md),
+            SizedBox(width: AppDimensions.md),
             _LegendDot(color: AppColors.primary, label: 'Neto'),
           ],
         ),
@@ -128,7 +128,7 @@ class _TrendLineChartState extends State<TrendLineChart> {
                 drawVerticalLine: false,
                 horizontalInterval: yInterval,
                 getDrawingHorizontalLine: (_) =>
-                    FlLine(color: AppColors.grey100, strokeWidth: 1),
+                    const FlLine(color: AppColors.grey100, strokeWidth: 1),
               ),
               borderData: FlBorderData(show: false),
               lineBarsData: [
@@ -199,7 +199,7 @@ class _TrendLineChartState extends State<TrendLineChart> {
     if (maxY <= 0) return 1;
     final raw = maxY / 4;
     double magnitude = 1;
-    while (magnitude * 10 < raw) magnitude *= 10;
+    while (magnitude * 10 < raw) { magnitude *= 10; }
     final normalized = raw / magnitude;
     final nice =
         normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;

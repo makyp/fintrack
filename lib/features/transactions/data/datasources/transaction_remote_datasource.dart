@@ -169,15 +169,15 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       batch.update(_txRef(tx.userId).doc(tx.id), tx.toFirestore());
 
       // Mirror household doc: update if now shared, delete if no longer shared
-      final householdRef = (hId) => _firestore
+      DocumentReference householdRef(String hId) => _firestore
           .collection('households')
           .doc(hId)
           .collection('transactions')
           .doc(tx.id);
       if (tx.householdId != null && tx.householdId!.isNotEmpty) {
-        batch.set(householdRef(tx.householdId), tx.toFirestore());
+        batch.set(householdRef(tx.householdId!), tx.toFirestore());
       } else if (old.householdId != null && old.householdId!.isNotEmpty) {
-        batch.delete(householdRef(old.householdId));
+        batch.delete(householdRef(old.householdId!));
       }
 
       // Reverse old balance effect (respecting credit card logic)

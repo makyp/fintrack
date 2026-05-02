@@ -21,6 +21,8 @@ import '../../../gamification/presentation/cubit/gamification_cubit.dart';
 import '../../../gamification/presentation/widgets/streak_card.dart';
 import '../../../gamification/presentation/widgets/activity_calendar.dart';
 import '../../../notifications/presentation/cubit/notifications_cubit.dart';
+import '../../../../core/services/app_startup_service.dart';
+import '../../../../core/di/injection.dart' show getIt;
 import '../cubit/dashboard_cubit.dart';
 import '../cubit/dashboard_state.dart';
 
@@ -62,6 +64,7 @@ class _DashboardViewState extends State<_DashboardView> {
         context.read<TransactionsBloc>().add(TransactionsWatchStarted(uid));
         context.read<GamificationCubit>().watch(uid);
         context.read<NotificationsCubit>().watch(uid);
+        getIt<AppStartupService>().run(uid);
       }
     });
   }
@@ -216,7 +219,7 @@ class _DashboardViewState extends State<_DashboardView> {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.primary, Color(0xFF2A5298)],
+            colors: [AppColors.gradientBegin, AppColors.gradientEnd],
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
@@ -250,7 +253,7 @@ class _DashboardViewState extends State<_DashboardView> {
                       .where((a) => !a.type.isLiability)
                       .fold(0.0, (s, a) => s + a.balance),
                   icon: Icons.trending_up,
-                  color: const Color(0xFF6EE7B7),
+                  color: AppColors.accent,
                 ),
                 const SizedBox(width: AppDimensions.lg),
                 _buildBalanceStat(
@@ -259,7 +262,7 @@ class _DashboardViewState extends State<_DashboardView> {
                       .where((a) => a.type.isLiability)
                       .fold(0.0, (s, a) => s + a.balance),
                   icon: Icons.trending_down,
-                  color: const Color(0xFFFCA5A5),
+                  color: AppColors.danger,
                 ),
               ],
             ),

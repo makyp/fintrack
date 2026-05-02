@@ -83,11 +83,11 @@ class _BrandPanel extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF1A3F6F),
-            Color(0xFF2563EB),
-            Color(0xFF1D4ED8),
+            AppColors.gradientBegin,
+            AppColors.secondary,
+            AppColors.gradientEnd,
           ],
-          stops: [0.0, 0.6, 1.0],
+          stops: [0.0, 0.55, 1.0],
         ),
       ),
       child: Stack(
