@@ -8,9 +8,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'core/analytics/analytics_service.dart';
+import 'core/cubit/theme_cubit.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'core/services/local_notification_service.dart';
+import 'core/theme/app_color_scheme.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
@@ -20,33 +22,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await configureDependencies();
-  // Initialize Spanish locale data for DateFormat
   await initializeDateFormatting('es', null);
   Intl.defaultLocale = 'es';
-  // Initialize local notifications
   await LocalNotificationService.initialize();
 
-  // ── FCM permission (Android 13+ and iOS require explicit request) ─────────
   if (!kIsWeb) {
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    // Create default Android notification channel so heads-up banners appear
+    await messaging.requestPermission(alert: true, badge: true, sound: true);
     await messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
+      alert: true, badge: true, sound: true,
     );
   }
 
-  // ── Crashlytics setup ────────────────────────────────────────────────────
   if (!kDebugMode) {
-    // Pass Flutter framework errors to Crashlytics
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    // Pass async errors that escape the Flutter framework
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
@@ -65,15 +54,16 @@ class FimakypApp extends StatefulWidget {
 
 class _FimakypAppState extends State<FimakypApp> {
   late final AuthBloc _authBloc;
+  late final ThemeCubit _themeCubit;
   late final GoRouter _routerConfig;
 
   @override
   void initState() {
     super.initState();
     _authBloc = getIt<AuthBloc>()..add(const AuthStarted());
+    _themeCubit = ThemeCubit();
     _routerConfig = AppRouter.buildRouter();
 
-    // Sync Analytics user ID when auth state changes
     _authBloc.stream.listen((state) {
       if (state.isAuthenticated && state.user != null) {
         AnalyticsService.setUser(state.user!.uid);
@@ -85,15 +75,22 @@ class _FimakypAppState extends State<FimakypApp> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _authBloc,
-      child: MaterialApp.router(
-        title: 'Fimakyp',
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.light,
-        routerConfig: _routerConfig,
-        debugShowCheckedModeBanner: false,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _authBloc),
+        BlocProvider.value(value: _themeCubit),
+      ],
+      child: BlocBuilder<ThemeCubit, AppColorSchemeType>(
+        builder: (context, schemeType) {
+          final palette = AppColorPalette.fromType(schemeType);
+          return MaterialApp.router(
+            title: 'Fimakyp',
+            theme: AppTheme.light(palette),
+            themeMode: ThemeMode.light,
+            routerConfig: _routerConfig,
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

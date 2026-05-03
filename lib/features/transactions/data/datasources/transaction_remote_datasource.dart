@@ -227,6 +227,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
 
       await batch.commit();
+      unawaited(WidgetService.update(tx.userId));
       return tx;
     } catch (e) {
       throw ServerException(e.toString());
@@ -269,6 +270,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
 
       await batch.commit();
+      unawaited(WidgetService.update(userId));
     } catch (e) {
       throw ServerException(e.toString());
     }

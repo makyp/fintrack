@@ -1,12 +1,13 @@
 package com.example.fintrack;
 
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.widget.RemoteViews;
-import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.view.View;
+import android.widget.RemoteViews;
 
 public class FimakypWidgetProvider extends AppWidgetProvider {
 
@@ -23,25 +24,28 @@ public class FimakypWidgetProvider extends AppWidgetProvider {
     static void updateWidget(Context context, AppWidgetManager appWidgetManager, int widgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.fimakyp_widget);
 
-        // Read data saved by Flutter via HomeWidget.saveWidgetData()
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String expenses  = prefs.getString("widget_expenses",     "$ 0");
-        String income    = prefs.getString("widget_income",       "$ 0");
         String date      = prefs.getString("widget_date",         "");
-        String topCat    = prefs.getString("widget_top_category", "Sin movimientos hoy");
+        String topCat    = prefs.getString("widget_top_category", "");
+        String hasData   = prefs.getString("widget_has_data",     "0");
 
-        views.setTextViewText(R.id.widget_expenses,     expenses);
-        views.setTextViewText(R.id.widget_income,       income);
         views.setTextViewText(R.id.widget_date,         date);
+        views.setTextViewText(R.id.widget_expenses,     expenses);
         views.setTextViewText(R.id.widget_top_category, topCat);
 
-        // Tap opens the app
+        // Show content or empty state based on whether there are expenses today
+        boolean showContent = "1".equals(hasData);
+        views.setViewVisibility(R.id.widget_content, showContent ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widget_empty,   showContent ? View.GONE   : View.VISIBLE);
+
+        // Tap anywhere opens the app
         Intent launchIntent = new Intent(context, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context, 0, launchIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        views.setOnClickPendingIntent(R.id.widget_expenses, pendingIntent);
-        views.setOnClickPendingIntent(R.id.widget_income,   pendingIntent);
+        views.setOnClickPendingIntent(R.id.widget_content, pendingIntent);
+        views.setOnClickPendingIntent(R.id.widget_empty,   pendingIntent);
 
         appWidgetManager.updateAppWidget(widgetId, views);
     }

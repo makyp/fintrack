@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/cubit/theme_cubit.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -116,7 +118,7 @@ class _DashboardViewState extends State<_DashboardView> {
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _openTransactionForm(context),
-            backgroundColor: AppColors.primary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: AppColors.white,
             icon: const Icon(Icons.add),
             label: const Text('Nuevo'),
@@ -206,65 +208,105 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildBalanceCard(BuildContext context, DashboardState state) {
+    final palette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
+    final assets = state.accounts
+        .where((a) => !a.type.isLiability)
+        .fold(0.0, (s, a) => s + a.balance);
+    final debts = state.accounts
+        .where((a) => a.type.isLiability)
+        .fold(0.0, (s, a) => s + a.balance);
+
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.fromLTRB(
-          AppDimensions.pagePadding,
-          AppDimensions.sm,
-          AppDimensions.pagePadding,
-          AppDimensions.lg,
+          AppDimensions.pagePadding, AppDimensions.sm,
+          AppDimensions.pagePadding, AppDimensions.lg,
         ),
-        padding: const EdgeInsets.all(AppDimensions.lg),
+        padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.gradientBegin, AppColors.gradientEnd],
-          ),
-          borderRadius: BorderRadius.circular(24),
+          gradient: palette.gradient,
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: palette.primary.withOpacity(0.35),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Patrimonio neto',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.white.withOpacity(0.8),
-              ),
-            ),
-            const SizedBox(height: AppDimensions.sm),
-            Text(
-              CurrencyFormatter.format(state.totalBalance),
-              style: AppTextStyles.displayMedium.copyWith(color: AppColors.white),
-            ),
-            const SizedBox(height: AppDimensions.lg),
+            // Label row
             Row(
               children: [
-                _buildBalanceStat(
-                  label: 'Activos',
-                  amount: state.accounts
-                      .where((a) => !a.type.isLiability)
-                      .fold(0.0, (s, a) => s + a.balance),
-                  icon: Icons.trending_up,
-                  color: AppColors.accent,
+                Text(
+                  'Tu portafolio',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Colors.white70,
+                    letterSpacing: 0.3,
+                  ),
                 ),
-                const SizedBox(width: AppDimensions.lg),
-                _buildBalanceStat(
-                  label: 'Deudas',
-                  amount: state.accounts
-                      .where((a) => a.type.isLiability)
-                      .fold(0.0, (s, a) => s + a.balance),
-                  icon: Icons.trending_down,
-                  color: AppColors.danger,
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Mes a la fecha',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.white, fontSize: 10,
+                    ),
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            // Total balance
+            Text(
+              'Balance total:',
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              CurrencyFormatter.format(state.totalBalance),
+              style: AppTextStyles.displayMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 34,
+              ),
+            ),
+            const SizedBox(height: AppDimensions.lg),
+            // Stats row
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.13),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  _buildBalanceStat(
+                    label: 'Activos',
+                    amount: assets,
+                    icon: Icons.trending_up_rounded,
+                    color: const Color(0xFF6EE7B7),
+                  ),
+                  Container(
+                    width: 1, height: 36,
+                    color: Colors.white24,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  _buildBalanceStat(
+                    label: 'Deudas',
+                    amount: debts,
+                    icon: Icons.trending_down_rounded,
+                    color: const Color(0xFFFCA5A5),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -412,42 +454,47 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppDimensions.pagePadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(
+            AppDimensions.pagePadding, 0,
+            AppDimensions.pagePadding, AppDimensions.lg),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Text('Acciones rápidas', style: AppTextStyles.headlineSmall),
-            const SizedBox(height: AppDimensions.md),
-            Row(
-              children: [
-                _buildQuickActionBtn(
-                  context,
-                  icon: Icons.remove_circle_outline,
-                  label: 'Gasto',
-                  color: AppColors.danger,
-                  onTap: () => _openTransactionForm(context, type: TransactionType.expense),
-                ),
-                const SizedBox(width: AppDimensions.sm),
-                _buildQuickActionBtn(
-                  context,
-                  icon: Icons.add_circle_outline,
-                  label: 'Ingreso',
-                  color: AppColors.success,
-                  onTap: () => _openTransactionForm(context, type: TransactionType.income),
-                ),
-                const SizedBox(width: AppDimensions.sm),
-                _buildQuickActionBtn(
-                  context,
-                  icon: Icons.swap_horiz,
-                  label: 'Transferir',
-                  color: AppColors.secondary,
-                  onTap: () => _openTransactionForm(context, type: TransactionType.transfer),
-                ),
-              ],
+            _buildQuickActionBtn(
+              context,
+              icon: Icons.arrow_downward_rounded,
+              label: 'Gasto',
+              bgColor: AppColors.danger.withOpacity(0.1),
+              iconColor: AppColors.danger,
+              onTap: () => _openTransactionForm(context, type: TransactionType.expense),
             ),
-            const SizedBox(height: AppDimensions.lg),
+            _buildQuickActionBtn(
+              context,
+              icon: Icons.arrow_upward_rounded,
+              label: 'Ingreso',
+              bgColor: AppColors.success.withOpacity(0.1),
+              iconColor: AppColors.success,
+              onTap: () => _openTransactionForm(context, type: TransactionType.income),
+            ),
+            _buildQuickActionBtn(
+              context,
+              icon: Icons.swap_horiz_rounded,
+              label: 'Transferir',
+              bgColor: primary.withOpacity(0.1),
+              iconColor: primary,
+              onTap: () => _openTransactionForm(context, type: TransactionType.transfer),
+            ),
+            _buildQuickActionBtn(
+              context,
+              icon: Icons.bar_chart_rounded,
+              label: 'Reportes',
+              bgColor: AppColors.warning.withOpacity(0.1),
+              iconColor: AppColors.warning,
+              onTap: () => context.go('/reports'),
+            ),
           ],
         ),
       ),
@@ -458,30 +505,32 @@ class _DashboardViewState extends State<_DashboardView> {
     BuildContext context, {
     required IconData icon,
     required String label,
-    required Color color,
+    required Color bgColor,
+    required Color iconColor,
     required VoidCallback onTap,
   }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: AppDimensions.md),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withOpacity(0.2)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: bgColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 26),
           ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: AppTextStyles.labelMedium.copyWith(color: color),
-              ),
-            ],
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.grey600,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

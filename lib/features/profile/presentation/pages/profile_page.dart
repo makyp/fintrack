@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/cubit/theme_cubit.dart';
+import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -84,6 +86,10 @@ class ProfilePage extends StatelessWidget {
               ),
               const Divider(),
 
+              // ── Color de la aplicación ────────────────────────────────────
+              _ThemePickerTile(),
+              const Divider(),
+
               // ── Preferencias ─────────────────────────────────────────────
               ListTile(
                 leading: const Icon(Icons.tune_outlined, color: AppColors.secondary),
@@ -149,6 +155,56 @@ class ProfilePage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Theme picker tile ─────────────────────────────────────────────────────────
+
+class _ThemePickerTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ThemeCubit, AppColorSchemeType>(
+      builder: (context, current) {
+        return ListTile(
+          leading: Icon(
+            Icons.palette_outlined,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          title: const Text('Color de la aplicación'),
+          subtitle: Text(AppColorPalette.fromType(current).label),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: AppColorPalette.all.map((palette) {
+              final selected = palette.type == current;
+              return GestureDetector(
+                onTap: () =>
+                    context.read<ThemeCubit>().setScheme(palette.type),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(left: 8),
+                  width: selected ? 28 : 24,
+                  height: selected ? 28 : 24,
+                  decoration: BoxDecoration(
+                    gradient: palette.gradient,
+                    shape: BoxShape.circle,
+                    border: selected
+                        ? Border.all(color: palette.primary, width: 2.5)
+                        : null,
+                    boxShadow: selected
+                        ? [BoxShadow(color: palette.primary.withOpacity(0.4),
+                            blurRadius: 6, spreadRadius: 1)]
+                        : null,
+                  ),
+                  child: selected
+                      ? const Icon(Icons.check, size: 14, color: Colors.white)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 }
