@@ -139,7 +139,7 @@ class _BrandPanel extends StatelessWidget {
                 Row(
                   children: [
                     Image.asset(
-                      'assets/images/LogoFintrack.png',
+                      'assets/images/LogoFimakyp.png',
                       width: 44,
                       height: 44,
                     ),

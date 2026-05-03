@@ -139,7 +139,7 @@ class _Sidebar extends StatelessWidget {
             child: Row(
               children: [
                 Image.asset(
-                  'assets/images/LogoFintrack.png',
+                  'assets/images/LogoFimakyp.png',
                   width: 36,
                   height: 36,
                 ),

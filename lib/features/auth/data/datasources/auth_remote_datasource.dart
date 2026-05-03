@@ -50,23 +50,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Stream<AppUserModel?> get authStateChanges {
     return _auth.authStateChanges().asyncMap((user) async {
-      if (user == null) return null;
+      // On Android, authStateChanges() may briefly emit null before the cached
+      // session is restored. Use currentUser as a synchronous fallback to avoid
+      // a false unauthenticated redirect on app restart.
+      final resolvedUser = user ?? _auth.currentUser;
+      if (resolvedUser == null) return null;
       try {
-        return await getUserProfile(user.uid);
-      } catch (_) {
-        // Doc no existe: lo creamos para que el flujo continúe normalmente
-        final model = AppUserModel.fromFirebaseUser(
-          uid: user.uid,
-          email: user.email ?? '',
-          displayName: user.displayName ?? '',
-          photoUrl: user.photoURL,
+        return await getUserProfile(resolvedUser.uid);
+      } catch (e) {
+        // AuthException means the Firestore doc doesn't exist → new user.
+        // Any other error is a transient Firestore failure → existing user.
+        final bool isNewUser = e is AuthException;
+        final model = AppUserModel(
+          uid: resolvedUser.uid,
+          email: resolvedUser.email ?? '',
+          displayName: resolvedUser.displayName ?? '',
+          photoUrl: resolvedUser.photoURL,
+          currency: 'COP',
+          onboardingCompleted: !isNewUser,
+          createdAt: DateTime.now(),
         );
-        try {
-          await _firestore
-              .collection('users')
-              .doc(user.uid)
-              .set(model.toFirestore());
-        } catch (_) {}
+        if (isNewUser) {
+          try {
+            await _firestore
+                .collection('users')
+                .doc(resolvedUser.uid)
+                .set(model.toFirestore());
+          } catch (_) {}
+        }
         return model;
       }
     });

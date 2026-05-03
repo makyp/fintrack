@@ -99,7 +99,7 @@ class _LoginForm extends StatelessWidget {
             const SizedBox(height: AppDimensions.xl),
             // Mobile logo
             Image.asset(
-              'assets/images/LogoFintrack.png',
+              'assets/images/LogoFimakyp.png',
               width: 64,
               height: 64,
             ),

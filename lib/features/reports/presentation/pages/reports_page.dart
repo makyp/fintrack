@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -122,6 +123,15 @@ class _ReportsView extends StatelessWidget {
               if (data.topExpense != null || data.topIncome != null) ...[
                 _buildHighlightCards(data),
                 const SizedBox(height: AppDimensions.md),
+              ],
+
+              // ── Member breakdown (household mode only) ──────────────────
+              if (state.mode == ReportMode.household && householdId != null) ...[
+                _HouseholdMemberBreakdown(
+                  householdId: householdId!,
+                  year: state.year,
+                  month: state.month,
+                ),
               ],
 
               // ── Expense donut chart ──────────────────────────────────────
@@ -613,4 +623,234 @@ class _GoalCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Household member breakdown ────────────────────────────────────────────────
+
+class _HouseholdMemberBreakdown extends StatefulWidget {
+  final String householdId;
+  final int year;
+  final int month;
+
+  const _HouseholdMemberBreakdown({
+    required this.householdId,
+    required this.year,
+    required this.month,
+  });
+
+  @override
+  State<_HouseholdMemberBreakdown> createState() =>
+      _HouseholdMemberBreakdownState();
+}
+
+class _HouseholdMemberBreakdownState
+    extends State<_HouseholdMemberBreakdown> {
+  late Future<_HouseholdMemberStats> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _fetch();
+  }
+
+  @override
+  void didUpdateWidget(_HouseholdMemberBreakdown old) {
+    super.didUpdateWidget(old);
+    if (old.month != widget.month || old.year != widget.year) {
+      setState(() => _future = _fetch());
+    }
+  }
+
+  Future<_HouseholdMemberStats> _fetch() async {
+    final db = FirebaseFirestore.instance;
+
+    final householdDoc =
+        await db.collection('households').doc(widget.householdId).get();
+    final membersRaw =
+        (householdDoc.data()?['members'] as List<dynamic>?) ?? [];
+    final members = membersRaw
+        .map((m) => _MemberInfo(
+              uid: m['uid'] as String? ?? '',
+              displayName: m['displayName'] as String? ?? '',
+            ))
+        .where((m) => m.uid.isNotEmpty)
+        .toList();
+
+    final start =
+        Timestamp.fromDate(DateTime(widget.year, widget.month, 1));
+    final end =
+        Timestamp.fromDate(DateTime(widget.year, widget.month + 1, 1));
+
+    final snap = await db
+        .collection('households')
+        .doc(widget.householdId)
+        .collection('transactions')
+        .where('date', isGreaterThanOrEqualTo: start)
+        .where('date', isLessThan: end)
+        .get();
+
+    final expenses = <String, double>{};
+
+    for (final doc in snap.docs) {
+      final d = doc.data();
+      final uid = d['userId'] as String? ?? '';
+      final amount = (d['amount'] as num?)?.toDouble() ?? 0;
+      final type = d['type'] as String? ?? 'expense';
+      if (type == 'expense') {
+        expenses[uid] = (expenses[uid] ?? 0) + amount;
+      }
+    }
+
+    return _HouseholdMemberStats(members: members, expenses: expenses);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_HouseholdMemberStats>(
+      future: _future,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+        final stats = snap.data;
+        if (stats == null || stats.members.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Gastos por miembro', style: AppTextStyles.labelLarge),
+            const SizedBox(height: AppDimensions.sm),
+            _MemberStatCard(
+              members: stats.members,
+              amounts: stats.expenses,
+              color: AppColors.expense,
+              totalLabel: 'Total gastos',
+              emptyText: 'Sin gastos compartidos este mes',
+            ),
+            const SizedBox(height: AppDimensions.md),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MemberStatCard extends StatelessWidget {
+  final List<_MemberInfo> members;
+  final Map<String, double> amounts;
+  final Color color;
+  final String totalLabel;
+  final String emptyText;
+
+  const _MemberStatCard({
+    required this.members,
+    required this.amounts,
+    required this.color,
+    required this.totalLabel,
+    required this.emptyText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = amounts.values.fold(0.0, (a, b) => a + b);
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.md),
+        child: total == 0
+            ? Text(emptyText,
+                style:
+                    AppTextStyles.bodySmall.copyWith(color: AppColors.grey400))
+            : Column(
+                children: [
+                  ...members.map((m) {
+                    final amount = amounts[m.uid] ?? 0;
+                    if (amount == 0) return const SizedBox.shrink();
+                    final pct = amount / total;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: color.withOpacity(0.15),
+                                child: Text(
+                                  m.displayName.isNotEmpty
+                                      ? m.displayName[0].toUpperCase()
+                                      : '?',
+                                  style: AppTextStyles.labelMedium
+                                      .copyWith(color: color, fontSize: 11),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(m.displayName,
+                                    style: AppTextStyles.bodySmall),
+                              ),
+                              Text(
+                                CurrencyFormatter.format(amount),
+                                style: AppTextStyles.bodySmall.copyWith(
+                                    fontWeight: FontWeight.w600, color: color),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${(pct * 100).toStringAsFixed(0)}%',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.grey400, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: pct,
+                              minHeight: 5,
+                              backgroundColor: AppColors.grey200,
+                              valueColor: AlwaysStoppedAnimation(color),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const Divider(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(totalLabel,
+                          style: AppTextStyles.bodySmall
+                              .copyWith(fontWeight: FontWeight.w600)),
+                      Text(CurrencyFormatter.format(total),
+                          style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w600, color: color)),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _HouseholdMemberStats {
+  final List<_MemberInfo> members;
+  final Map<String, double> expenses;
+
+  const _HouseholdMemberStats(
+      {required this.members, required this.expenses});
+}
+
+class _MemberInfo {
+  final String uid;
+  final String displayName;
+
+  const _MemberInfo({required this.uid, required this.displayName});
 }

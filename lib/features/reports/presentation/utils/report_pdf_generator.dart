@@ -186,7 +186,7 @@ class ReportPdfGenerator {
             padding:
                 const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: pw.BoxDecoration(
-              color: const PdfColor(1, 1, 1, 0.18),
+              color: PdfColor.fromHex('1E3A8A'),
               borderRadius: pw.BorderRadius.circular(8),
             ),
             child: pw.Text(
@@ -319,11 +319,12 @@ class ReportPdfGenerator {
     final savingsLabel =
         data.netBalance >= 0 ? 'ahorro' : 'déficit';
 
+    final monthName = _months[data.month - 1];
     final lines = <pw.Widget>[];
 
     // Line 1 – income
     lines.add(_narrativeLine(
-      prefix: 'Este mes te ingresaron ',
+      prefix: 'En $monthName ${data.year} ingresaste ',
       highlight: _fmt(data.totalIncome),
       suffix: '.',
       highlightColor: incomeColor,
