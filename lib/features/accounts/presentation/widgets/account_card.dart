@@ -101,7 +101,9 @@ class AccountCard extends StatelessWidget {
   }
 
   Widget _buildCompact(Color color) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       width: 160,
       padding: const EdgeInsets.all(AppDimensions.md),
       decoration: BoxDecoration(
@@ -139,6 +141,7 @@ class AccountCard extends StatelessWidget {
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500, fontSize: 10),
           ),
         ],
+      ),
       ),
     );
   }

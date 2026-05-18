@@ -49,17 +49,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Stream<AppUserModel?> get authStateChanges {
-    // Tracks whether this is the first emission of this subscription.
     // On Android cold start the Firebase Auth SDK fires null before restoring
-    // the persisted session from SharedPreferences, so _auth.currentUser is also
-    // null at that instant. We wait 1.5 s and retry to give the SDK time to load.
+    // the persisted session from SharedPreferences. We poll currentUser every
+    // 400 ms for up to 4 seconds so slower devices still restore their session.
     var firstEmission = true;
     return _auth.authStateChanges().asyncMap((user) async {
       var resolvedUser = user ?? _auth.currentUser;
       if (resolvedUser == null && firstEmission) {
         firstEmission = false;
-        await Future.delayed(const Duration(milliseconds: 1500));
-        resolvedUser = _auth.currentUser;
+        for (int i = 0; i < 10; i++) {
+          await Future.delayed(const Duration(milliseconds: 400));
+          resolvedUser = _auth.currentUser;
+          if (resolvedUser != null) break;
+        }
       } else {
         firstEmission = false;
       }
