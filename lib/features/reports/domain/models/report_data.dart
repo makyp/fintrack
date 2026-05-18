@@ -1,5 +1,21 @@
 import '../../../transactions/domain/entities/transaction.dart';
 
+class TxSummary {
+  final DateTime date;
+  final String description;
+  final TransactionCategory category;
+  final TransactionType type;
+  final double amount;
+
+  const TxSummary({
+    required this.date,
+    required this.description,
+    required this.category,
+    required this.type,
+    required this.amount,
+  });
+}
+
 class CategoryData {
   final TransactionCategory category;
   final double amount;
@@ -83,6 +99,7 @@ class ReportData {
   final List<MonthlyData> trend;
   final List<DailyData> daily;
   final List<GoalProgressData> goals;
+  final List<TxSummary> transactions;
 
   const ReportData({
     required this.month,
@@ -94,6 +111,7 @@ class ReportData {
     required this.trend,
     this.daily = const [],
     this.goals = const [],
+    this.transactions = const [],
   });
 
   double get netBalance => totalIncome - totalExpenses;
@@ -114,5 +132,6 @@ class ReportData {
         trend: const [],
         daily: const [],
         goals: const [],
+        transactions: const [],
       );
 }

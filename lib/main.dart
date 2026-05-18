@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -12,6 +13,7 @@ import 'core/cubit/theme_cubit.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'core/services/local_notification_service.dart';
+import 'core/services/widget_service.dart';
 import 'core/theme/app_color_scheme.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -56,6 +58,7 @@ class _FimakypAppState extends State<FimakypApp> {
   late final AuthBloc _authBloc;
   late final ThemeCubit _themeCubit;
   late final GoRouter _routerConfig;
+  String? _authedUid;
 
   @override
   void initState() {
@@ -67,8 +70,16 @@ class _FimakypAppState extends State<FimakypApp> {
     _authBloc.stream.listen((state) {
       if (state.isAuthenticated && state.user != null) {
         AnalyticsService.setUser(state.user!.uid);
+        // On first authentication (login or session restore), reschedule
+        // reminders and refresh the home widget with today's data.
+        if (_authedUid != state.user!.uid) {
+          _authedUid = state.user!.uid;
+          unawaited(LocalNotificationService.scheduleFromString(state.user!.reminderTime));
+          if (!kIsWeb) unawaited(WidgetService.update(state.user!.uid));
+        }
       } else if (state.isUnauthenticated) {
         AnalyticsService.clearUser();
+        _authedUid = null;
       }
     });
   }

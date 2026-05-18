@@ -103,7 +103,9 @@ class LocalNotificationService {
             presentSound: true,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        // alarmClock uses AlarmManager.setAlarmClock which is always exact
+        // and doesn't require SCHEDULE_EXACT_ALARM special permission.
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
         matchDateTimeComponents: DateTimeComponents.time,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,

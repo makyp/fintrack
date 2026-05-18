@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../../../transactions/domain/entities/transaction.dart';
 import '../../domain/models/report_data.dart';
 
 class ReportPdfGenerator {
@@ -38,7 +40,7 @@ class ReportPdfGenerator {
     return v < 0 ? '-\$ $s' : '\$ $s';
   }
 
-  static String _fmtPct(double v) => '${v.toStringAsFixed(1)}%';
+  static String _fmtPct(double v) => '${v.toStringAsFixed(2)}%';
 
   // ── Public entry point ────────────────────────────────────────────────────
 
@@ -124,7 +126,16 @@ class ReportPdfGenerator {
             pw.SizedBox(height: 22),
           ],
 
-          // ── 7. INSIGHTS ──────────────────────────────────────────────────
+          // ── 7. TRANSACTION LIST ──────────────────────────────────────────
+          if (data.transactions.isNotEmpty) ...[
+            _sectionTitle('Movimientos del mes', primary, fontBold),
+            pw.SizedBox(height: 10),
+            _buildTransactionList(data.transactions, incomeColor, expenseColor,
+                greyMid, greyLight, borderGrey, font, fontBold),
+            pw.SizedBox(height: 22),
+          ],
+
+          // ── 8. INSIGHTS ──────────────────────────────────────────────────
           _buildInsights(data, primary, primaryLight, incomeColor, expenseColor,
               greyDark, greyMid, greyLight, borderGrey, font, fontBold),
         ],
@@ -516,7 +527,7 @@ class ReportPdfGenerator {
                     ),
                     pw.SizedBox(width: 4),
                     pw.Text(
-                      _fmtPct(cat.percentage),
+                      _fmtPct(cat.percentage * 100),
                       style: pw.TextStyle(
                           font: fontBold,
                           fontSize: 9,
@@ -624,7 +635,8 @@ class ReportPdfGenerator {
   ) {
     const trackH = 7.0;
     const trackW = 280.0;
-    final fillW = (pct.clamp(0, 100) / 100) * trackW;
+    // pct is a 0–1 fraction (e.value / total from datasource)
+    final fillW = pct.clamp(0.0, 1.0) * trackW;
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -644,7 +656,7 @@ class ReportPdfGenerator {
                       fontSize: 10,
                       color: PdfColor.fromHex('111827'))),
               pw.SizedBox(width: 5),
-              pw.Text('(${_fmtPct(pct)})',
+              pw.Text('(${_fmtPct(pct * 100)})',
                   style:
                       pw.TextStyle(font: font, fontSize: 9, color: greyMid)),
             ]),
@@ -685,17 +697,14 @@ class ReportPdfGenerator {
     PdfColor borderGrey,
     pw.Font font,
   ) {
-    final active =
-        daily.where((d) => d.income > 0 || d.expenses > 0).toList();
-    if (active.isEmpty) return pw.SizedBox();
+    if (daily.isEmpty) return pw.SizedBox();
 
-    final maxVal = active
-        .map((d) => d.income > d.expenses ? d.income : d.expenses)
-        .reduce((a, b) => a > b ? a : b);
+    final maxVal = daily.fold(
+        0.0, (m, d) => math.max(m, math.max(d.income, d.expenses)));
 
-    const chartH = 70.0;
-    const barW = 5.0;
-    const gap = 1.0;
+    const chartH = 130.0;
+    const barW = 4.0;
+    const gap = 0.5;
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -725,17 +734,14 @@ class ReportPdfGenerator {
               style: pw.TextStyle(font: font, fontSize: 8.5, color: greyMid)),
         ]),
         pw.SizedBox(height: 8),
-        // Chart rows
+        // All days of the month
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
-          children: active.map((d) {
-            final incH =
-                maxVal > 0 ? (d.income / maxVal) * chartH : 0.0;
-            final expH =
-                maxVal > 0 ? (d.expenses / maxVal) * chartH : 0.0;
+          children: daily.map((d) {
+            final incH = maxVal > 0 ? (d.income / maxVal) * chartH : 0.0;
+            final expH = maxVal > 0 ? (d.expenses / maxVal) * chartH : 0.0;
             return pw.Padding(
-              padding:
-                  const pw.EdgeInsets.symmetric(horizontal: gap / 2),
+              padding: const pw.EdgeInsets.symmetric(horizontal: gap / 2),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
@@ -754,7 +760,9 @@ class ReportPdfGenerator {
                               topRight: pw.Radius.circular(2),
                             ),
                           ),
-                        ),
+                        )
+                      else
+                        pw.SizedBox(width: barW),
                       pw.SizedBox(width: gap),
                       if (expH > 0)
                         pw.Container(
@@ -767,14 +775,16 @@ class ReportPdfGenerator {
                               topRight: pw.Radius.circular(2),
                             ),
                           ),
-                        ),
+                        )
+                      else
+                        pw.SizedBox(width: barW),
                     ],
                   ),
                   pw.SizedBox(height: 3),
                   pw.Text(
                     '${d.day}',
                     style: pw.TextStyle(
-                        font: font, fontSize: 6.5, color: greyMid),
+                        font: font, fontSize: 6.0, color: greyMid),
                   ),
                 ],
               ),
@@ -782,6 +792,98 @@ class ReportPdfGenerator {
           }).toList(),
         ),
       ],
+    );
+  }
+
+  // ── SECTION: TRANSACTION LIST ────────────────────────────────────────────
+
+  static pw.Widget _buildTransactionList(
+    List<TxSummary> transactions,
+    PdfColor incomeColor,
+    PdfColor expenseColor,
+    PdfColor greyMid,
+    PdfColor greyLight,
+    PdfColor borderGrey,
+    pw.Font font,
+    pw.Font fontBold,
+  ) {
+    final dateFmt = DateFormat('dd/MM', 'es');
+
+    return pw.Column(
+      children: List.generate(transactions.length, (i) {
+        final tx = transactions[i];
+        final isExpense = tx.type == TransactionType.expense;
+        final amtColor = isExpense ? expenseColor : incomeColor;
+        final sign = isExpense ? '-' : '+';
+        final isLast = i == transactions.length - 1;
+
+        return pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: pw.BoxDecoration(
+            color: i.isEven ? greyLight : PdfColors.white,
+            border: pw.Border(
+              bottom: isLast
+                  ? pw.BorderSide.none
+                  : pw.BorderSide(color: borderGrey, width: 0.5),
+            ),
+          ),
+          child: pw.Row(
+            children: [
+              // Date
+              pw.SizedBox(
+                width: 34,
+                child: pw.Text(
+                  dateFmt.format(tx.date),
+                  style: pw.TextStyle(
+                      font: font,
+                      fontSize: 9,
+                      color: greyMid),
+                ),
+              ),
+              // Category dot
+              pw.Container(
+                width: 7,
+                height: 7,
+                decoration: pw.BoxDecoration(
+                  color: amtColor,
+                  borderRadius: pw.BorderRadius.circular(3.5),
+                ),
+              ),
+              pw.SizedBox(width: 6),
+              // Category + description
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      tx.category.label,
+                      style: pw.TextStyle(
+                          font: fontBold,
+                          fontSize: 9,
+                          color: PdfColor.fromHex('374151')),
+                    ),
+                    if (tx.description.isNotEmpty)
+                      pw.Text(
+                        tx.description,
+                        style: pw.TextStyle(
+                            font: font,
+                            fontSize: 8,
+                            color: greyMid),
+                        maxLines: 1,
+                      ),
+                  ],
+                ),
+              ),
+              // Amount
+              pw.Text(
+                '$sign ${_fmt(tx.amount)}',
+                style: pw.TextStyle(
+                    font: fontBold, fontSize: 10, color: amtColor),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 

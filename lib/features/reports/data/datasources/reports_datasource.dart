@@ -121,6 +121,24 @@ class ReportsDataSource {
         ..sort((a, b) => b.amount.compareTo(a.amount));
     }
 
+    // ── Individual transactions (for PDF list) ────────────────────────────
+    final txSummaries = <TxSummary>[];
+    for (final doc in monthSnap.docs) {
+      final d = doc.data();
+      final amount = (d['amount'] as num).toDouble();
+      final typeStr = d['type'] as String? ?? 'expense';
+      final catStr  = d['categoryId'] as String? ?? 'other';
+      final type = TransactionType.values.firstWhere(
+          (e) => e.name == typeStr, orElse: () => TransactionType.expense);
+      if (type == TransactionType.transfer) continue;
+      final cat = TransactionCategory.values.firstWhere(
+          (e) => e.name == catStr, orElse: () => TransactionCategory.other);
+      final date = (d['date'] as Timestamp).toDate();
+      final desc = d['description'] as String? ?? '';
+      txSummaries.add(TxSummary(date: date, description: desc, category: cat, type: type, amount: amount));
+    }
+    txSummaries.sort((a, b) => b.date.compareTo(a.date));
+
     // ── Goals progress ────────────────────────────────────────────────────
     final goalsSnap = await _goalsCol(userId)
         .where('isCompleted', isEqualTo: false)
@@ -153,6 +171,7 @@ class ReportsDataSource {
             : a.month.compareTo(b.month)),
       daily: daily,
       goals: goals,
+      transactions: txSummaries,
     );
   }
 
