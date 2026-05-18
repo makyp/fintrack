@@ -152,6 +152,33 @@ abstract class AppTheme {
         foregroundColor: AppColors.white,
         elevation: 4,
       ),
+      // Material 3 NavigationBar — makes selected item clearly follow the theme
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: p.tint,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return IconThemeData(color: p.primary);
+          }
+          return const IconThemeData(color: AppColors.grey500);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return TextStyle(
+              color: p.primary,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            );
+          }
+          return const TextStyle(
+            color: AppColors.grey500,
+            fontWeight: FontWeight.normal,
+            fontSize: 11,
+          );
+        }),
+      ),
     );
   }
 

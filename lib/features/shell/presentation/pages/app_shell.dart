@@ -144,13 +144,13 @@ class _Sidebar extends StatelessWidget {
                   height: 36,
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Fimakyp',
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -233,7 +233,7 @@ class _SidebarItem extends StatelessWidget {
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.08)
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
@@ -242,13 +242,17 @@ class _SidebarItem extends StatelessWidget {
                 Icon(
                   icon,
                   size: 20,
-                  color: isSelected ? AppColors.primary : AppColors.grey500,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : AppColors.grey500,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   label,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: isSelected ? AppColors.primary : AppColors.grey600,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : AppColors.grey600,
                     fontWeight: isSelected
                         ? FontWeight.w600
                         : FontWeight.normal,
@@ -259,8 +263,8 @@ class _SidebarItem extends StatelessWidget {
                   Container(
                     width: 4,
                     height: 4,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
