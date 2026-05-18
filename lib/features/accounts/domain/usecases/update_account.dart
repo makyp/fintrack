@@ -14,4 +14,7 @@ class UpdateAccount {
 
   Future<Either<Failure, void>> archive(String userId, String accountId) =>
       _repository.archiveAccount(userId, accountId);
+
+  Future<Either<Failure, void>> delete(String userId, String accountId) =>
+      _repository.deleteAccount(userId, accountId);
 }

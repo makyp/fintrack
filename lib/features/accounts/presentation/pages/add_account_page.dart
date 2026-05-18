@@ -85,16 +85,15 @@ class _AddAccountPageState extends State<AddAccountPage> {
     setState(() => _isLoading = true);
 
     try {
-      final balance = ThousandsSeparatorFormatter.parse(_balanceCtrl.text);
       final name = _selectedType == AccountType.cash ? 'Efectivo' : _nameCtrl.text.trim();
       final interestRate = _selectedType == AccountType.highYield
           ? (double.tryParse(_rateCtrl.text.replaceAll(',', '.')) ?? 0) / 100
           : null;
       if (_isEditing) {
+        // Balance is intentionally kept unchanged when editing name/type/color.
         final updated = widget.editAccount!.copyWith(
           name: name,
           type: _selectedType,
-          balance: balance,
           colorValue: _selectedColor,
           icon: _selectedType.icon,
           interestRate: interestRate,
@@ -102,6 +101,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
         );
         await _cubit.updateAccount(updated);
       } else {
+        final balance = ThousandsSeparatorFormatter.parse(_balanceCtrl.text);
         final account = Account(
           id: '',
           userId: userId,
@@ -195,19 +195,21 @@ class _AddAccountPageState extends State<AddAccountPage> {
                   },
                 ),
               ],
-              const SizedBox(height: AppDimensions.md),
-              TextFormField(
-                controller: _balanceCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [ThousandsSeparatorFormatter()],
-                decoration: InputDecoration(
-                  labelText: _isEditing ? 'Saldo actual' : 'Saldo inicial',
-                  hintText: '0',
-                  prefixText: '\$ ',
+              if (!_isEditing) ...[
+                const SizedBox(height: AppDimensions.md),
+                TextFormField(
+                  controller: _balanceCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [ThousandsSeparatorFormatter()],
+                  decoration: const InputDecoration(
+                    labelText: 'Saldo inicial',
+                    hintText: '0',
+                    prefixText: '\$ ',
+                  ),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Ingresa el saldo' : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Ingresa el saldo' : null,
-              ),
+              ],
               const SizedBox(height: AppDimensions.lg),
               Text('Color', style: AppTextStyles.labelLarge),
               const SizedBox(height: AppDimensions.sm),
@@ -227,12 +229,12 @@ class _AddAccountPageState extends State<AddAccountPage> {
               if (_isEditing) ...[
                 const SizedBox(height: AppDimensions.md),
                 OutlinedButton(
-                  onPressed: () => _confirmArchive(userId),
+                  onPressed: () => _confirmDelete(userId),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.danger,
                     side: const BorderSide(color: AppColors.danger),
                   ),
-                  child: const Text('Archivar cuenta'),
+                  child: const Text('Eliminar cuenta'),
                 ),
               ],
             ],
@@ -310,13 +312,13 @@ class _AddAccountPageState extends State<AddAccountPage> {
     );
   }
 
-  void _confirmArchive(String userId) {
+  void _confirmDelete(String userId) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Archivar cuenta'),
+        title: const Text('Eliminar cuenta'),
         content: const Text(
-          'La cuenta se ocultará del dashboard pero sus transacciones se conservarán. ¿Continuar?',
+          'Se eliminará permanentemente esta cuenta. Las transacciones registradas no se borran. ¿Continuar?',
         ),
         actions: [
           TextButton(
@@ -328,11 +330,11 @@ class _AddAccountPageState extends State<AddAccountPage> {
               Navigator.pop(context);
               await context
                   .read<AccountsCubit>()
-                  .archiveAccount(userId, widget.editAccount!.id);
+                  .deleteAccount(userId, widget.editAccount!.id);
               if (mounted) context.pop(true);
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Archivar'),
+            child: const Text('Eliminar'),
           ),
         ],
       ),

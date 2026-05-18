@@ -56,6 +56,17 @@ class AccountsCubit extends Cubit<AccountsState> {
     );
   }
 
+  Future<bool> deleteAccount(String userId, String accountId) async {
+    final result = await _updateAccount.delete(userId, accountId);
+    return result.fold(
+      (failure) {
+        emit(AccountsState.error(failure.message));
+        return false;
+      },
+      (_) => true,
+    );
+  }
+
   double get consolidatedBalance {
     if (state.accounts == null) return 0;
     return state.accounts!.fold(0.0, (sum, a) => sum + a.netBalance);

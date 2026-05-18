@@ -59,6 +59,16 @@ class AccountRepositoryImpl implements AccountRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deleteAccount(String userId, String accountId) async {
+    try {
+      await _dataSource.deleteAccount(userId, accountId);
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> updateBalance(
       String userId, String accountId, double newBalance) async {
     try {

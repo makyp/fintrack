@@ -8,5 +8,6 @@ abstract class AccountRepository {
   Future<Either<Failure, Account>> addAccount(Account account);
   Future<Either<Failure, Account>> updateAccount(Account account);
   Future<Either<Failure, void>> archiveAccount(String userId, String accountId);
+  Future<Either<Failure, void>> deleteAccount(String userId, String accountId);
   Future<Either<Failure, void>> updateBalance(String userId, String accountId, double newBalance);
 }

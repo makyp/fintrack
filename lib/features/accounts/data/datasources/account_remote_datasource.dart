@@ -10,6 +10,7 @@ abstract class AccountRemoteDataSource {
   Future<AccountModel> addAccount(AccountModel account);
   Future<AccountModel> updateAccount(AccountModel account);
   Future<void> archiveAccount(String userId, String accountId);
+  Future<void> deleteAccount(String userId, String accountId);
   Future<void> updateBalance(String userId, String accountId, double newBalance);
 }
 
@@ -125,6 +126,15 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   Future<void> archiveAccount(String userId, String accountId) async {
     try {
       await _accountsRef(userId).doc(accountId).update({'isArchived': true});
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> deleteAccount(String userId, String accountId) async {
+    try {
+      await _accountsRef(userId).doc(accountId).delete();
     } catch (e) {
       throw ServerException(e.toString());
     }
