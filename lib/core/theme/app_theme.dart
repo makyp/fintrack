@@ -59,7 +59,7 @@ abstract class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFB923C),
+          backgroundColor: p.primary,
           foregroundColor: AppColors.white,
           minimumSize: const Size(double.infinity, 52),
           elevation: 0,
@@ -71,9 +71,9 @@ abstract class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFFB923C),
+          foregroundColor: p.primary,
           minimumSize: const Size(double.infinity, 52),
-          side: const BorderSide(color: Color(0xFFFB923C), width: 1.5),
+          side: BorderSide(color: p.primary, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -82,7 +82,7 @@ abstract class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFFFB923C),
+          foregroundColor: p.primary,
           textStyle: AppTextStyles.labelLarge,
         ),
       ),
