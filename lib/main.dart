@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -24,13 +23,6 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Wait for Firebase Auth to finish loading the persisted session from disk
-  // before the app UI starts. Without this, authStateChanges() can fire null
-  // on cold start even when a valid session exists, forcing re-login.
-  await FirebaseAuth.instance
-      .authStateChanges()
-      .first
-      .timeout(const Duration(seconds: 5), onTimeout: () => null);
   await configureDependencies();
   await initializeDateFormatting('es', null);
   Intl.defaultLocale = 'es';

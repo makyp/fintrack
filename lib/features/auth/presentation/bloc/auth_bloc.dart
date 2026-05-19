@@ -21,6 +21,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SendPasswordReset _sendPasswordReset;
   final SignOut _signOut;
   StreamSubscription<AppUser?>? _authSubscription;
+  Timer? _sessionTimer;
 
   AuthBloc(
     this._repository,
@@ -45,9 +46,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
     await _authSubscription?.cancel();
-    _authSubscription = _repository.authStateChanges.listen(
-      (user) => add(AuthUserChanged(user)),
-    );
+    _sessionTimer?.cancel();
+
+    bool firstNull = true;
+
+    _authSubscription = _repository.authStateChanges.listen((user) {
+      _sessionTimer?.cancel();
+      if (user == null && firstNull) {
+        firstNull = false;
+        // Firebase fires null before restoring the persisted session on
+        // Android cold start. Wait 2 s; if the real user arrives first we
+        // cancel the timer and go straight to the dashboard.
+        _sessionTimer = Timer(const Duration(seconds: 2), () {
+          add(const AuthUserChanged(null));
+        });
+      } else {
+        firstNull = false;
+        add(AuthUserChanged(user));
+      }
+    });
   }
 
   void _onUserChanged(AuthUserChanged event, Emitter<AuthState> emit) {
@@ -191,6 +208,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   @override
   Future<void> close() {
     _authSubscription?.cancel();
+    _sessionTimer?.cancel();
     return super.close();
   }
 }
