@@ -86,7 +86,7 @@ flutter_launcher_icons:
   android: true
   min_sdk_android: 21
   image_path_android: "assets/images/LogoFimakyp.png"
-  adaptive_icon_background: "#2563EB"
+  adaptive_icon_background: "#7C3AED"
   adaptive_icon_foreground: "assets/images/LogoFimakyp.png"
   # iOS
   ios: true
@@ -96,5 +96,5 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/images/LogoFimakyp.png"
-    background_color: "#2563EB"
-    theme_color: "#2563EB"
+    background_color: "#7C3AED"
+    theme_color: "#7C3AED"
