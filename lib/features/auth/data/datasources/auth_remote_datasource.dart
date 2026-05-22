@@ -49,17 +49,33 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Stream<AppUserModel?> get authStateChanges {
-    // main() already awaited authStateChanges().first so Firebase Auth has
-    // finished loading the persisted session before this stream is subscribed to.
-    // currentUser is a synchronous fallback in case the stream still fires null.
-    return _auth.authStateChanges().asyncMap((user) async {
+    // asyncExpand lets us yield the Firebase-level user immediately (before the
+    // Firestore profile fetch completes) so the BLoC 2-second session-restore
+    // timer is cancelled as soon as Firebase confirms the session, not after the
+    // full Firestore round-trip. Without this, slow Firestore responses (>2 s)
+    // caused the timer to fire first and send the user to the login page.
+    return _auth.authStateChanges().asyncExpand((user) async* {
       final resolvedUser = user ?? _auth.currentUser;
-      if (resolvedUser == null) return null;
+      if (resolvedUser == null) {
+        yield null;
+        return;
+      }
+      // Immediately confirm auth to cancel the BLoC timer. onboardingCompleted
+      // defaults to true here (safe for session restores); the full Firestore
+      // yield below will correct it if the user actually hasn't finished.
+      yield AppUserModel(
+        uid: resolvedUser.uid,
+        email: resolvedUser.email ?? '',
+        displayName: resolvedUser.displayName ?? '',
+        photoUrl: resolvedUser.photoURL,
+        currency: 'COP',
+        onboardingCompleted: true,
+        createdAt: DateTime.now(),
+      );
+      // Load complete profile from Firestore
       try {
-        return await getUserProfile(resolvedUser.uid);
+        yield await getUserProfile(resolvedUser.uid);
       } catch (e) {
-        // AuthException means the Firestore doc doesn't exist → new user.
-        // Any other error is a transient Firestore failure → existing user.
         final bool isNewUser = e is AuthException;
         final model = AppUserModel(
           uid: resolvedUser.uid,
@@ -78,7 +94,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
                 .set(model.toFirestore());
           } catch (_) {}
         }
-        return model;
+        yield model;
       }
     });
   }
