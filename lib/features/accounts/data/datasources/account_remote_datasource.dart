@@ -85,6 +85,7 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
         icon: account.icon,
         isArchived: account.isArchived,
         createdAt: account.createdAt,
+        interestRate: account.interestRate,
       );
       await _accountsRef(account.userId).doc(id).set(model.toFirestore());
       return model;
@@ -115,6 +116,7 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
         'currency': account.currency,
         'colorValue': account.colorValue,
         'icon': account.icon,
+        'interestRate': account.interestRate ?? FieldValue.delete(),
       });
       return account;
     } catch (e) {
