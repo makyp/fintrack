@@ -1,5 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/cubit/theme_cubit.dart';
+import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
@@ -33,6 +36,10 @@ class _DailyBarChartState extends State<DailyBarChart> {
       );
     }
 
+    final palette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
+    final incomeColor  = palette.income;
+    final expenseColor = palette.expense;
+
     final maxVal = active
         .map((d) => d.income > d.expenses ? d.income : d.expenses)
         .reduce((a, b) => a > b ? a : b);
@@ -41,12 +48,11 @@ class _DailyBarChartState extends State<DailyBarChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Legend
-        const Row(
+        Row(
           children: [
-            _LegendDot(color: AppColors.income, label: 'Ingresos'),
-            SizedBox(width: 16),
-            _LegendDot(color: AppColors.expense, label: 'Gastos'),
+            _LegendDot(color: incomeColor,  label: 'Ingresos'),
+            const SizedBox(width: 16),
+            _LegendDot(color: expenseColor, label: 'Gastos'),
           ],
         ),
         const SizedBox(height: 12),
@@ -146,16 +152,14 @@ class _DailyBarChartState extends State<DailyBarChart> {
                   barRods: [
                     BarChartRodData(
                       toY: d.income,
-                      color: AppColors.income
-                          .withOpacity(isTouched ? 1.0 : 0.85),
+                      color: incomeColor.withOpacity(isTouched ? 1.0 : 0.85),
                       width: _barWidth(widget.data.length),
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(3)),
                     ),
                     BarChartRodData(
                       toY: d.expenses,
-                      color: AppColors.expense
-                          .withOpacity(isTouched ? 1.0 : 0.85),
+                      color: expenseColor.withOpacity(isTouched ? 1.0 : 0.85),
                       width: _barWidth(widget.data.length),
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(3)),

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/cubit/theme_cubit.dart';
+import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -116,12 +118,12 @@ class _ReportsView extends StatelessWidget {
               const SizedBox(height: AppDimensions.lg),
 
               // ── Summary cards ────────────────────────────────────────────
-              _buildSummaryCards(data),
+              _buildSummaryCards(context, data),
               const SizedBox(height: AppDimensions.md),
 
               // ── Highlight cards: top expense & top income ────────────────
               if (data.topExpense != null || data.topIncome != null) ...[
-                _buildHighlightCards(data),
+                _buildHighlightCards(context, data),
                 const SizedBox(height: AppDimensions.md),
               ],
 
@@ -145,26 +147,32 @@ class _ReportsView extends StatelessWidget {
               const SizedBox(height: AppDimensions.md),
 
               // ── Expense horizontal bars ──────────────────────────────────
-              _Card(
-                child: CategoryHorizontalBars(
-                  categories: data.expensesByCategory,
-                  total: data.totalExpenses,
-                  title: 'Gastos por categoría',
-                  barColor: AppColors.expense,
-                ),
-              ),
+              Builder(builder: (ctx) {
+                final p = AppColorPalette.fromType(ctx.read<ThemeCubit>().state);
+                return _Card(
+                  child: CategoryHorizontalBars(
+                    categories: data.expensesByCategory,
+                    total: data.totalExpenses,
+                    title: 'Gastos por categoría',
+                    barColor: p.expense,
+                  ),
+                );
+              }),
               const SizedBox(height: AppDimensions.md),
 
               // ── Income horizontal bars ───────────────────────────────────
               if (data.incomeByCategory.isNotEmpty || data.totalIncome == 0) ...[
-                _Card(
-                  child: CategoryHorizontalBars(
-                    categories: data.incomeByCategory,
-                    total: data.totalIncome,
-                    title: 'Ingresos por categoría',
-                    barColor: AppColors.income,
-                  ),
-                ),
+                Builder(builder: (ctx) {
+                  final p = AppColorPalette.fromType(ctx.read<ThemeCubit>().state);
+                  return _Card(
+                    child: CategoryHorizontalBars(
+                      categories: data.incomeByCategory,
+                      total: data.totalIncome,
+                      title: 'Ingresos por categoría',
+                      barColor: p.income,
+                    ),
+                  );
+                }),
                 const SizedBox(height: AppDimensions.md),
               ],
 
@@ -245,16 +253,17 @@ class _ReportsView extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCards(ReportData data) {
+  Widget _buildSummaryCards(BuildContext context, ReportData data) {
+    final palette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
     final net = data.netBalance;
-    final netColor = net >= 0 ? AppColors.income : AppColors.expense;
+    final netColor = net >= 0 ? palette.income : palette.expense;
     return Row(
       children: [
         Expanded(
             child: _SummaryCard(
           label: 'Ingresos',
           amount: data.totalIncome,
-          color: AppColors.income,
+          color: palette.income,
           icon: Icons.trending_up,
         )),
         const SizedBox(width: AppDimensions.sm),
@@ -262,7 +271,7 @@ class _ReportsView extends StatelessWidget {
             child: _SummaryCard(
           label: 'Gastos',
           amount: data.totalExpenses,
-          color: AppColors.expense,
+          color: palette.expense,
           icon: Icons.trending_down,
         )),
         const SizedBox(width: AppDimensions.sm),
@@ -280,7 +289,8 @@ class _ReportsView extends StatelessWidget {
     );
   }
 
-  Widget _buildHighlightCards(ReportData data) {
+  Widget _buildHighlightCards(BuildContext context, ReportData data) {
+    final palette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
     return Row(
       children: [
         if (data.topExpense != null)
@@ -288,7 +298,7 @@ class _ReportsView extends StatelessWidget {
             child: _HighlightCard(
               label: 'Mayor gasto',
               categoryData: data.topExpense!,
-              color: AppColors.expense,
+              color: palette.expense,
             ),
           ),
         if (data.topExpense != null && data.topIncome != null)
@@ -298,7 +308,7 @@ class _ReportsView extends StatelessWidget {
             child: _HighlightCard(
               label: 'Mayor ingreso',
               categoryData: data.topIncome!,
-              color: AppColors.income,
+              color: palette.income,
             ),
           ),
       ],
@@ -558,29 +568,33 @@ class _GoalCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                '$pct%',
-                style: AppTextStyles.monoSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
+              Builder(builder: (ctx) {
+                final p = AppColorPalette.fromType(ctx.read<ThemeCubit>().state);
+                return Text(
+                  '$pct%',
+                  style: AppTextStyles.monoSmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: p.primary,
+                  ),
+                );
+              }),
             ],
           ),
           const SizedBox(height: AppDimensions.sm),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: goal.progress,
-              minHeight: 8,
-              backgroundColor: AppColors.grey200,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                goal.progress >= 0.8
-                    ? AppColors.income
-                    : AppColors.primary,
+          Builder(builder: (ctx) {
+            final p = AppColorPalette.fromType(ctx.read<ThemeCubit>().state);
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: goal.progress,
+                minHeight: 8,
+                backgroundColor: AppColors.grey200,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  goal.progress >= 0.8 ? p.income : p.primary,
+                ),
               ),
-            ),
-          ),
+            );
+          }),
           const SizedBox(height: AppDimensions.xs),
           Row(
             children: [
@@ -726,7 +740,7 @@ class _HouseholdMemberBreakdownState
             _MemberStatCard(
               members: stats.members,
               amounts: stats.expenses,
-              color: AppColors.expense,
+              color: AppColorPalette.fromType(context.read<ThemeCubit>().state).expense,
               totalLabel: 'Total gastos',
               emptyText: 'Sin gastos compartidos este mes',
             ),

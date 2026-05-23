@@ -292,7 +292,7 @@ class _DashboardViewState extends State<_DashboardView> {
                     label: 'Activos',
                     amount: assets,
                     icon: Icons.trending_up_rounded,
-                    color: const Color(0xFF6EE7B7),
+                    color: palette.income,
                   ),
                   Container(
                     width: 1, height: 36,
@@ -303,7 +303,7 @@ class _DashboardViewState extends State<_DashboardView> {
                     label: 'Deudas',
                     amount: debts,
                     icon: Icons.trending_down_rounded,
-                    color: const Color(0xFFFCA5A5),
+                    color: palette.expense,
                   ),
                 ],
               ),
@@ -398,6 +398,7 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildEmptyAccounts(BuildContext context, String userId) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.pagePadding),
       child: GestureDetector(
@@ -405,17 +406,17 @@ class _DashboardViewState extends State<_DashboardView> {
         child: Container(
           padding: const EdgeInsets.all(AppDimensions.lg),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.05),
+            color: primary.withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.2),
+              color: primary.withOpacity(0.2),
               style: BorderStyle.solid,
             ),
           ),
           child: Row(
             children: [
-              const Icon(Icons.account_balance_outlined,
-                  color: AppColors.primary, size: 32),
+              Icon(Icons.account_balance_outlined,
+                  color: primary, size: 32),
               const SizedBox(width: AppDimensions.md),
               Expanded(
                 child: Column(
@@ -454,6 +455,7 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
+    final palette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
     final primary = Theme.of(context).colorScheme.primary;
     return SliverToBoxAdapter(
       child: Padding(
@@ -467,16 +469,16 @@ class _DashboardViewState extends State<_DashboardView> {
               context,
               icon: Icons.arrow_downward_rounded,
               label: 'Gasto',
-              bgColor: AppColors.danger.withOpacity(0.1),
-              iconColor: AppColors.danger,
+              bgColor: palette.expense.withOpacity(0.15),
+              iconColor: palette.expense,
               onTap: () => _openTransactionForm(context, type: TransactionType.expense),
             ),
             _buildQuickActionBtn(
               context,
               icon: Icons.arrow_upward_rounded,
               label: 'Ingreso',
-              bgColor: AppColors.success.withOpacity(0.1),
-              iconColor: AppColors.success,
+              bgColor: palette.income.withOpacity(0.15),
+              iconColor: palette.income,
               onTap: () => _openTransactionForm(context, type: TransactionType.income),
             ),
             _buildQuickActionBtn(
@@ -592,7 +594,8 @@ class _DashboardViewState extends State<_DashboardView> {
                   child: Column(
                     children: recent.map((tx) {
                       final isExpense = tx.type == TransactionType.expense;
-                      final color = isExpense ? AppColors.danger : AppColors.success;
+                      final txPalette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
+                      final color = isExpense ? txPalette.expense : txPalette.income;
                       final sign = isExpense ? '-' : '+';
                       return ListTile(
                         leading: Container(

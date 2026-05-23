@@ -1,5 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/cubit/theme_cubit.dart';
+import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -15,6 +18,10 @@ class MonthlyBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (trend.isEmpty) return const SizedBox.shrink();
 
+    final palette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
+    final incomeColor  = palette.income;
+    final expenseColor = palette.expense;
+
     final maxY = trend
         .expand((m) => [m.income, m.expenses])
         .fold(0.0, (prev, v) => v > prev ? v : prev);
@@ -25,12 +32,11 @@ class MonthlyBarChart extends StatelessWidget {
       children: [
         Text('Tendencia mensual', style: AppTextStyles.headlineSmall),
         const SizedBox(height: AppDimensions.sm),
-        // Legend
-        const Row(
+        Row(
           children: [
-            _LegendDot(color: AppColors.income, label: 'Ingresos'),
-            SizedBox(width: AppDimensions.md),
-            _LegendDot(color: AppColors.expense, label: 'Gastos'),
+            _LegendDot(color: incomeColor,  label: 'Ingresos'),
+            const SizedBox(width: AppDimensions.md),
+            _LegendDot(color: expenseColor, label: 'Gastos'),
           ],
         ),
         const SizedBox(height: AppDimensions.md),
@@ -116,14 +122,14 @@ class MonthlyBarChart extends StatelessWidget {
                   barRods: [
                     BarChartRodData(
                       toY: m.income,
-                      color: AppColors.income,
+                      color: incomeColor,
                       width: 10,
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4)),
                     ),
                     BarChartRodData(
                       toY: m.expenses,
-                      color: AppColors.expense,
+                      color: expenseColor,
                       width: 10,
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4)),
@@ -165,8 +171,7 @@ class _LegendDot extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 4),
         Text(label,
-            style:
-                AppTextStyles.bodySmall.copyWith(color: AppColors.grey600)),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600)),
       ],
     );
   }

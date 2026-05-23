@@ -1,5 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/cubit/theme_cubit.dart';
+import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -22,6 +25,11 @@ class _TrendLineChartState extends State<TrendLineChart> {
   Widget build(BuildContext context) {
     if (widget.trend.isEmpty) return const SizedBox.shrink();
 
+    final palette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
+    final incomeColor  = palette.income;
+    final expenseColor = palette.expense;
+    final netColor     = palette.primary;
+
     final maxY = widget.trend
         .expand((m) => [m.income, m.expenses])
         .fold(0.0, (prev, v) => v > prev ? v : prev);
@@ -32,13 +40,13 @@ class _TrendLineChartState extends State<TrendLineChart> {
       children: [
         Text('Evolución 6 meses', style: AppTextStyles.headlineSmall),
         const SizedBox(height: AppDimensions.sm),
-        const Row(
+        Row(
           children: [
-            _LegendDot(color: AppColors.income, label: 'Ingresos'),
-            SizedBox(width: AppDimensions.md),
-            _LegendDot(color: AppColors.expense, label: 'Gastos'),
-            SizedBox(width: AppDimensions.md),
-            _LegendDot(color: AppColors.primary, label: 'Neto'),
+            _LegendDot(color: incomeColor,  label: 'Ingresos'),
+            const SizedBox(width: AppDimensions.md),
+            _LegendDot(color: expenseColor, label: 'Gastos'),
+            const SizedBox(width: AppDimensions.md),
+            _LegendDot(color: netColor,     label: 'Neto'),
           ],
         ),
         const SizedBox(height: AppDimensions.md),
@@ -51,13 +59,9 @@ class _TrendLineChartState extends State<TrendLineChart> {
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
                   getTooltipItems: (spots) {
+                    final labels = ['Ing', 'Gas', 'Neto'];
+                    final colors = [incomeColor, expenseColor, netColor];
                     return spots.map((spot) {
-                      final labels = ['Ing', 'Gas', 'Neto'];
-                      final colors = [
-                        AppColors.income,
-                        AppColors.expense,
-                        AppColors.primary
-                      ];
                       return LineTooltipItem(
                         '${labels[spot.barIndex]}: ${CurrencyFormatter.format(spot.y, compact: true)}',
                         AppTextStyles.bodySmall.copyWith(
@@ -91,7 +95,7 @@ class _TrendLineChartState extends State<TrendLineChart> {
                           widget.trend[i].label,
                           style: AppTextStyles.bodySmall.copyWith(
                             color: i == _touchedIndex
-                                ? AppColors.primary
+                                ? netColor
                                 : AppColors.grey500,
                             fontSize: 10,
                             fontWeight: i == _touchedIndex
@@ -134,17 +138,15 @@ class _TrendLineChartState extends State<TrendLineChart> {
               lineBarsData: [
                 _buildLine(
                   spots: widget.trend.asMap().entries
-                      .map((e) =>
-                          FlSpot(e.key.toDouble(), e.value.income))
+                      .map((e) => FlSpot(e.key.toDouble(), e.value.income))
                       .toList(),
-                  color: AppColors.income,
+                  color: incomeColor,
                 ),
                 _buildLine(
                   spots: widget.trend.asMap().entries
-                      .map((e) =>
-                          FlSpot(e.key.toDouble(), e.value.expenses))
+                      .map((e) => FlSpot(e.key.toDouble(), e.value.expenses))
                       .toList(),
-                  color: AppColors.expense,
+                  color: expenseColor,
                 ),
                 _buildLine(
                   spots: widget.trend.asMap().entries
@@ -152,7 +154,7 @@ class _TrendLineChartState extends State<TrendLineChart> {
                           e.key.toDouble(),
                           (e.value.net).clamp(0, double.infinity).toDouble()))
                       .toList(),
-                  color: AppColors.primary,
+                  color: netColor,
                   dashed: true,
                 ),
               ],
@@ -224,8 +226,7 @@ class _LegendDot extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Text(label,
-            style:
-                AppTextStyles.bodySmall.copyWith(color: AppColors.grey600)),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600)),
       ],
     );
   }

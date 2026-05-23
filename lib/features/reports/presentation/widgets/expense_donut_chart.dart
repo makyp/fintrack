@@ -1,5 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/cubit/theme_cubit.dart';
+import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -25,10 +28,12 @@ class ExpenseDonutChart extends StatefulWidget {
 class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
   int _touched = -1;
 
-  static const _colors = AppColors.categoryColors;
-
   @override
   Widget build(BuildContext context) {
+    final colors = AppColorPalette.fromType(
+      context.read<ThemeCubit>().state,
+    ).chartColors;
+
     if (widget.categories.isEmpty) {
       return _buildEmpty();
     }
@@ -56,24 +61,24 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
                   });
                 },
               ),
-              sections: _buildSections(),
+              sections: _buildSections(colors),
               centerSpaceRadius: 56,
               sectionsSpace: 2,
             ),
           ),
         ),
         const SizedBox(height: AppDimensions.md),
-        _buildLegend(),
+        _buildLegend(colors),
       ],
     );
   }
 
-  List<PieChartSectionData> _buildSections() {
+  List<PieChartSectionData> _buildSections(List<Color> colors) {
     return widget.categories.asMap().entries.map((e) {
       final i = e.key;
       final cat = e.value;
       final isTouched = i == _touched;
-      final color = _colors[i % _colors.length];
+      final color = colors[i % colors.length];
       return PieChartSectionData(
         color: color,
         value: cat.amount,
@@ -103,12 +108,12 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
     }).toList();
   }
 
-  Widget _buildLegend() {
+  Widget _buildLegend(List<Color> colors) {
     return Column(
       children: widget.categories.asMap().entries.map((e) {
         final i = e.key;
         final cat = e.value;
-        final color = _colors[i % _colors.length];
+        final color = colors[i % colors.length];
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 3),
           child: Row(
