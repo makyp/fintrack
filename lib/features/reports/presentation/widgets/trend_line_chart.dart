@@ -30,10 +30,17 @@ class _TrendLineChartState extends State<TrendLineChart> {
     final expenseColor = palette.expense;
     final netColor     = palette.primary;
 
-    final maxY = widget.trend
-        .expand((m) => [m.income, m.expenses])
+    final maxVal = widget.trend
+        .expand((m) => [m.income, m.expenses, m.net])
         .fold(0.0, (prev, v) => v > prev ? v : prev);
-    final yInterval = _niceInterval(maxY);
+    // Net can be negative (spent more than earned) → let the axis go below zero.
+    final minNet = widget.trend
+        .map((m) => m.net)
+        .fold(0.0, (prev, v) => v < prev ? v : prev);
+
+    final maxY = maxVal * 1.25;
+    final minY = minNet < 0 ? minNet * 1.25 : 0.0;
+    final yInterval = _niceInterval(maxY - minY);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,8 +61,19 @@ class _TrendLineChartState extends State<TrendLineChart> {
           height: 200,
           child: LineChart(
             LineChartData(
-              minY: 0,
-              maxY: maxY * 1.25,
+              minY: minY,
+              maxY: maxY,
+              extraLinesData: ExtraLinesData(
+                horizontalLines: [
+                  // Zero baseline so negative months read clearly below it.
+                  if (minY < 0)
+                    HorizontalLine(
+                      y: 0,
+                      color: AppColors.grey300,
+                      strokeWidth: 1,
+                    ),
+                ],
+              ),
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
                   getTooltipItems: (spots) {
@@ -113,7 +131,11 @@ class _TrendLineChartState extends State<TrendLineChart> {
                     reservedSize: 52,
                     interval: yInterval,
                     getTitlesWidget: (value, meta) {
-                      if (value == 0) return const SizedBox.shrink();
+                      // Hide the 0 label only when the axis starts at 0
+                      // (no negatives); otherwise show it as the baseline.
+                      if (value == 0 && minY >= 0) {
+                        return const SizedBox.shrink();
+                      }
                       return Text(
                         CurrencyFormatter.format(value, compact: true),
                         style: AppTextStyles.bodySmall
@@ -149,10 +171,9 @@ class _TrendLineChartState extends State<TrendLineChart> {
                   color: expenseColor,
                 ),
                 _buildLine(
+                  // Net may be negative when expenses exceed income.
                   spots: widget.trend.asMap().entries
-                      .map((e) => FlSpot(
-                          e.key.toDouble(),
-                          (e.value.net).clamp(0, double.infinity).toDouble()))
+                      .map((e) => FlSpot(e.key.toDouble(), e.value.net))
                       .toList(),
                   color: netColor,
                   dashed: true,

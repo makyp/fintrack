@@ -111,8 +111,6 @@ class _DebtsViewState extends State<_DebtsView>
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(context, initialDirection:
             _tabController.index == 1 ? DebtDirection.iOweThem : DebtDirection.theyOweMe),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
         icon: const Icon(Icons.add),
         label: const Text('Nueva deuda'),
       ),
@@ -247,22 +245,23 @@ class _PersonGroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.07),
+        color: primary.withOpacity(0.07),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: primary.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: AppColors.primary.withOpacity(0.15),
+            backgroundColor: primary.withOpacity(0.15),
             child: Text(
               name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                  color: AppColors.primary, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: primary, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: 12),
@@ -284,7 +283,7 @@ class _PersonGroupHeader extends StatelessWidget {
           Text(
             CurrencyFormatter.format(total),
             style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.primary, fontWeight: FontWeight.bold),
+                color: primary, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -298,24 +297,25 @@ class _SummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     final total = debts.fold(0.0, (s, d) => s + d.pendingAmount);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.08),
+        color: primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: primary.withOpacity(0.2)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_balance_wallet_outlined,
-              color: AppColors.primary, size: 20),
+          Icon(Icons.account_balance_wallet_outlined,
+              color: primary, size: 20),
           const SizedBox(width: 8),
           Text('Total pendiente: ',
               style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey600)),
           Text(CurrencyFormatter.format(total),
               style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.primary, fontWeight: FontWeight.bold)),
+                  color: primary, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -343,7 +343,7 @@ class _DebtCard extends StatelessWidget {
     final isOverdue = debt.isOverdue;
     final accentColor = debt.isClosed
         ? AppColors.grey400
-        : (isOverdue ? AppColors.danger : AppColors.primary);
+        : (isOverdue ? AppColors.danger : Theme.of(context).colorScheme.primary);
     final progress =
         debt.currentTotal > 0 ? debt.totalPaid / debt.currentTotal : 0.0;
 
@@ -484,6 +484,7 @@ class _DebtCard extends StatelessWidget {
   void _showOptions(BuildContext context) {
     final cubit = context.read<DebtsCubit>();
     final nav = Navigator.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
 
     showModalBottomSheet(
       context: context,
@@ -509,13 +510,13 @@ class _DebtCard extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: AppColors.primary.withOpacity(0.12),
+                      backgroundColor: primary.withOpacity(0.12),
                       child: Text(
                         debt.personName.isNotEmpty
                             ? debt.personName[0].toUpperCase()
                             : '?',
-                        style: const TextStyle(
-                            color: AppColors.primary, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: primary, fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(width: AppDimensions.sm),
@@ -536,7 +537,7 @@ class _DebtCard extends StatelessWidget {
                 ),
                 ListTile(
                   leading:
-                      const Icon(Icons.edit_outlined, color: AppColors.primary),
+                      Icon(Icons.edit_outlined, color: primary),
                   title: const Text('Editar'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -579,6 +580,7 @@ class _DebtCard extends StatelessWidget {
   void _showPaymentDialog(BuildContext context, DebtsCubit cubit) {
     final ctrl = TextEditingController();
     final noteCtrl = TextEditingController();
+    final primary = Theme.of(context).colorScheme.primary;
     final accountsCubit = getIt<AccountsCubit>()..watchAccounts(userId);
 
     showDialog(
@@ -643,12 +645,12 @@ class _DebtCard extends StatelessWidget {
                                           ? AppColors.white
                                           : AppColors.grey700)),
                               selected: sel,
-                              selectedColor: AppColors.primary,
+                              selectedColor: primary,
                               backgroundColor: AppColors.grey100,
                               showCheckmark: false,
                               side: BorderSide(
                                   color: sel
-                                      ? AppColors.primary
+                                      ? primary
                                       : AppColors.grey200),
                               onSelected: (_) => setS(() =>
                                   selectedAccountId =

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../../core/cubit/theme_cubit.dart';
+import '../../../../../core/theme/app_color_scheme.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../../core/theme/app_dimensions.dart';
@@ -39,6 +41,7 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = AppColorPalette.fromType(context.read<ThemeCubit>().state).primary;
     return BlocBuilder<GamificationCubit, GamificationState>(
       builder: (context, state) {
         return Column(
@@ -74,14 +77,14 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
               ],
             ),
             const SizedBox(height: AppDimensions.sm),
-            _buildCalendarGrid(state.activityDays),
+            _buildCalendarGrid(state.activityDays, accent),
           ],
         );
       },
     );
   }
 
-  Widget _buildCalendarGrid(Set<DateTime> activeDays) {
+  Widget _buildCalendarGrid(Set<DateTime> activeDays, Color accent) {
     final firstDay = DateTime(_month.year, _month.month, 1);
     // Monday=1, so offset: Monday=0, ..., Sunday=6
     final startOffset = (firstDay.weekday - 1) % 7;
@@ -128,6 +131,7 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
               isActive: isActive,
               isToday: isToday,
               isFuture: isFuture,
+              accent: accent,
             );
           },
         ),
@@ -141,12 +145,14 @@ class _DayCell extends StatelessWidget {
   final bool isActive;
   final bool isToday;
   final bool isFuture;
+  final Color accent;
 
   const _DayCell({
     required this.day,
     required this.isActive,
     required this.isToday,
     required this.isFuture,
+    required this.accent,
   });
 
   @override
@@ -157,11 +163,11 @@ class _DayCell extends StatelessWidget {
     if (isFuture) {
       textColor = AppColors.grey300;
     } else if (isActive) {
-      bgColor = AppColors.primary;
+      bgColor = accent;
       textColor = AppColors.white;
     } else if (isToday) {
       bgColor = AppColors.grey100;
-      textColor = AppColors.primary;
+      textColor = accent;
     }
 
     return Container(
@@ -169,7 +175,7 @@ class _DayCell extends StatelessWidget {
         color: bgColor,
         shape: BoxShape.circle,
         border: isToday && !isActive
-            ? Border.all(color: AppColors.primary, width: 1.5)
+            ? Border.all(color: accent, width: 1.5)
             : null,
       ),
       child: Center(

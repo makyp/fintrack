@@ -54,8 +54,6 @@ class _GoalsView extends StatelessWidget {
                   : _buildList(context, state.goals, userId),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _openForm(context, userId),
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.white,
             icon: const Icon(Icons.add),
             label: const Text('Nueva meta'),
           ),
@@ -138,7 +136,9 @@ class _GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = goal.progress;
-    final color = goal.isCompleted ? AppColors.success : AppColors.primary;
+    final color = goal.isCompleted
+        ? AppColors.success
+        : Theme.of(context).colorScheme.primary;
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppDimensions.md),
@@ -306,7 +306,8 @@ class _GoalOptionsSheet extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
+              leading: Icon(Icons.edit_outlined,
+                  color: Theme.of(context).colorScheme.primary),
               title: const Text('Editar'),
               onTap: () {
                 Navigator.pop(context);
