@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 /// Runs on every app open (after auth) to replace the paid Cloud Functions:
 ///   1. processRecurringTransactions  — processes overdue recurring txs
 ///   2. creditHighYieldInterest       — credits daily interest on highYield accounts
+///   3. migrateCategoryIds            — one-time backfill of the legacy
+///                                      'category' key into 'categoryId'
 class AppStartupService {
   final FirebaseFirestore _db;
   final Uuid _uuid;
@@ -12,10 +14,48 @@ class AppStartupService {
 
   Future<void> run(String userId) async {
     if (userId.isEmpty) return;
+    // Run the migration before crediting/recurring so any historical records
+    // are normalised first; the guard flag makes it a no-op after the first run.
+    await _migrateCategoryIds(userId);
     await Future.wait([
       _processRecurring(userId),
       _creditInterest(userId),
     ]);
+  }
+
+  // ── 0. One-time category key migration ──────────────────────────────────────
+
+  /// Early auto-generated transactions (interest + recurring) were written with
+  /// the key `category`, but [TransactionModel] reads/writes `categoryId`. Those
+  /// records therefore deserialised as "Otro". This copies the legacy value into
+  /// `categoryId` for any transaction that is missing it, then sets a guard flag
+  /// on the user doc so it never scans again.
+  Future<void> _migrateCategoryIds(String userId) async {
+    final userRef = _db.collection('users').doc(userId);
+    final userSnap = await userRef.get();
+    if (userSnap.data()?['categoryIdMigrated'] == true) return;
+
+    final txSnap = await userRef.collection('transactions').get();
+
+    WriteBatch batch = _db.batch();
+    var ops = 0;
+    for (final doc in txSnap.docs) {
+      final data = doc.data();
+      final legacy = data['category'];
+      if (data['categoryId'] == null && legacy is String && legacy.isNotEmpty) {
+        batch.update(doc.reference, {'categoryId': legacy});
+        ops++;
+        if (ops >= 400) {
+          await batch.commit();
+          batch = _db.batch();
+          ops = 0;
+        }
+      }
+    }
+
+    // Mark migrated (even when nothing needed fixing) so we don't rescan.
+    batch.set(userRef, {'categoryIdMigrated': true}, SetOptions(merge: true));
+    await batch.commit();
   }
 
   // ── 1. Recurring transactions ──────────────────────────────────────────────
@@ -64,7 +104,9 @@ class AppStartupService {
         'userId': userId,
         'amount': rt['amount'],
         'type': rt['type'],
-        'category': rt['category'],
+        // 'categoryId' is the key TransactionModel reads; 'category' would be
+        // dropped on read and shown as "Otro".
+        'categoryId': rt['category'],
         'accountId': rt['accountId'],
         'description': rt['description'],
         'date': todayTs,
@@ -152,54 +194,86 @@ class AppStartupService {
 
     if (snap.docs.isEmpty) return;
 
+    // Upper bound on a single catch-up so a stale/missing lastInterestDate can
+    // never build an unbounded batch.
+    const maxBackfillDays = 60;
+
     final batch = _db.batch();
+    var hasWrites = false;
 
     for (final accDoc in snap.docs) {
       final acc = accDoc.data();
 
-      // Skip if already credited today
-      final lastInterest = acc['lastInterestDate'] as Timestamp?;
-      if (lastInterest != null &&
-          _startOfDay(lastInterest.toDate()) == today) continue;
-
       final annualRate = (acc['interestRate'] as num?)?.toDouble() ?? 0;
       if (annualRate <= 0) continue;
 
-      final balance = (acc['balance'] as num?)?.toDouble() ?? 0;
+      var balance = (acc['balance'] as num?)?.toDouble() ?? 0;
       if (balance <= 0) continue;
 
-      final dailyInterest = (balance * (annualRate / 365)).roundToDouble();
-      if (dailyInterest < 1) continue;
+      final lastInterest = acc['lastInterestDate'] as Timestamp?;
+      final lastDay =
+          lastInterest != null ? _startOfDay(lastInterest.toDate()) : null;
 
-      // Create income transaction
-      final txId = _uuid.v4();
-      final txRef = _db
-          .collection('users')
-          .doc(userId)
-          .collection('transactions')
-          .doc(txId);
+      // Already credited today (or somehow in the future) → nothing to do.
+      if (lastDay != null && !lastDay.isBefore(today)) continue;
 
-      batch.set(txRef, {
-        'userId': userId,
-        'amount': dailyInterest,
-        'type': 'income',
-        'category': 'investment',
-        'accountId': accDoc.id,
-        'description': 'Interés diario 🏆 ${acc['name']}',
-        'date': todayTs,
-        'isRecurring': false,
-        'tags': ['interes', 'alto-rendimiento'],
-        'createdAt': Timestamp.now(),
-      });
+      // Every day still owed interest: strictly after the last credit, up to
+      // and including today. This is what makes a day the app was NEVER opened
+      // still get its record — it is filled in the next time the app opens,
+      // instead of being lost.
+      final daysToCredit = <DateTime>[];
+      if (lastDay == null) {
+        // First credit ever: only today (we don't fabricate unknown history).
+        daysToCredit.add(today);
+      } else {
+        var d = _startOfDay(lastDay.add(const Duration(days: 1)));
+        while (!d.isAfter(today) && daysToCredit.length < maxBackfillDays) {
+          daysToCredit.add(d);
+          d = _startOfDay(d.add(const Duration(days: 1)));
+        }
+      }
 
-      // Update balance + mark today as credited
-      batch.update(accDoc.reference, {
-        'balance': FieldValue.increment(dailyInterest),
-        'lastInterestDate': todayTs,
-      });
+      double creditedTotal = 0;
+      for (final day in daysToCredit) {
+        final dailyInterest = (balance * (annualRate / 365)).roundToDouble();
+        if (dailyInterest < 1) break; // negligible — stop crediting
+
+        final txRef = _db
+            .collection('users')
+            .doc(userId)
+            .collection('transactions')
+            .doc(_uuid.v4());
+
+        batch.set(txRef, {
+          'userId': userId,
+          'amount': dailyInterest,
+          'type': 'income',
+          // Must be 'categoryId' (the key TransactionModel reads/writes), not
+          // 'category' — otherwise it deserialises as TransactionCategory.other
+          // ("Otro") instead of "Inversiones".
+          'categoryId': 'investment',
+          'accountId': accDoc.id,
+          'description': 'Interés diario 🏆 ${acc['name']}',
+          'date': Timestamp.fromDate(day),
+          'isRecurring': false,
+          'tags': ['interes', 'alto-rendimiento'],
+          'createdAt': Timestamp.now(),
+        });
+
+        balance += dailyInterest; // compound for the following day
+        creditedTotal += dailyInterest;
+        hasWrites = true;
+      }
+
+      if (creditedTotal > 0) {
+        batch.update(accDoc.reference, {
+          'balance': FieldValue.increment(creditedTotal),
+          'lastInterestDate': todayTs,
+        });
+      }
     }
 
-    await batch.commit();
+    if (hasWrites) await batch.commit();
   }
 
   DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
