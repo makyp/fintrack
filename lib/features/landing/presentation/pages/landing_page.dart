@@ -266,7 +266,7 @@ class _Navbar extends StatelessWidget {
             _PrimaryButton(
               label: 'Comenzar gratis',
               icon: Icons.arrow_forward_rounded,
-              onTap: () => context.go('/login'),
+              onTap: () => context.go('/register'),
               compact: true,
             ),
           ],
@@ -745,7 +745,7 @@ class _HeroCopy extends StatelessWidget {
               _PrimaryButton(
                   label: 'Comenzar gratis',
                   icon: Icons.rocket_launch_rounded,
-                  onTap: () => context.go('/login')),
+                  onTap: () => context.go('/register')),
               _GhostButton(
                   label: 'Iniciar sesión',
                   icon: Icons.login_rounded,
@@ -2472,7 +2472,7 @@ class _CtaSection extends StatelessWidget {
                 runSpacing: 14,
                 alignment: WrapAlignment.center,
                 children: [
-                  _CtaWhiteButton(onTap: () => context.go('/login')),
+                  _CtaWhiteButton(onTap: () => context.go('/register')),
                   _GhostButton(
                       label: 'Ya tengo cuenta',
                       onTap: () => context.go('/login'),
