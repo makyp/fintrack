@@ -12,7 +12,7 @@ import '../../domain/usecases/sign_out.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
-@injectable
+@lazySingleton
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
   final SignInWithEmail _signInWithEmail;
@@ -21,7 +21,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SendPasswordReset _sendPasswordReset;
   final SignOut _signOut;
   StreamSubscription<AppUser?>? _authSubscription;
-  Timer? _sessionTimer;
+  Timer? _firstNullTimer;
+  bool _sawAuthEvent = false;
 
   AuthBloc(
     this._repository,
@@ -46,25 +47,74 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
     await _authSubscription?.cancel();
-    _sessionTimer?.cancel();
+    _firstNullTimer?.cancel();
+    _sawAuthEvent = false;
 
-    bool firstNull = true;
+    // Fast path: if FirebaseAuth already exposes a persisted user synchronously
+    // (hot restart, or platforms that hydrate currentUser eagerly), restore it
+    // right away so a returning user never sees the login page.
+    if (_repository.currentUser != null) {
+      await _restoreCurrentUser();
+    }
 
     _authSubscription = _repository.authStateChanges.listen((user) {
-      _sessionTimer?.cancel();
-      if (user == null && firstNull) {
-        firstNull = false;
-        // Firebase fires null before restoring the persisted session on
-        // Android cold start. Wait 2 s; if the real user arrives first we
-        // cancel the timer and go straight to the dashboard.
-        _sessionTimer = Timer(const Duration(seconds: 2), () {
-          add(const AuthUserChanged(null));
-        });
-      } else {
-        firstNull = false;
+      // Any concrete event supersedes the pending first-null grace timer.
+      _firstNullTimer?.cancel();
+
+      if (user != null) {
+        // Signed in (fresh login or session restore).
+        _sawAuthEvent = true;
         add(AuthUserChanged(user));
+        return;
       }
+
+      // user == null below.
+      if (_repository.currentUser != null) {
+        // Transient null while the persisted session is still being restored —
+        // the SDK still has the user, so keep them signed in.
+        _sawAuthEvent = true;
+        _restoreCurrentUser();
+        return;
+      }
+
+      if (!_sawAuthEvent) {
+        // VERY FIRST event is null with no SDK user. On Android cold start
+        // Firebase emits null BEFORE it finishes restoring the persisted
+        // session, so this null is not yet trustworthy. Wait briefly: if the
+        // real user (or a hydrated currentUser) shows up we go straight to the
+        // dashboard; only if nothing appears do we conclude there is no session.
+        _sawAuthEvent = true;
+        _firstNullTimer = Timer(const Duration(seconds: 3), () {
+          if (_repository.currentUser != null) {
+            _restoreCurrentUser();
+          } else {
+            add(const AuthUserChanged(null));
+          }
+        });
+        return;
+      }
+
+      // A later null with no SDK user = genuine sign-out.
+      add(const AuthUserChanged(null));
     });
+  }
+
+  /// Restores the persisted session by loading the full Firestore profile, so
+  /// onboardingCompleted is accurate (the bare SDK user defaults it to false,
+  /// which would wrongly re-trigger onboarding). If the profile can't be loaded
+  /// (e.g. offline), we still keep the user signed in and assume onboarding was
+  /// already completed — a returning, persisted user has been through it.
+  Future<void> _restoreCurrentUser() async {
+    final result = await _repository.getCurrentUserProfile();
+    result.fold(
+      (_) {
+        final fallback = _repository.currentUser;
+        if (fallback != null) {
+          add(AuthUserChanged(fallback.copyWith(onboardingCompleted: true)));
+        }
+      },
+      (user) => add(AuthUserChanged(user)),
+    );
   }
 
   void _onUserChanged(AuthUserChanged event, Emitter<AuthState> emit) {
@@ -208,7 +258,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   @override
   Future<void> close() {
     _authSubscription?.cancel();
-    _sessionTimer?.cancel();
+    _firstNullTimer?.cancel();
     return super.close();
   }
 }
