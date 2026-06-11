@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/analytics/analytics_service.dart';
@@ -78,12 +79,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       if (!_sawAuthEvent) {
+        _sawAuthEvent = true;
+        // On web the JS SDK resolves persistence BEFORE the first callback, so
+        // a first null is authoritative — emit immediately (no splash delay for
+        // anonymous landing visitors).
+        if (kIsWeb) {
+          add(const AuthUserChanged(null));
+          return;
+        }
         // VERY FIRST event is null with no SDK user. On Android cold start
         // Firebase emits null BEFORE it finishes restoring the persisted
         // session, so this null is not yet trustworthy. Wait briefly: if the
         // real user (or a hydrated currentUser) shows up we go straight to the
         // dashboard; only if nothing appears do we conclude there is no session.
-        _sawAuthEvent = true;
         _firstNullTimer = Timer(const Duration(seconds: 3), () {
           if (_repository.currentUser != null) {
             _restoreCurrentUser();
