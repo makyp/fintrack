@@ -71,6 +71,7 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return BlocProvider.value(
       value: _accountsCubit,
       child: SingleChildScrollView(
@@ -168,13 +169,13 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
                     ],
                   ),
                   selected: isSelected,
-                  selectedColor: AppColors.primary,
+                  selectedColor: primary,
                   backgroundColor: AppColors.grey100,
                   checkmarkColor: AppColors.white,
                   showCheckmark: false,
                   side: BorderSide(
                     color: isSelected
-                        ? AppColors.primary
+                        ? primary
                         : AppColors.grey200,
                   ),
                   onSelected: (_) => setState(

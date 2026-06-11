@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/cubit/theme_cubit.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -14,6 +16,7 @@ import '../bloc/transactions_bloc.dart';
 import '../bloc/transactions_event.dart';
 import '../bloc/transactions_state.dart';
 import '../widgets/transaction_filter_bar.dart';
+import '../utils/transactions_export.dart';
 import 'transaction_form_page.dart';
 import 'recurring_transactions_page.dart';
 
@@ -87,7 +90,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
                           );
                     },
                   )
-                : const Text('Transacciones'),
+                : const Text('Movimientos'),
             actions: [
               IconButton(
                 icon: Icon(_showSearch ? Icons.close : Icons.search),
@@ -108,6 +111,13 @@ class _TransactionsViewState extends State<_TransactionsView> {
                 ),
               ),
               IconButton(
+                icon: const Icon(Icons.download_outlined),
+                tooltip: 'Descargar histórico',
+                onPressed: state.transactions.isEmpty
+                    ? null
+                    : () => _showExportSheet(context),
+              ),
+              IconButton(
                 icon: const Icon(Icons.filter_list),
                 onPressed: () => _showFilterSheet(context),
               ),
@@ -120,8 +130,6 @@ class _TransactionsViewState extends State<_TransactionsView> {
                   : _buildList(context, state),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _openForm(context),
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.white,
             icon: const Icon(Icons.add),
             label: const Text('Nueva'),
           ),
@@ -140,8 +148,12 @@ class _TransactionsViewState extends State<_TransactionsView> {
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 100),
-      itemCount: dateKeys.length,
+      // +1 for the footer ("Ver más" / counter).
+      itemCount: dateKeys.length + 1,
       itemBuilder: (_, i) {
+        if (i == dateKeys.length) {
+          return _buildFooter(context, state);
+        }
         final key = dateKeys[i];
         final txs = grouped[key]!;
         return Column(
@@ -163,6 +175,47 @@ class _TransactionsViewState extends State<_TransactionsView> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildFooter(BuildContext context, TransactionsState state) {
+    final count = state.transactions.length;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppDimensions.pagePadding, AppDimensions.lg,
+          AppDimensions.pagePadding, AppDimensions.md),
+      child: Column(
+        children: [
+          if (state.hasMore && !state.isFiltered)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: state.loadingMore
+                    ? null
+                    : () => context.read<TransactionsBloc>().add(
+                          const TransactionsLoadMore(),
+                        ),
+                icon: state.loadingMore
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.expand_more),
+                label: Text(state.loadingMore ? 'Cargando…' : 'Ver más'),
+              ),
+            ),
+          const SizedBox(height: AppDimensions.sm),
+          Text(
+            state.isFiltered
+                ? '$count movimientos (filtro aplicado)'
+                : state.hasMore
+                    ? 'Mostrando $count movimientos'
+                    : '$count movimientos en total',
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey400),
+          ),
+        ],
+      ),
     );
   }
 
@@ -192,6 +245,111 @@ class _TransactionsViewState extends State<_TransactionsView> {
         ),
       ),
     );
+  }
+
+  void _showExportSheet(BuildContext context) {
+    final isFiltered = context.read<TransactionsBloc>().state.isFiltered;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppDimensions.sm),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.grey300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppDimensions.md),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.pagePadding),
+              child: Row(
+                children: [
+                  Text('Descargar histórico',
+                      style: AppTextStyles.headlineSmall),
+                ],
+              ),
+            ),
+            if (isFiltered)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.pagePadding, 4, AppDimensions.pagePadding, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Se exporta todo lo que coincide con el filtro',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.grey500)),
+                ),
+              ),
+            const SizedBox(height: AppDimensions.sm),
+            ListTile(
+              leading: const Icon(Icons.table_chart_outlined,
+                  color: AppColors.success),
+              title: const Text('Excel / CSV'),
+              subtitle: const Text('Abre en Excel o Google Sheets'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _export(context, asPdf: false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined,
+                  color: AppColors.danger),
+              title: const Text('PDF'),
+              subtitle: const Text('Documento para imprimir o compartir'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _export(context, asPdf: true);
+              },
+            ),
+            const SizedBox(height: AppDimensions.sm),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _export(BuildContext context, {required bool asPdf}) async {
+    final bloc = context.read<TransactionsBloc>();
+    final accountsCubit = context.read<AccountsCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.showSnackBar(const SnackBar(
+      content: Text('Preparando archivo…'),
+      duration: Duration(seconds: 1),
+    ));
+
+    try {
+      final txs = await bloc.fetchAllForExport();
+      if (txs.isEmpty) {
+        messenger.showSnackBar(const SnackBar(
+          content: Text('No hay movimientos para exportar'),
+        ));
+        return;
+      }
+      final accountNames = {
+        for (final a in accountsCubit.state.accounts ?? <Account>[])
+          a.id: a.name,
+      };
+      if (asPdf) {
+        await TransactionsExport.sharePdf(txs, accountNames: accountNames);
+      } else {
+        await TransactionsExport.shareCsv(txs, accountNames: accountNames);
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('No se pudo exportar: $e'),
+        backgroundColor: AppColors.danger,
+      ));
+    }
   }
 
   void _showFilterSheet(BuildContext context) {
@@ -227,11 +385,13 @@ class _TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isExpense = transaction.type == TransactionType.expense;
     final isTransfer = transaction.type == TransactionType.transfer;
+    // Follow the active theme palette (same colors as the dashboard).
+    final palette = AppColorPalette.fromType(context.watch<ThemeCubit>().state);
     final amountColor = isExpense
-        ? AppColors.danger
+        ? palette.expense
         : isTransfer
-            ? AppColors.secondary
-            : AppColors.success;
+            ? palette.primary
+            : palette.income;
     final sign = isExpense ? '-' : isTransfer ? '' : '+';
 
     return InkWell(

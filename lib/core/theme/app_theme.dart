@@ -169,13 +169,15 @@ abstract class AppTheme {
             return TextStyle(
               color: p.primary,
               fontWeight: FontWeight.w600,
-              fontSize: 11,
+              fontSize: 10,
+              letterSpacing: -0.2,
             );
           }
           return const TextStyle(
             color: AppColors.grey500,
             fontWeight: FontWeight.normal,
-            fontSize: 11,
+            fontSize: 10,
+            letterSpacing: -0.2,
           );
         }),
       ),

@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/thousands_separator_formatter.dart';
+import '../../../accounts/domain/entities/account.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../../../core/di/injection.dart';
@@ -41,6 +43,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   late DateTime _selectedDate;
   bool _isLoading = false;
   bool _shareWithHousehold = false;
+  // Kept in sync with AccountsCubit so _save() can validate available balance.
+  List<Account> _accounts = const [];
 
   bool get _isEditing => widget.transaction != null;
   bool get _isTransfer => _type == TransactionType.transfer;
@@ -171,8 +175,22 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       }
     }
 
-    setState(() => _isLoading = true);
     final amount = ThousandsSeparatorFormatter.parse(_amountCtrl.text);
+
+    // Warn when an expense/transfer would overdraw an asset account (credit
+    // cards are liabilities, so spending on them is expected — skip those).
+    if (!_isEditing && _type != TransactionType.income) {
+      final source = _accountById(_selectedAccountId!);
+      if (source != null &&
+          !source.type.isLiability &&
+          amount > source.balance) {
+        await _showInsufficientBalance(source, amount);
+        return; // hard block — like a bank, the transaction is not allowed
+      }
+    }
+    if (!mounted) return;
+
+    setState(() => _isLoading = true);
     final now = DateTime.now();
     final householdId = (!_isTransfer && _shareWithHousehold)
         ? context.read<AuthBloc>().state.user?.householdId
@@ -203,6 +221,42 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     }
 
     if (mounted) Navigator.of(context).pop();
+  }
+
+  Account? _accountById(String id) {
+    for (final a in _accounts) {
+      if (a.id == id) return a;
+    }
+    return null;
+  }
+
+  /// Blocks the transaction: the amount exceeds the account's available
+  /// balance, so (like a banking app) we inform the user and do not let it
+  /// through. They must correct the amount or pick another account.
+  Future<void> _showInsufficientBalance(Account account, double amount) {
+    final missing = amount - account.balance;
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.account_balance_wallet_outlined,
+            color: AppColors.danger, size: 36),
+        title: const Text('Saldo insuficiente'),
+        content: Text(
+          'La cuenta "${account.name}" tiene '
+          '${CurrencyFormatter.format(account.balance)} disponible, '
+          'pero estás registrando ${CurrencyFormatter.format(amount)}.\n\n'
+          'Faltan ${CurrencyFormatter.format(missing)}. No puedes registrar un '
+          'movimiento mayor al saldo disponible. Verifica el monto o elige '
+          'otra cuenta.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _confirmDelete() {
@@ -252,7 +306,9 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
               ),
           ],
         ),
-        body: SingleChildScrollView(
+        body: BlocListener<AccountsCubit, AccountsState>(
+          listener: (_, state) => _accounts = state.activeAccounts,
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDimensions.pagePadding),
           child: Form(
             key: _formKey,
@@ -290,6 +346,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

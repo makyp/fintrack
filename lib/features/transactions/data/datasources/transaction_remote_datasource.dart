@@ -40,13 +40,13 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
   @override
   Stream<List<TransactionModel>> watchTransactions(String userId, {int limit = 50}) {
-    return _txRef(userId)
-        .orderBy('date', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => TransactionModel.fromFirestore(d.data(), d.id))
-            .toList());
+    Query<Map<String, dynamic>> query =
+        _txRef(userId).orderBy('date', descending: true);
+    // limit <= 0 means "no limit" → stream the full history.
+    if (limit > 0) query = query.limit(limit);
+    return query.snapshots().map((snap) => snap.docs
+        .map((d) => TransactionModel.fromFirestore(d.data(), d.id))
+        .toList());
   }
 
   @override
@@ -67,7 +67,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         final lastDoc = await _txRef(userId).doc(lastDocId).get();
         query = query.startAfterDocument(lastDoc);
       }
-      query = query.limit(limit);
+      // limit <= 0 means "no limit" → fetch every matching document so filtered
+      // views (e.g. all movements of one card) show the complete set.
+      if (limit > 0) query = query.limit(limit);
       final snap = await query.get();
       var results = snap.docs.map((d) => TransactionModel.fromFirestore(d.data(), d.id)).toList();
       if (category != null) {

@@ -38,10 +38,15 @@ class _MobileShell extends StatelessWidget {
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (i) => _navigate(context, i),
-        destinations: _destinations,
+      // Clamp text scaling so a large system font can never wrap a nav label
+      // onto a second line (e.g. "Movimientos" dropping its trailing "s").
+      bottomNavigationBar: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.0,
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (i) => _navigate(context, i),
+          destinations: _destinations,
+        ),
       ),
     );
   }
@@ -118,7 +123,7 @@ class _Sidebar extends StatelessWidget {
 
   static const _navItems = [
     _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Inicio'),
-    _NavItem(Icons.receipt_long_outlined, Icons.receipt_long, 'Transacciones'),
+    _NavItem(Icons.receipt_long_outlined, Icons.receipt_long, 'Movimientos'),
     _NavItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Reportes'),
     _NavItem(Icons.savings_outlined, Icons.savings, 'Metas'),
     _NavItem(Icons.handshake_outlined, Icons.handshake, 'Deudas'),
@@ -312,7 +317,7 @@ const _destinations = [
   NavigationDestination(
     icon: Icon(Icons.receipt_long_outlined),
     selectedIcon: Icon(Icons.receipt_long),
-    label: 'Transacciones',
+    label: 'Movimientos',
   ),
   NavigationDestination(
     icon: Icon(Icons.bar_chart_outlined),

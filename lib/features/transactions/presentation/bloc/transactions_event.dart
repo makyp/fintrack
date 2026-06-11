@@ -21,6 +21,11 @@ class TransactionsUpdated extends TransactionsEvent {
   List<Object> get props => [transactions];
 }
 
+/// Loads the next page of the unfiltered list ("Ver más").
+class TransactionsLoadMore extends TransactionsEvent {
+  const TransactionsLoadMore();
+}
+
 class TransactionAdded extends TransactionsEvent {
   final Transaction transaction;
   const TransactionAdded(this.transaction);
