@@ -118,12 +118,7 @@ class _RegisterForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isWeb) ...[
-            const SizedBox(height: AppDimensions.sm),
-            // Back button on mobile
-            const BackButton(),
-            const SizedBox(height: AppDimensions.sm),
-          ],
+          if (!isWeb) const SizedBox(height: AppDimensions.sm),
 
           // Header
           Text(
