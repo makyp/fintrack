@@ -14,6 +14,8 @@ class AccountModel extends Account {
     super.isArchived,
     required super.createdAt,
     super.interestRate,
+    super.statementDay,
+    super.paymentDay,
   });
 
   factory AccountModel.fromFirestore(Map<String, dynamic> map, String id) {
@@ -34,6 +36,8 @@ class AccountModel extends Account {
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
       interestRate: (map['interestRate'] as num?)?.toDouble(),
+      statementDay: (map['statementDay'] as num?)?.toInt(),
+      paymentDay: (map['paymentDay'] as num?)?.toInt(),
     );
   }
 
@@ -49,6 +53,8 @@ class AccountModel extends Account {
       'isArchived': isArchived,
       'createdAt': Timestamp.fromDate(createdAt),
       if (interestRate != null) 'interestRate': interestRate,
+      if (statementDay != null) 'statementDay': statementDay,
+      if (paymentDay != null) 'paymentDay': paymentDay,
     };
   }
 
@@ -65,6 +71,8 @@ class AccountModel extends Account {
       isArchived: account.isArchived,
       createdAt: account.createdAt,
       interestRate: account.interestRate,
+      statementDay: account.statementDay,
+      paymentDay: account.paymentDay,
     );
   }
 }

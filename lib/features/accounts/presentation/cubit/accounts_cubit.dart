@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/services/local_notification_service.dart';
 import '../../domain/entities/account.dart';
 import '../../domain/usecases/get_accounts.dart';
 import '../../domain/usecases/add_account.dart';
@@ -21,7 +22,12 @@ class AccountsCubit extends Cubit<AccountsState> {
     emit(const AccountsState.loading());
     _subscription?.cancel();
     _subscription = _getAccounts.watch(userId).listen(
-      (accounts) => emit(AccountsState.loaded(accounts)),
+      (accounts) {
+        emit(AccountsState.loaded(accounts));
+        // Re-book the credit card corte/pago reminders on every change, so
+        // adding a card or editing its dates takes effect right away.
+        unawaited(LocalNotificationService.scheduleCreditCardAlerts(accounts));
+      },
       onError: (e) => emit(AccountsState.error(e.toString())),
     );
   }

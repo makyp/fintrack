@@ -17,6 +17,7 @@ class TransactionModel extends Transaction {
     super.receiptUrl,
     super.tags = const [],
     required super.createdAt,
+    super.installments,
   });
 
   factory TransactionModel.fromFirestore(Map<String, dynamic> map, String id) {
@@ -45,6 +46,7 @@ class TransactionModel extends Transaction {
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      installments: (map['installments'] as num?)?.toInt(),
     );
   }
 
@@ -63,6 +65,7 @@ class TransactionModel extends Transaction {
       if (receiptUrl != null) 'receiptUrl': receiptUrl,
       'tags': tags,
       'createdAt': Timestamp.fromDate(createdAt),
+      if (installments != null && installments! > 1) 'installments': installments,
     };
   }
 
@@ -81,5 +84,6 @@ class TransactionModel extends Transaction {
         receiptUrl: t.receiptUrl,
         tags: t.tags,
         createdAt: t.createdAt,
+        installments: t.installments,
       );
 }

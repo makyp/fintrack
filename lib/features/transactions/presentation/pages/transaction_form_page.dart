@@ -46,8 +46,20 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   // Kept in sync with AccountsCubit so _save() can validate available balance.
   List<Account> _accounts = const [];
 
+  /// Instalments chosen for a credit card purchase. 1 = a single payment.
+  int _installments = 1;
+
   bool get _isEditing => widget.transaction != null;
   bool get _isTransfer => _type == TransactionType.transfer;
+
+  /// The selected source account is a credit card, so the purchase can be
+  /// deferred. Transfers and income are not deferrable.
+  bool get _canDefer {
+    if (_isTransfer || _type != TransactionType.expense) return false;
+    final id = _selectedAccountId;
+    if (id == null) return false;
+    return _accountById(id)?.type == AccountType.credit;
+  }
 
   // ── Auto-categorization keyword map ──────────────────────────────────────
   static const _categoryKeywords = <TransactionCategory, List<String>>{
@@ -114,6 +126,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     _selectedToAccountId = tx?.toAccountId;
     _selectedDate = tx?.date ?? DateTime.now();
     _shareWithHousehold = tx?.householdId != null;
+    _installments = tx?.installments ?? 1;
     if (tx != null) {
       // Display with thousands separator
       _amountCtrl.text = ThousandsSeparatorFormatter().formatEditUpdate(
@@ -123,11 +136,18 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       _descCtrl.text = tx.description;
     }
     _descCtrl.addListener(_onDescriptionChanged);
+    _amountCtrl.addListener(_onAmountChanged);
+  }
+
+  /// Keeps the "≈ $X al mes" instalment preview in sync with the amount.
+  void _onAmountChanged() {
+    if (_canDefer && _installments > 1) setState(() {});
   }
 
   @override
   void dispose() {
     _descCtrl.removeListener(_onDescriptionChanged);
+    _amountCtrl.removeListener(_onAmountChanged);
     _amountCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
@@ -212,6 +232,9 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       receiptUrl: _isEditing ? widget.transaction!.receiptUrl : null,
       tags: _isEditing ? widget.transaction!.tags : const [],
       createdAt: _isEditing ? widget.transaction!.createdAt : now,
+      // Only kept when it actually applies: switching away from the card (or
+      // to a single payment) must not leave a stale instalment count behind.
+      installments: _canDefer && _installments > 1 ? _installments : null,
     );
 
     if (_isEditing) {
@@ -326,6 +349,10 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                   const SizedBox(height: AppDimensions.lg),
                 ],
                 _buildAccountSelector(),
+                if (_canDefer) ...[
+                  const SizedBox(height: AppDimensions.lg),
+                  _buildInstallmentsSelector(),
+                ],
                 if (_isTransfer) ...[
                   const SizedBox(height: AppDimensions.lg),
                   _buildToAccountSelector(),
@@ -528,13 +555,108 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
                     ),
                   );
                 }).toList(),
-                onChanged: (v) => setState(() => _selectedAccountId = v),
+                onChanged: (v) => setState(() {
+                  _selectedAccountId = v;
+                  // Leaving a credit card drops the instalment plan, so the
+                  // field never shows a stale value when it reappears.
+                  if (!_canDefer) _installments = 1;
+                }),
                 validator: (v) => v == null ? 'Selecciona una cuenta' : null,
               ),
           ],
         );
       },
     );
+  }
+
+  /// Common instalment plans offered by Colombian issuers. "Otro" lets the
+  /// user type any number the bank actually gave them.
+  static const _installmentOptions = [1, 2, 3, 6, 9, 12, 18, 24, 36];
+
+  Widget _buildInstallmentsSelector() {
+    final amount = ThousandsSeparatorFormatter.parse(_amountCtrl.text);
+    final perMonth = _installments > 1 && amount > 0
+        ? amount / _installments
+        : null;
+    final options = {..._installmentOptions, _installments}.toList()..sort();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Cuotas', style: AppTextStyles.labelLarge),
+        const SizedBox(height: 4),
+        Text(
+          'Compra con tarjeta de crédito: ¿a cuántas cuotas la diferiste?',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600),
+        ),
+        const SizedBox(height: AppDimensions.sm),
+        DropdownButtonFormField<int>(
+          value: options.contains(_installments) ? _installments : 1,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.credit_card_outlined),
+          ),
+          items: [
+            for (final n in options)
+              DropdownMenuItem(
+                value: n,
+                child: Text(n == 1 ? 'Una sola cuota' : '$n cuotas'),
+              ),
+          ],
+          onChanged: (v) => setState(() => _installments = v ?? 1),
+        ),
+        const SizedBox(height: AppDimensions.sm),
+        TextButton.icon(
+          onPressed: _promptCustomInstallments,
+          icon: const Icon(Icons.edit_outlined, size: 16),
+          label: const Text('Otro número de cuotas'),
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+        ),
+        if (perMonth != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Aprox. ${CurrencyFormatter.format(perMonth)} al mes durante '
+            '$_installments meses. La deuda total de la tarjeta sube por el '
+            'valor completo de la compra.',
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _promptCustomInstallments() async {
+    final controller = TextEditingController(text: '$_installments');
+    final result = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Número de cuotas'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Cuotas',
+            hintText: 'Ej: 48',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              final n = int.tryParse(controller.text.trim());
+              Navigator.pop(ctx, (n != null && n >= 1 && n <= 120) ? n : null);
+            },
+            child: const Text('Usar'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result != null && mounted) setState(() => _installments = result);
   }
 
   Widget _buildToAccountSelector() {

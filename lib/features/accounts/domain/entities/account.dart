@@ -61,6 +61,14 @@ class Account extends Equatable {
   /// Only meaningful for [AccountType.highYield].
   final double? interestRate;
 
+  /// Day of the month the statement closes ("fecha de corte", 1–31).
+  /// Only meaningful for [AccountType.credit].
+  final int? statementDay;
+
+  /// Day of the month the payment is due ("fecha límite de pago", 1–31).
+  /// Only meaningful for [AccountType.credit].
+  final int? paymentDay;
+
   const Account({
     required this.id,
     required this.userId,
@@ -73,10 +81,43 @@ class Account extends Equatable {
     this.isArchived = false,
     required this.createdAt,
     this.interestRate,
+    this.statementDay,
+    this.paymentDay,
   });
 
   /// For net worth: credit balance is subtracted (it's debt)
   double get netBalance => type.isLiability ? -balance : balance;
+
+  /// A credit card that knows when it closes and when it must be paid, so we
+  /// can remind the user.
+  bool get hasBillingCycle =>
+      type == AccountType.credit && statementDay != null && paymentDay != null;
+
+  /// Next time the statement closes, counting from [from] (today by default).
+  /// Includes today when today *is* the closing day.
+  DateTime? nextStatementDate({DateTime? from}) =>
+      _nextOccurrence(statementDay, from ?? DateTime.now());
+
+  /// Next payment due date, counting from [from] (today by default).
+  DateTime? nextPaymentDate({DateTime? from}) =>
+      _nextOccurrence(paymentDay, from ?? DateTime.now());
+
+  /// The next calendar date landing on [day]. Months shorter than [day] fall
+  /// back to their last day, so a card that closes on the 31st still closes in
+  /// February (on the 28th/29th).
+  static DateTime? _nextOccurrence(int? day, DateTime from) {
+    if (day == null || day < 1 || day > 31) return null;
+    final today = DateTime(from.year, from.month, from.day);
+    final thisMonth = _clampToMonth(today.year, today.month, day);
+    if (!thisMonth.isBefore(today)) return thisMonth;
+    return _clampToMonth(today.year, today.month + 1, day);
+  }
+
+  /// [month] may overflow past 12 — DateTime rolls it into the next year.
+  static DateTime _clampToMonth(int year, int month, int day) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    return DateTime(year, month, day > lastDay ? lastDay : day);
+  }
 
   Account copyWith({
     String? name,
@@ -88,6 +129,9 @@ class Account extends Equatable {
     bool? isArchived,
     double? interestRate,
     bool clearInterestRate = false,
+    int? statementDay,
+    int? paymentDay,
+    bool clearBillingCycle = false,
   }) {
     return Account(
       id: id,
@@ -101,9 +145,12 @@ class Account extends Equatable {
       isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt,
       interestRate: clearInterestRate ? null : (interestRate ?? this.interestRate),
+      statementDay:
+          clearBillingCycle ? null : (statementDay ?? this.statementDay),
+      paymentDay: clearBillingCycle ? null : (paymentDay ?? this.paymentDay),
     );
   }
 
   @override
-  List<Object?> get props => [id, userId, name, type, balance, currency, colorValue, icon, isArchived, interestRate];
+  List<Object?> get props => [id, userId, name, type, balance, currency, colorValue, icon, isArchived, interestRate, statementDay, paymentDay];
 }

@@ -102,6 +102,12 @@ class Transaction extends Equatable {
   final List<String> tags;
   final DateTime createdAt;
 
+  /// Number of monthly instalments this purchase was deferred to on a credit
+  /// card ("a cuántas cuotas"). null or 1 = paid in a single instalment.
+  /// The account balance always carries the full amount: the whole purchase
+  /// joins the card debt, the instalments only split how it is paid back.
+  final int? installments;
+
   const Transaction({
     required this.id,
     required this.userId,
@@ -117,7 +123,15 @@ class Transaction extends Equatable {
     this.receiptUrl,
     this.tags = const [],
     required this.createdAt,
+    this.installments,
   });
+
+  /// True when the purchase was split into more than one instalment.
+  bool get isDeferred => (installments ?? 1) > 1;
+
+  /// What each monthly instalment costs. Null when it was not deferred.
+  double? get installmentAmount =>
+      isDeferred ? amount / installments! : null;
 
   Transaction copyWith({
     double? amount,
@@ -130,6 +144,8 @@ class Transaction extends Equatable {
     bool? isRecurring,
     String? receiptUrl,
     List<String>? tags,
+    int? installments,
+    bool clearInstallments = false,
   }) {
     return Transaction(
       id: id,
@@ -146,9 +162,11 @@ class Transaction extends Equatable {
       receiptUrl: receiptUrl ?? this.receiptUrl,
       tags: tags ?? this.tags,
       createdAt: createdAt,
+      installments:
+          clearInstallments ? null : (installments ?? this.installments),
     );
   }
 
   @override
-  List<Object?> get props => [id, userId, amount, type, category, accountId, description, date];
+  List<Object?> get props => [id, userId, amount, type, category, accountId, description, date, installments];
 }

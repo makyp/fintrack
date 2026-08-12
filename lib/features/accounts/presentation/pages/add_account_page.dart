@@ -31,7 +31,13 @@ class _AddAccountPageState extends State<AddAccountPage> {
   int _selectedColor = 0xFF2563EB;
   bool _isLoading = false;
 
+  /// Credit card billing cycle: day the statement closes and day the payment
+  /// is due. Both drive the reminders scheduled by LocalNotificationService.
+  int? _statementDay;
+  int? _paymentDay;
+
   bool get _isEditing => widget.editAccount != null;
+  bool get _isCredit => _selectedType == AccountType.credit;
 
   static const _colorOptions = [
     0xFF2563EB, // blue
@@ -62,6 +68,8 @@ class _AddAccountPageState extends State<AddAccountPage> {
       if (a.interestRate != null) {
         _rateCtrl.text = (a.interestRate! * 100).toStringAsFixed(2);
       }
+      _statementDay = a.statementDay;
+      _paymentDay = a.paymentDay;
     }
   }
 
@@ -76,6 +84,15 @@ class _AddAccountPageState extends State<AddAccountPage> {
 
   Future<void> _save(String userId) async {
     if (!_formKey.currentState!.validate()) return;
+    if (_isCredit && (_statementDay == null || _paymentDay == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Indica la fecha de corte y la fecha límite de pago'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     if (userId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sesión no disponible, reinicia la app')),
@@ -98,6 +115,9 @@ class _AddAccountPageState extends State<AddAccountPage> {
           icon: _selectedType.icon,
           interestRate: interestRate,
           clearInterestRate: _selectedType != AccountType.highYield,
+          statementDay: _isCredit ? _statementDay : null,
+          paymentDay: _isCredit ? _paymentDay : null,
+          clearBillingCycle: !_isCredit,
         );
         await _cubit.updateAccount(updated);
       } else {
@@ -112,6 +132,8 @@ class _AddAccountPageState extends State<AddAccountPage> {
           icon: _selectedType.icon,
           createdAt: DateTime.now(),
           interestRate: interestRate,
+          statementDay: _isCredit ? _statementDay : null,
+          paymentDay: _isCredit ? _paymentDay : null,
         );
         await _cubit.addAccount(account);
       }
@@ -195,19 +217,26 @@ class _AddAccountPageState extends State<AddAccountPage> {
                   },
                 ),
               ],
+              if (_isCredit) ...[
+                const SizedBox(height: AppDimensions.lg),
+                _buildBillingCycleSection(),
+              ],
               if (!_isEditing) ...[
                 const SizedBox(height: AppDimensions.md),
                 TextFormField(
                   controller: _balanceCtrl,
                   keyboardType: TextInputType.number,
                   inputFormatters: [ThousandsSeparatorFormatter()],
-                  decoration: const InputDecoration(
-                    labelText: 'Saldo inicial',
+                  decoration: InputDecoration(
+                    // On a credit card the balance is what you owe, not what
+                    // you have — say so instead of "saldo".
+                    labelText: _isCredit ? 'Deuda actual' : 'Saldo inicial',
                     hintText: '0',
                     prefixText: '\$ ',
                   ),
-                  validator: (v) =>
-                      (v == null || v.isEmpty) ? 'Ingresa el saldo' : null,
+                  validator: (v) => (v == null || v.isEmpty)
+                      ? (_isCredit ? 'Ingresa la deuda actual' : 'Ingresa el saldo')
+                      : null,
                 ),
               ],
               const SizedBox(height: AppDimensions.lg),
@@ -275,6 +304,103 @@ class _AddAccountPageState extends State<AddAccountPage> {
           }).toList(),
         ),
       ],
+    );
+  }
+
+  /// Asks for the two dates every credit card statement revolves around, and
+  /// previews what the app will do with them so the value is obvious.
+  Widget _buildBillingCycleSection() {
+    final preview = _cyclePreview();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Ciclo de facturación', style: AppTextStyles.labelLarge),
+        const SizedBox(height: 4),
+        Text(
+          'Con estas dos fechas te avisamos del corte y del pago.',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600),
+        ),
+        const SizedBox(height: AppDimensions.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _buildDayDropdown(
+                label: 'Día de corte',
+                icon: Icons.event_available_outlined,
+                value: _statementDay,
+                onChanged: (v) => setState(() => _statementDay = v),
+              ),
+            ),
+            const SizedBox(width: AppDimensions.sm),
+            Expanded(
+              child: _buildDayDropdown(
+                label: 'Día de pago',
+                icon: Icons.event_busy_outlined,
+                value: _paymentDay,
+                onChanged: (v) => setState(() => _paymentDay = v),
+              ),
+            ),
+          ],
+        ),
+        if (preview != null) ...[
+          const SizedBox(height: AppDimensions.sm),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppDimensions.md),
+            decoration: BoxDecoration(
+              color: Color(_selectedColor).withOpacity(0.07),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              border: Border.all(color: Color(_selectedColor).withOpacity(0.2)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.notifications_active_outlined,
+                    size: 18, color: Color(_selectedColor)),
+                const SizedBox(width: AppDimensions.sm),
+                Expanded(
+                  child: Text(
+                    preview,
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.grey700),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Plain-language summary of the reminders these dates will produce.
+  String? _cyclePreview() {
+    final statement = _statementDay;
+    final payment = _paymentDay;
+    if (statement == null || payment == null) return null;
+    return 'Te avisaremos el día $statement (corte), 3 días antes del pago y '
+        'el día $payment (fecha límite de pago).';
+  }
+
+  Widget _buildDayDropdown({
+    required String label,
+    required IconData icon,
+    required int? value,
+    required ValueChanged<int?> onChanged,
+  }) {
+    return DropdownButtonFormField<int>(
+      value: value,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+      ),
+      items: [
+        for (var day = 1; day <= 31; day++)
+          DropdownMenuItem(value: day, child: Text('$day')),
+      ],
+      onChanged: onChanged,
+      validator: (v) => v == null ? 'Requerido' : null,
     );
   }
 

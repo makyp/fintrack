@@ -442,12 +442,28 @@ class _TransactionTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppDimensions.sm),
-            Text(
-              '$sign${CurrencyFormatter.format(transaction.amount)}',
-              style: AppTextStyles.monoMedium.copyWith(
-                color: amountColor,
-                fontWeight: FontWeight.w600,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '$sign${CurrencyFormatter.format(transaction.amount)}',
+                  style: AppTextStyles.monoMedium.copyWith(
+                    color: amountColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                // A deferred card purchase hits the debt in full, but the user
+                // budgets by the monthly instalment — show both.
+                if (transaction.isDeferred)
+                  Text(
+                    '${transaction.installments} cuotas de '
+                    '${CurrencyFormatter.format(transaction.installmentAmount!)}',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.grey500,
+                      fontSize: 10,
+                    ),
+                  ),
+              ],
             ),
           ],
         ),

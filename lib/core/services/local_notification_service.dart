@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../../features/accounts/domain/entities/account.dart';
 import '../../features/transactions/domain/entities/transaction.dart';
 import '../../features/transactions/domain/entities/recurring_transaction.dart';
 
@@ -182,4 +183,150 @@ class LocalNotificationService {
       if (notifId >= _dueDateBaseId + 100) break;
     }
   }
+
+  // ── Credit card billing cycle ─────────────────────────────────────────────
+
+  static const _cardChannelId = 'fimakyp_credit_cards';
+  static const _cardChannelName = 'Tarjetas de crédito Fimakyp';
+  static const _cardBaseId = 3100; // 3100–3199
+  static const _cardIdLimit = 100;
+
+  /// How many future cycles we schedule ahead. Local notifications are
+  /// one-shot, so booking a few months means the reminders keep arriving even
+  /// if the app is not opened for a while; every open re-schedules from today.
+  static const _cardCyclesAhead = 3;
+
+  /// Hour of the day the card reminders fire.
+  static const _cardAlertHour = 9;
+
+  /// Schedules, for every credit card that has a billing cycle configured:
+  ///   * the statement closing day ("hoy corta")
+  ///   * 3 days before the due date ("se acerca el pago")
+  ///   * the due date itself ("hoy vence")
+  /// Replaces all previously scheduled card reminders.
+  static Future<void> scheduleCreditCardAlerts(List<Account> accounts) async {
+    if (kIsWeb) return;
+    await initialize();
+
+    for (int i = _cardBaseId; i < _cardBaseId + _cardIdLimit; i++) {
+      await _plugin.cancel(i);
+    }
+
+    final cards = accounts
+        .where((a) => !a.isArchived && a.hasBillingCycle)
+        .toList();
+    if (cards.isEmpty) return;
+
+    final now = DateTime.now();
+    var notifId = _cardBaseId;
+    const maxId = _cardBaseId + _cardIdLimit;
+
+    for (final card in cards) {
+      // Walk the next few cycles by asking for the occurrence that follows the
+      // previous one, which keeps short months (Feb) correctly clamped.
+      var statementCursor = now;
+      var paymentCursor = now;
+
+      for (int cycle = 0; cycle < _cardCyclesAhead; cycle++) {
+        final statement = card.nextStatementDate(from: statementCursor);
+        final payment = card.nextPaymentDate(from: paymentCursor);
+        if (statement == null || payment == null) break;
+
+        final alerts = <_CardAlert>[
+          _CardAlert(
+            when: statement,
+            title: '💳 Corte de ${card.name}',
+            body: 'Hoy cierra tu facturación. Lo que compres desde mañana '
+                'entra a la siguiente factura.',
+          ),
+          _CardAlert(
+            when: payment.subtract(const Duration(days: 3)),
+            title: '⏰ Pago de ${card.name} en 3 días',
+            body: 'Vence el ${payment.day}/${payment.month}. Prepara el pago '
+                'para no generar intereses.',
+          ),
+          _CardAlert(
+            when: payment,
+            title: '🔔 Hoy vence ${card.name}',
+            body: 'Último día para pagar tu tarjeta sin intereses de mora.',
+          ),
+        ];
+
+        for (final alert in alerts) {
+          if (notifId >= maxId) return;
+          final fireAt = DateTime(
+            alert.when.year,
+            alert.when.month,
+            alert.when.day,
+            _cardAlertHour,
+          );
+          if (!fireAt.isAfter(now)) continue; // already past today
+          await _scheduleOneShot(
+            notifId++,
+            alert.title,
+            alert.body,
+            fireAt,
+            _cardChannelId,
+            _cardChannelName,
+          );
+        }
+
+        // Next cycle starts the day after the one we just scheduled.
+        statementCursor = statement.add(const Duration(days: 1));
+        paymentCursor = payment.add(const Duration(days: 1));
+      }
+    }
+  }
+
+  static Future<void> _scheduleOneShot(
+    int id,
+    String title,
+    String body,
+    DateTime when,
+    String channelId,
+    String channelName,
+  ) async {
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(when, tz.local),
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            channelId,
+            channelName,
+            importance: Importance.max,
+            priority: Priority.max,
+            icon: '@mipmap/ic_launcher',
+            playSound: true,
+            enableVibration: true,
+            channelShowBadge: true,
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (_) {
+      // Never crash if notification scheduling fails
+    }
+  }
+}
+
+class _CardAlert {
+  final DateTime when;
+  final String title;
+  final String body;
+
+  const _CardAlert({
+    required this.when,
+    required this.title,
+    required this.body,
+  });
 }

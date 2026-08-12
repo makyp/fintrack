@@ -93,12 +93,63 @@ class AccountCard extends StatelessWidget {
                   'Saldo a pagar',
                   style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
                 ),
+              if (account.hasBillingCycle) ...[
+                const SizedBox(height: AppDimensions.sm),
+                _buildBillingCycleRow(),
+              ],
             ],
           ),
         ),
       ),
     );
   }
+
+  /// Shows when the card closes and when it must be paid, plus how many days
+  /// are left — the two things you actually want to know at a glance.
+  Widget _buildBillingCycleRow() {
+    final statement = account.nextStatementDate();
+    final payment = account.nextPaymentDate();
+    if (statement == null || payment == null) return const SizedBox.shrink();
+
+    final today = DateTime.now();
+    final daysToPay = payment
+        .difference(DateTime(today.year, today.month, today.day))
+        .inDays;
+    final urgent = daysToPay <= 3;
+
+    return Row(
+      children: [
+        const Icon(Icons.event_available_outlined,
+            size: 14, color: AppColors.grey500),
+        const SizedBox(width: 4),
+        Text(
+          'Corte ${_dayMonth(statement)}',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600),
+        ),
+        const SizedBox(width: AppDimensions.md),
+        Icon(
+          Icons.event_busy_outlined,
+          size: 14,
+          color: urgent ? AppColors.danger : AppColors.grey500,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            daysToPay == 0
+                ? 'Paga hoy'
+                : 'Pago ${_dayMonth(payment)} · ${daysToPay}d',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: urgent ? AppColors.danger : AppColors.grey600,
+              fontWeight: urgent ? FontWeight.w600 : FontWeight.normal,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _dayMonth(DateTime d) => '${d.day}/${d.month}';
 
   Widget _buildCompact(Color color) {
     return GestureDetector(

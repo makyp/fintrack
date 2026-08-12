@@ -86,6 +86,8 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
         isArchived: account.isArchived,
         createdAt: account.createdAt,
         interestRate: account.interestRate,
+        statementDay: account.statementDay,
+        paymentDay: account.paymentDay,
       );
       await _accountsRef(account.userId).doc(id).set(model.toFirestore());
       return model;
@@ -117,6 +119,10 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
         'colorValue': account.colorValue,
         'icon': account.icon,
         'interestRate': account.interestRate ?? FieldValue.delete(),
+        // Billing cycle only exists on credit cards — switching the type away
+        // must remove it, not leave a stale reminder behind.
+        'statementDay': account.statementDay ?? FieldValue.delete(),
+        'paymentDay': account.paymentDay ?? FieldValue.delete(),
       });
       return account;
     } catch (e) {
