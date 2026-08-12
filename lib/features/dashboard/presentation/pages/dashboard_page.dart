@@ -23,6 +23,7 @@ import '../../../gamification/presentation/cubit/gamification_cubit.dart';
 import '../../../gamification/presentation/widgets/streak_card.dart';
 import '../../../gamification/presentation/widgets/activity_calendar.dart';
 import '../../../notifications/presentation/cubit/notifications_cubit.dart';
+import '../../../insights/presentation/widgets/tips_section.dart';
 import '../../../../core/services/app_startup_service.dart';
 import '../../../../core/di/injection.dart' show getIt;
 import '../cubit/dashboard_cubit.dart';
@@ -109,6 +110,7 @@ class _DashboardViewState extends State<_DashboardView> {
               else ...[
                 _buildBalanceCard(context, state),
                 const SliverToBoxAdapter(child: StreakCard()),
+                _buildTipsSection(context),
                 _buildAccountsSection(context, state),
                 _buildQuickActions(context),
                 _buildActivityCalendar(context),
@@ -344,6 +346,12 @@ class _DashboardViewState extends State<_DashboardView> {
         ],
       ),
     );
+  }
+
+  Widget _buildTipsSection(BuildContext context) {
+    final userId = context.read<AuthBloc>().state.user?.uid ?? '';
+    if (userId.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    return SliverToBoxAdapter(child: TipsSection(userId: userId));
   }
 
   Widget _buildAccountsSection(BuildContext context, DashboardState state) {
