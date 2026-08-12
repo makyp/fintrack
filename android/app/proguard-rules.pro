@@ -18,3 +18,13 @@
 # Keep generic signatures for all classes used with Gson TypeToken
 -keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
 -keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
+
+# ML Kit text recognition (lectura de recibos).
+# El plugin referencia los reconocedores de todos los alfabetos, pero solo
+# empaquetamos el latino: sin esto R8 falla por las clases ausentes de
+# coreano/japonés/chino/devanagari.
+-dontwarn com.google.mlkit.vision.text.chinese.**
+-dontwarn com.google.mlkit.vision.text.devanagari.**
+-dontwarn com.google.mlkit.vision.text.japanese.**
+-dontwarn com.google.mlkit.vision.text.korean.**
+-keep class com.google.mlkit.vision.text.** { *; }

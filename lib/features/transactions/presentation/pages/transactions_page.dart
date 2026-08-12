@@ -11,6 +11,8 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../accounts/domain/entities/account.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
+import '../../../capture/domain/entities/transaction_draft.dart';
+import '../../../capture/presentation/pages/capture_options_sheet.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/transactions_bloc.dart';
 import '../bloc/transactions_event.dart';
@@ -129,7 +131,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
                   ? _buildEmpty()
                   : _buildList(context, state),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _openForm(context),
+            onPressed: () => _startCapture(context),
             icon: const Icon(Icons.add),
             label: const Text('Nueva'),
           ),
@@ -234,17 +236,32 @@ class _TransactionsViewState extends State<_TransactionsView> {
     );
   }
 
-  void _openForm(BuildContext context, {Transaction? transaction}) {
+  void _openForm(
+    BuildContext context, {
+    Transaction? transaction,
+    TransactionDraft? draft,
+  }) {
     final userId = context.read<AuthBloc>().state.user?.uid ?? '';
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => BlocProvider.value(
           value: context.read<TransactionsBloc>(),
-          child: TransactionFormPage(userId: userId, transaction: transaction),
+          child: TransactionFormPage(
+            userId: userId,
+            transaction: transaction,
+            draft: draft,
+          ),
         ),
       ),
     );
+  }
+
+  /// Voice, receipt photo or by hand — then the form, prefilled.
+  Future<void> _startCapture(BuildContext context) async {
+    final draft = await showCaptureFlow(context);
+    if (draft == null || !context.mounted) return;
+    _openForm(context, draft: draft);
   }
 
   void _showExportSheet(BuildContext context) {

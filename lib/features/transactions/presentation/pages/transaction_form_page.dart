@@ -9,6 +9,8 @@ import '../../../accounts/domain/entities/account.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../../../core/di/injection.dart';
+import '../../../capture/domain/entities/transaction_draft.dart';
+import '../../domain/category_matcher.dart';
 import '../../domain/entities/transaction.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -20,11 +22,16 @@ class TransactionFormPage extends StatefulWidget {
   final Transaction? transaction;
   final TransactionType? initialType;
 
+  /// Prefill coming from a voice dictation or a receipt photo. Nothing is
+  /// saved until the user confirms this form.
+  final TransactionDraft? draft;
+
   const TransactionFormPage({
     super.key,
     required this.userId,
     this.transaction,
     this.initialType,
+    this.draft,
   });
 
   @override
@@ -61,80 +68,36 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     return _accountById(id)?.type == AccountType.credit;
   }
 
-  // ── Auto-categorization keyword map ──────────────────────────────────────
-  static const _categoryKeywords = <TransactionCategory, List<String>>{
-    TransactionCategory.food: [
-      'almuerzo', 'comida', 'restaurante', 'café', 'cafe', 'pizza', 'burger',
-      'sushi', 'desayuno', 'cena', 'mercado', 'supermercado', 'rappi', 'domicilio',
-      'hamburguesa', 'pollo', 'sandwich', 'taco', 'ensalada', 'postre',
-    ],
-    TransactionCategory.transport: [
-      'uber', 'taxi', 'bus', 'metro', 'transporte', 'gasolina', 'combustible',
-      'parqueadero', 'estacionamiento', 'peaje', 'tren', 'avión', 'avion', 'vuelo',
-    ],
-    TransactionCategory.entertainment: [
-      'netflix', 'spotify', 'cine', 'película', 'pelicula', 'juego', 'concierto',
-      'teatro', 'streaming', 'prime', 'disney', 'youtube', 'hbo', 'apple tv',
-    ],
-    TransactionCategory.health: [
-      'farmacia', 'médico', 'medico', 'doctor', 'hospital', 'clínica', 'clinica',
-      'medicina', 'gym', 'gimnasio', 'dentista', 'psicólogo', 'psicologo', 'droga',
-    ],
-    TransactionCategory.education: [
-      'libro', 'curso', 'universidad', 'colegio', 'matrícula', 'matricula',
-      'udemy', 'coursera', 'tutoría', 'tutoria', 'platzi', 'clase',
-    ],
-    TransactionCategory.home: [
-      'alquiler', 'arriendo', 'luz', 'agua', 'gas', 'internet', 'cable',
-      'mantenimiento', 'reparación', 'reparacion', 'mueble', 'hogar', 'limpieza',
-    ],
-    TransactionCategory.clothing: [
-      'ropa', 'zapatos', 'camisa', 'pantalón', 'pantalon', 'vestido', 'moda',
-      'tenis', 'zapatillas', 'chaqueta', 'abrigo', 'zara',
-    ],
-    TransactionCategory.shopping: [
-      'temu', 'shein', 'amazon', 'aliexpress', 'mercado libre', 'mercadolibre',
-      'linio', 'falabella', 'exito', 'éxito', 'jumbo', 'compra', 'pedido',
-    ],
-    TransactionCategory.technology: [
-      'celular', 'laptop', 'computador', 'tablet', 'auriculares', 'teclado',
-      'software', 'app', 'apple', 'samsung', 'mouse',
-    ],
-    TransactionCategory.services: [
-      'teléfono', 'telefono', 'plan', 'seguro', 'servicio', 'suscripción',
-      'suscripcion', 'mensualidad', 'factura',
-    ],
-    TransactionCategory.salary: [
-      'salario', 'sueldo', 'nómina', 'nomina', 'quincena', 'pago mensual',
-    ],
-    TransactionCategory.freelance: [
-      'proyecto', 'freelance', 'consultoría', 'consultoria', 'honorarios', 'factura',
-    ],
-    TransactionCategory.investment: [
-      'dividendo', 'interés', 'interes', 'rendimiento', 'acciones', 'crypto',
-      'bitcoin', 'bolsa', 'fondo',
-    ],
-  };
+  /// True when the form was opened from a voice dictation or a receipt photo.
+  bool get _isPrefilled =>
+      widget.draft != null &&
+      widget.draft!.source != CaptureSource.manual &&
+      !widget.draft!.isEmpty;
 
   @override
   void initState() {
     super.initState();
     final tx = widget.transaction;
-    _type = tx?.type ?? widget.initialType ?? TransactionType.expense;
-    _category = tx?.category ?? TransactionCategory.forType(_type).first;
+    final draft = widget.draft;
+
+    _type = tx?.type ?? draft?.type ?? widget.initialType ?? TransactionType.expense;
+    _category = tx?.category ??
+        _draftCategory(draft) ??
+        TransactionCategory.forType(_type).first;
     _selectedAccountId = tx?.accountId;
     _selectedToAccountId = tx?.toAccountId;
-    _selectedDate = tx?.date ?? DateTime.now();
+    _selectedDate = tx?.date ?? draft?.date ?? DateTime.now();
     _shareWithHousehold = tx?.householdId != null;
     _installments = tx?.installments ?? 1;
+
     if (tx != null) {
-      // Display with thousands separator
-      _amountCtrl.text = ThousandsSeparatorFormatter().formatEditUpdate(
-        const TextEditingValue(text: ''),
-        TextEditingValue(text: tx.amount.toStringAsFixed(0)),
-      ).text;
+      _setAmountText(tx.amount);
       _descCtrl.text = tx.description;
+    } else if (draft != null) {
+      if (draft.hasAmount) _setAmountText(draft.amount!);
+      if (draft.description != null) _descCtrl.text = draft.description!;
     }
+
     _descCtrl.addListener(_onDescriptionChanged);
     _amountCtrl.addListener(_onAmountChanged);
   }
@@ -142,6 +105,24 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   /// Keeps the "≈ $X al mes" instalment preview in sync with the amount.
   void _onAmountChanged() {
     if (_canDefer && _installments > 1) setState(() {});
+  }
+
+  /// Only accepts the drafted category when it is valid for the resolved type.
+  TransactionCategory? _draftCategory(TransactionDraft? draft) {
+    final category = draft?.category;
+    if (category == null) return null;
+    return TransactionCategory.forType(_type).contains(category)
+        ? category
+        : null;
+  }
+
+  void _setAmountText(double amount) {
+    _amountCtrl.text = ThousandsSeparatorFormatter()
+        .formatEditUpdate(
+          const TextEditingValue(text: ''),
+          TextEditingValue(text: amount.toStringAsFixed(0)),
+        )
+        .text;
   }
 
   @override
@@ -155,21 +136,12 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
 
   void _onDescriptionChanged() {
     if (_isTransfer) return;
-    final text = _descCtrl.text.toLowerCase();
+    final text = _descCtrl.text;
     if (text.length < 3) return;
-    final suggested = _suggestCategory(text);
+    final suggested = CategoryMatcher.suggest(text, type: _type);
     if (suggested != null && suggested != _category) {
       setState(() => _category = suggested);
     }
-  }
-
-  TransactionCategory? _suggestCategory(String text) {
-    for (final entry in _categoryKeywords.entries) {
-      for (final kw in entry.value) {
-        if (text.contains(kw)) return entry.key;
-      }
-    }
-    return null;
   }
 
   Future<void> _save() async {
@@ -338,6 +310,10 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (_isPrefilled) ...[
+                  _buildDraftBanner(),
+                  const SizedBox(height: AppDimensions.md),
+                ],
                 _buildTypeSelector(),
                 const SizedBox(height: AppDimensions.lg),
                 _buildAmountField(),
@@ -472,10 +448,70 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     );
   }
 
+  /// Tells the user where the prefilled values came from, and that they are
+  /// still the ones deciding — the parser can misread.
+  Widget _buildDraftBanner() {
+    final draft = widget.draft!;
+    final isVoice = draft.source == CaptureSource.voice;
+    final color = isVoice
+        ? Theme.of(context).colorScheme.primary
+        : AppColors.secondary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDimensions.md),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(isVoice ? Icons.mic_none_rounded : Icons.receipt_long_outlined,
+              color: color, size: 20),
+          const SizedBox(width: AppDimensions.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(draft.source.label,
+                    style: AppTextStyles.labelMedium.copyWith(color: color)),
+                const SizedBox(height: 2),
+                Text(
+                  'Revisa los datos y ajusta lo que falte antes de registrar.',
+                  style: AppTextStyles.bodySmall
+                      .copyWith(color: AppColors.grey600),
+                ),
+                if (draft.rawText.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '«${draft.rawText}»',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.grey500,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDescriptionField() {
     return TextFormField(
       controller: _descCtrl,
       textCapitalization: TextCapitalization.sentences,
+      // A receipt fills this with the whole product list, which is unreadable
+      // on one line — let the field grow instead of hiding the text.
+      minLines: 1,
+      maxLines: 4,
+      keyboardType: TextInputType.multiline,
       decoration: const InputDecoration(
         labelText: 'Descripción (opcional)',
         hintText: 'Ej: Almuerzo en restaurante',

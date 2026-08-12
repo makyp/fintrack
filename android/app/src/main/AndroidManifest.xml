@@ -5,6 +5,15 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 
+    <!-- Registro por voz (speech_to_text) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <!-- Lectura de recibos: foto con la cámara o elegida de la galería.
+         READ_MEDIA_IMAGES es la de Android 13+; por debajo el selector del
+         sistema no necesita permiso de almacenamiento. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+
     <application
         android:label="Fimakyp"
         android:name="${applicationName}"
@@ -73,6 +82,11 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Android 11+ exige declarar el servicio de reconocimiento de voz
+             para que speech_to_text pueda encontrarlo. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
         </intent>
     </queries>
 </manifest>

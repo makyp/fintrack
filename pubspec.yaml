@@ -52,6 +52,13 @@ dependencies:
   shared_preferences: ^2.3.0
   path_provider: ^2.1.5
 
+  # Capture (voz / foto) — todo on-device, sin APIs pagas.
+  # speech_to_text queda en 6.x: desde 7.x el plugin usa
+  # `flutter.compileSdkVersion` en su build.gradle, que Flutter 3.22 todavía no
+  # inyecta en los proyectos de plugin (llegó en 3.27+) y rompe el build Android.
+  speech_to_text: ^6.6.0
+  google_mlkit_text_recognition: ^0.14.0
+
   # Utils
   intl: ^0.19.0
   uuid: ^4.5.1
@@ -66,6 +73,7 @@ dependencies:
 
   # Icons
   cupertino_icons: ^1.0.6
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

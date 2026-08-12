@@ -11,6 +11,8 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/widgets/account_card.dart';
+import '../../../capture/domain/entities/transaction_draft.dart';
+import '../../../capture/presentation/pages/capture_options_sheet.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../transactions/presentation/bloc/transactions_bloc.dart';
@@ -119,7 +121,7 @@ class _DashboardViewState extends State<_DashboardView> {
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _openTransactionForm(context),
+            onPressed: () => _startCapture(context),
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: AppColors.white,
             icon: const Icon(Icons.add),
@@ -449,17 +451,33 @@ class _DashboardViewState extends State<_DashboardView> {
     );
   }
 
-  void _openTransactionForm(BuildContext context, {TransactionType? type}) {
+  void _openTransactionForm(
+    BuildContext context, {
+    TransactionType? type,
+    TransactionDraft? draft,
+  }) {
     final userId = context.read<AuthBloc>().state.user?.uid ?? '';
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => BlocProvider.value(
           value: context.read<TransactionsBloc>(),
-          child: TransactionFormPage(userId: userId, initialType: type),
+          child: TransactionFormPage(
+            userId: userId,
+            initialType: type,
+            draft: draft,
+          ),
         ),
       ),
     );
+  }
+
+  /// Asks how the user wants to register (voice, receipt photo or by hand)
+  /// and opens the form prefilled with whatever was captured.
+  Future<void> _startCapture(BuildContext context) async {
+    final draft = await showCaptureFlow(context);
+    if (draft == null || !context.mounted) return;
+    _openTransactionForm(context, draft: draft);
   }
 
   Widget _buildQuickActions(BuildContext context) {
