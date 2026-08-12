@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/services/session_hint.dart';
 import '../../domain/entities/app_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/sign_in_with_email.dart';
@@ -22,8 +23,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SendPasswordReset _sendPasswordReset;
   final SignOut _signOut;
   StreamSubscription<AppUser?>? _authSubscription;
-  Timer? _firstNullTimer;
-  bool _sawAuthEvent = false;
+  Timer? _graceTimer;
+
+  /// True once FirebaseAuth has handed us a real (non-null) user in this run.
+  /// Until that happens every null is suspect on mobile; afterwards a null is a
+  /// genuine sign-out.
+  bool _sawUser = false;
+
+  /// Whether this device had a signed-in user before (see [SessionHint]).
+  bool _hadSession = false;
+
+  /// How long we keep the splash up waiting for FirebaseAuth to hydrate a
+  /// persisted session before concluding there is none. Longer when the device
+  /// tells us a session existed, because then a null really is unexpected and
+  /// worth waiting for; a cold, throttled device can take several seconds.
+  static const _graceWithoutHint = Duration(seconds: 3);
+  static const _graceWithHint = Duration(seconds: 8);
+  static const _gracePollInterval = Duration(milliseconds: 250);
 
   AuthBloc(
     this._repository,
@@ -48,8 +64,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
     await _authSubscription?.cancel();
-    _firstNullTimer?.cancel();
-    _sawAuthEvent = false;
+    _graceTimer?.cancel();
+    _sawUser = false;
+    _hadSession = await SessionHint.hadSession();
 
     // Fast path: if FirebaseAuth already exposes a persisted user synchronously
     // (hot restart, or platforms that hydrate currentUser eagerly), restore it
@@ -59,12 +76,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
 
     _authSubscription = _repository.authStateChanges.listen((user) {
-      // Any concrete event supersedes the pending first-null grace timer.
-      _firstNullTimer?.cancel();
-
       if (user != null) {
         // Signed in (fresh login or session restore).
-        _sawAuthEvent = true;
+        _graceTimer?.cancel();
+        _sawUser = true;
         add(AuthUserChanged(user));
         return;
       }
@@ -73,37 +88,54 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (_repository.currentUser != null) {
         // Transient null while the persisted session is still being restored —
         // the SDK still has the user, so keep them signed in.
-        _sawAuthEvent = true;
+        _graceTimer?.cancel();
+        _sawUser = true;
         _restoreCurrentUser();
         return;
       }
 
-      if (!_sawAuthEvent) {
-        _sawAuthEvent = true;
-        // On web the JS SDK resolves persistence BEFORE the first callback, so
-        // a first null is authoritative — emit immediately (no splash delay for
-        // anonymous landing visitors).
-        if (kIsWeb) {
-          add(const AuthUserChanged(null));
-          return;
-        }
-        // VERY FIRST event is null with no SDK user. On Android cold start
-        // Firebase emits null BEFORE it finishes restoring the persisted
-        // session, so this null is not yet trustworthy. Wait briefly: if the
-        // real user (or a hydrated currentUser) shows up we go straight to the
-        // dashboard; only if nothing appears do we conclude there is no session.
-        _firstNullTimer = Timer(const Duration(seconds: 3), () {
-          if (_repository.currentUser != null) {
-            _restoreCurrentUser();
-          } else {
-            add(const AuthUserChanged(null));
-          }
-        });
+      // A null after we have seen a real user = genuine sign-out, act now.
+      if (_sawUser) {
+        _graceTimer?.cancel();
+        add(const AuthUserChanged(null));
         return;
       }
 
-      // A later null with no SDK user = genuine sign-out.
-      add(const AuthUserChanged(null));
+      // On web the JS SDK resolves persistence BEFORE the first callback, so a
+      // null is authoritative — emit immediately (no splash delay for anonymous
+      // landing visitors).
+      if (kIsWeb) {
+        add(const AuthUserChanged(null));
+        return;
+      }
+
+      // Android cold start: Firebase emits null BEFORE it finishes restoring
+      // the persisted session, and it can emit it more than once. None of those
+      // nulls is trustworthy until we have seen a real user, so every one of
+      // them (re)opens the same grace window instead of ending it.
+      _startGrace();
+    });
+  }
+
+  /// Holds the splash while polling [AuthRepository.currentUser], so a session
+  /// that hydrates without producing a stream event is still picked up. Gives
+  /// up — and only then reports the user as signed out — once the window
+  /// closes with still no user.
+  void _startGrace() {
+    if (_graceTimer?.isActive ?? false) return; // window already open
+    final deadline = DateTime.now().add(
+      _hadSession ? _graceWithHint : _graceWithoutHint,
+    );
+    _graceTimer = Timer.periodic(_gracePollInterval, (timer) {
+      if (_repository.currentUser != null) {
+        timer.cancel();
+        _restoreCurrentUser();
+        return;
+      }
+      if (DateTime.now().isAfter(deadline)) {
+        timer.cancel();
+        add(const AuthUserChanged(null));
+      }
     });
   }
 
@@ -127,8 +159,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   void _onUserChanged(AuthUserChanged event, Emitter<AuthState> emit) {
     if (event.user != null) {
+      // Remember for the next cold start that this device does have a session,
+      // so a slow restore is waited out instead of bouncing to login.
+      unawaited(SessionHint.set(true));
       emit(AuthState.authenticated(event.user!));
     } else {
+      unawaited(SessionHint.set(false));
       emit(const AuthState.unauthenticated());
     }
   }
@@ -209,6 +245,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     await _signOut();
+    await SessionHint.set(false);
     emit(const AuthState.unauthenticated());
   }
 
@@ -257,16 +294,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthState.loading());
     final result = await _repository.deleteAccount(password: event.password);
-    result.fold(
-      (failure) => emit(AuthState.error(failure.message)),
-      (_) => emit(const AuthState.unauthenticated()),
-    );
+    if (result.isLeft) {
+      emit(AuthState.error(result.leftValue.message));
+      return;
+    }
+    await SessionHint.set(false);
+    emit(const AuthState.unauthenticated());
   }
 
   @override
   Future<void> close() {
     _authSubscription?.cancel();
-    _firstNullTimer?.cancel();
+    _graceTimer?.cancel();
     return super.close();
   }
 }
