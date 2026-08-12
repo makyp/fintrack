@@ -14,7 +14,30 @@
       "Bash(flutter build:*)",
       "Bash(firebase deploy:*)",
       "Bash(dart analyze:*)",
-      "Bash(grep -E \"\\\\.\\(dart|html\\)$\")"
+      "Bash(grep -E \"\\\\.\\(dart|html\\)$\")",
+      "Bash(Copy-Item \"C:\\\\Users\\\\Makyp\\\\Pictures\\\\Logo fondo transparente.png\" \"C:\\\\Users\\\\Makyp\\\\StudioProjects\\\\FinTrack\\\\assets\\\\images\\\\LogoFimakyp.png\" -Force)",
+      "Bash(Write-Output \"Copied\")",
+      "Bash(dart run *)",
+      "Bash(python -m http.server 8099 --directory build/web)",
+      "PowerShell($c = Get-NetTCPConnection -LocalPort 8099 -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { Stop-Process -Id $c.OwningProcess -Force; \"stopped server on 8099\" } else { \"no listener\" })",
+      "Bash(firebase --version)",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb devices)",
+      "Bash(/c/Users/Makyp/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 emu kill)",
+      "Bash(/c/Users/Makyp/AppData/Local/Android/Sdk/platform-tools/adb.exe kill-server *)",
+      "Bash(/c/Users/Makyp/AppData/Local/Android/Sdk/platform-tools/adb.exe start-server *)",
+      "Bash(/c/Users/Makyp/AppData/Local/Android/Sdk/platform-tools/adb.exe devices *)",
+      "Bash(/c/Users/Makyp/AppData/Local/Android/Sdk/platform-tools/adb.exe install *)",
+      "Bash(/c/Users/Makyp/AppData/Local/Android/Sdk/platform-tools/adb.exe shell *)",
+      "Bash(/c/Users/Makyp/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out *)",
+      "PowerShell(Start-Process \"http://localhost:5599\"; \"Abriendo http://localhost:5599 en el navegador por defecto\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}, %{size_download} bytes\\\\n\" http://localhost:5599/)",
+      "Bash(curl -s -o /dev/null -w \"main.dart.js: HTTP %{http_code}, %{size_download} bytes\\\\n\" http://localhost:5599/main.dart.js)",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(python -m http.server 5599 --directory build/web)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5599/main.dart.js)",
+      "PowerShell(Start-Process \"http://localhost:5599\"; \"Abierto en navegador\")",
+      "Bash(flutter test *)",
+      "Bash(git status *)"
     ]
   }
 }
