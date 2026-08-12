@@ -5,6 +5,7 @@ import '../../../../core/cubit/theme_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_color_scheme.dart';
 import '../../../../core/widgets/app_avatar.dart';
+import '../../../../core/widgets/expandable_text.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -632,10 +633,11 @@ class _DashboardViewState extends State<_DashboardView> {
                           ),
                           child: Center(child: Text(tx.category.icon, style: const TextStyle(fontSize: 18))),
                         ),
-                        title: Text(
-                          tx.description.isNotEmpty ? tx.description : tx.category.label,
+                        title: ExpandableText(
+                          text: tx.description.isNotEmpty
+                              ? tx.description
+                              : tx.category.label,
                           style: AppTextStyles.bodyMedium,
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(tx.category.label,
                             style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
