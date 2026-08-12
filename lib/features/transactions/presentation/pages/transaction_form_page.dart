@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -74,6 +77,10 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       widget.draft!.source != CaptureSource.manual &&
       !widget.draft!.isEmpty;
 
+  /// Preselected on a new transaction: the account used last time, so the
+  /// most common case is one tap less.
+  String? _rememberedAccountId;
+
   @override
   void initState() {
     super.initState();
@@ -98,6 +105,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       if (draft.description != null) _descCtrl.text = draft.description!;
     }
 
+    if (!_isEditing) _loadRememberedAccount();
     _descCtrl.addListener(_onDescriptionChanged);
     _amountCtrl.addListener(_onAmountChanged);
   }
@@ -142,6 +150,38 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     if (suggested != null && suggested != _category) {
       setState(() => _category = suggested);
     }
+  }
+
+  // ── Last used account ────────────────────────────────────────────────────
+
+  String get _lastAccountKey => 'last_account_${widget.userId}';
+
+  Future<void> _loadRememberedAccount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_lastAccountKey);
+    if (saved == null || !mounted) return;
+    setState(() => _rememberedAccountId = saved);
+  }
+
+  Future<void> _rememberAccount(String accountId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastAccountKey, accountId);
+  }
+
+  /// Applies the remembered account once the account list is available and
+  /// the user has not chosen one yet.
+  void _onAccountsLoaded(List<Account> accounts) {
+    _accounts = accounts;
+    if (_isEditing || _selectedAccountId != null) return;
+    final remembered = _rememberedAccountId;
+    if (remembered == null) return;
+    if (!accounts.any((a) => a.id == remembered)) return;
+    // The dropdown is built in the same frame, so defer the state change.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _selectedAccountId == null) {
+        setState(() => _selectedAccountId = remembered);
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -213,6 +253,8 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       context.read<TransactionsBloc>().add(TransactionEdited(tx));
     } else {
       context.read<TransactionsBloc>().add(TransactionAdded(tx));
+      // Preselect this account next time.
+      unawaited(_rememberAccount(_selectedAccountId!));
     }
 
     if (mounted) Navigator.of(context).pop();
@@ -302,7 +344,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
           ],
         ),
         body: BlocListener<AccountsCubit, AccountsState>(
-          listener: (_, state) => _accounts = state.activeAccounts,
+          listener: (_, state) => _onAccountsLoaded(state.activeAccounts),
           child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDimensions.pagePadding),
           child: Form(
