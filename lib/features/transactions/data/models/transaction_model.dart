@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import '../../../categories/domain/category_registry.dart';
 import '../../domain/entities/transaction.dart';
 
 class TransactionModel extends Transaction {
-  const TransactionModel({
+  TransactionModel({
     required super.id,
     required super.userId,
     required super.amount,
@@ -29,10 +30,7 @@ class TransactionModel extends Transaction {
         (e) => e.name == (map['type'] as String? ?? 'expense'),
         orElse: () => TransactionType.expense,
       ),
-      category: TransactionCategory.values.firstWhere(
-        (e) => e.name == (map['categoryId'] as String? ?? 'other'),
-        orElse: () => TransactionCategory.other,
-      ),
+      category: CategoryRegistry.byId(map['categoryId'] as String? ?? 'other'),
       accountId: map['accountId'] as String? ?? '',
       toAccountId: map['toAccountId'] as String?,
       description: map['description'] as String? ?? '',
@@ -55,7 +53,7 @@ class TransactionModel extends Transaction {
       'userId': userId,
       'amount': amount,
       'type': type.name,
-      'categoryId': category.name,
+      'categoryId': categoryId,
       'accountId': accountId,
       if (toAccountId != null) 'toAccountId': toAccountId,
       'description': description,

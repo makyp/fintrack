@@ -1,7 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
+
+// **************************************************************************
+// InjectableConfigGenerator
+// **************************************************************************
+
 // ignore_for_file: type=lint
 // coverage:ignore-file
 
+// ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:cloud_firestore/cloud_firestore.dart' as _i974;
 import 'package:firebase_auth/firebase_auth.dart' as _i59;
 import 'package:firebase_storage/firebase_storage.dart' as _i457;
@@ -10,293 +16,183 @@ import 'package:google_sign_in/google_sign_in.dart' as _i116;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:uuid/uuid.dart' as _i706;
 
-import '../../features/accounts/data/datasources/account_remote_datasource.dart' as _i801;
-import '../../features/accounts/data/repositories/account_repository_impl.dart' as _i802;
-import '../../features/accounts/domain/repositories/account_repository.dart' as _i803;
-import '../../features/accounts/domain/usecases/add_account.dart' as _i804;
-import '../../features/accounts/domain/usecases/get_accounts.dart' as _i805;
-import '../../features/accounts/domain/usecases/update_account.dart' as _i806;
-import '../../features/accounts/presentation/cubit/accounts_cubit.dart' as _i807;
-import '../../features/transactions/data/datasources/transaction_remote_datasource.dart' as _i903;
-import '../../features/transactions/data/repositories/transaction_repository_impl.dart' as _i904;
-import '../../features/transactions/domain/repositories/transaction_repository.dart' as _i905;
-import '../../features/transactions/domain/usecases/add_transaction.dart' as _i906;
-import '../../features/transactions/domain/usecases/get_transactions.dart' as _i907;
-import '../../features/transactions/domain/usecases/update_transaction.dart' as _i908;
-import '../../features/transactions/presentation/bloc/transactions_bloc.dart' as _i909;
-import '../../features/transactions/data/datasources/recurring_transaction_datasource.dart' as _i910;
-import '../../features/transactions/data/repositories/recurring_transaction_repository_impl.dart' as _i911;
-import '../../features/transactions/domain/repositories/recurring_transaction_repository.dart' as _i912;
-import '../../features/transactions/domain/usecases/get_recurring_transactions.dart' as _i913;
-import '../../features/transactions/domain/usecases/add_recurring_transaction.dart' as _i914;
-import '../../features/transactions/domain/usecases/update_recurring_transaction.dart' as _i915;
-import '../../features/transactions/presentation/cubit/recurring_cubit.dart' as _i916;
-import '../../features/reports/data/datasources/reports_datasource.dart' as _i940;
-import '../../features/reports/presentation/cubit/reports_cubit.dart' as _i941;
-import '../../features/household/data/datasources/household_datasource.dart' as _i950;
-import '../../features/household/data/repositories/household_repository_impl.dart' as _i951;
-import '../../features/household/domain/repositories/household_repository.dart' as _i952;
-import '../../features/household/presentation/cubit/household_cubit.dart' as _i953;
-import '../../features/notifications/presentation/cubit/notifications_cubit.dart' as _i954;
-import '../../core/services/app_startup_service.dart' as _i955;
-import '../../features/debts/data/datasources/debt_datasource.dart' as _i960;
-import '../../features/gamification/data/datasources/gamification_datasource.dart' as _i930;
-import '../../features/gamification/data/services/badge_service.dart' as _i961;
-import '../../features/gamification/data/repositories/gamification_repository_impl.dart' as _i931;
-import '../../features/gamification/domain/repositories/gamification_repository.dart' as _i932;
-import '../../features/gamification/presentation/cubit/gamification_cubit.dart' as _i933;
-import '../../features/goals/data/datasources/goal_remote_datasource.dart' as _i920;
-import '../../features/goals/data/repositories/goal_repository_impl.dart' as _i921;
-import '../../features/goals/domain/repositories/goal_repository.dart' as _i922;
-import '../../features/goals/domain/usecases/get_goals.dart' as _i923;
-import '../../features/goals/domain/usecases/add_goal.dart' as _i924;
-import '../../features/goals/domain/usecases/update_goal.dart' as _i925;
-import '../../features/goals/domain/usecases/delete_goal.dart' as _i926;
-import '../../features/goals/domain/usecases/add_contribution.dart' as _i927;
-import '../../features/goals/presentation/cubit/goals_cubit.dart' as _i928;
-import '../../features/auth/data/datasources/auth_remote_datasource.dart' as _i441;
-import '../../features/auth/data/datasources/google_sign_in_module.dart' as _i860;
-import '../../features/auth/data/repositories/auth_repository_impl.dart' as _i738;
-import '../../features/auth/domain/repositories/auth_repository.dart' as _i305;
-import '../../features/auth/domain/usecases/register_with_email.dart' as _i512;
-import '../../features/auth/domain/usecases/send_password_reset.dart' as _i296;
-import '../../features/auth/domain/usecases/sign_in_with_email.dart' as _i1;
-import '../../features/auth/domain/usecases/sign_in_with_google.dart' as _i614;
-import '../../features/auth/domain/usecases/sign_out.dart' as _i812;
-import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i847;
-import '../../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i901;
-import '../../features/onboarding/domain/onboarding_service.dart' as _i902;
-import 'firebase_module.dart' as _i343;
-import 'uuid_module.dart' as _i344;
+import '../../features/accounts/data/datasources/account_remote_datasource.dart'
+    as _i613;
+import '../../features/accounts/data/repositories/account_repository_impl.dart'
+    as _i126;
+import '../../features/accounts/domain/repositories/account_repository.dart'
+    as _i706;
+import '../../features/accounts/domain/usecases/add_account.dart' as _i583;
+import '../../features/accounts/domain/usecases/get_accounts.dart' as _i473;
+import '../../features/accounts/domain/usecases/update_account.dart' as _i770;
+import '../../features/accounts/presentation/cubit/accounts_cubit.dart' as _i43;
+import '../../features/auth/data/datasources/auth_remote_datasource.dart'
+    as _i161;
+import '../../features/auth/data/datasources/google_sign_in_module.dart'
+    as _i508;
+import '../../features/auth/data/repositories/auth_repository_impl.dart'
+    as _i153;
+import '../../features/auth/domain/repositories/auth_repository.dart' as _i787;
+import '../../features/auth/domain/usecases/register_with_email.dart' as _i298;
+import '../../features/auth/domain/usecases/send_password_reset.dart' as _i174;
+import '../../features/auth/domain/usecases/sign_in_with_email.dart' as _i485;
+import '../../features/auth/domain/usecases/sign_in_with_google.dart' as _i692;
+import '../../features/auth/domain/usecases/sign_out.dart' as _i568;
+import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i797;
+import '../../features/categories/data/datasources/category_datasource.dart'
+    as _i555;
+import '../../features/categories/presentation/cubit/categories_cubit.dart'
+    as _i802;
+import '../../features/dashboard/presentation/cubit/dashboard_cubit.dart'
+    as _i24;
+import '../../features/gamification/data/services/badge_service.dart' as _i756;
+import '../../features/onboarding/domain/onboarding_service.dart' as _i720;
+import '../../features/transactions/data/datasources/recurring_transaction_datasource.dart'
+    as _i701;
+import '../../features/transactions/data/datasources/transaction_remote_datasource.dart'
+    as _i634;
+import '../../features/transactions/data/repositories/recurring_transaction_repository_impl.dart'
+    as _i974;
+import '../../features/transactions/data/repositories/transaction_repository_impl.dart'
+    as _i443;
+import '../../features/transactions/domain/repositories/recurring_transaction_repository.dart'
+    as _i54;
+import '../../features/transactions/domain/repositories/transaction_repository.dart'
+    as _i421;
+import '../../features/transactions/domain/usecases/add_recurring_transaction.dart'
+    as _i195;
+import '../../features/transactions/domain/usecases/add_transaction.dart'
+    as _i5;
+import '../../features/transactions/domain/usecases/get_recurring_transactions.dart'
+    as _i964;
+import '../../features/transactions/domain/usecases/get_transactions.dart'
+    as _i439;
+import '../../features/transactions/domain/usecases/update_recurring_transaction.dart'
+    as _i553;
+import '../../features/transactions/domain/usecases/update_transaction.dart'
+    as _i373;
+import '../../features/transactions/presentation/bloc/transactions_bloc.dart'
+    as _i439;
+import '../../features/transactions/presentation/cubit/recurring_cubit.dart'
+    as _i578;
+import 'firebase_module.dart' as _i616;
+import 'uuid_module.dart' as _i78;
 
 extension GetItInjectableX on _i174.GetIt {
+// initializes the registration of main-scope dependencies inside of GetIt
   _i174.GetIt init({
     String? environment,
     _i526.EnvironmentFilter? environmentFilter,
   }) {
-    final gh = _i526.GetItHelper(this, environment, environmentFilter);
-
-    // ── Modules ──────────────────────────────────────────
+    final gh = _i526.GetItHelper(
+      this,
+      environment,
+      environmentFilter,
+    );
     final firebaseModule = _$FirebaseModule();
-    final googleSignInModule = _$GoogleSignInModule();
     final uuidModule = _$UuidModule();
-
-    // ── Primitives ────────────────────────────────────────
+    final googleSignInModule = _$GoogleSignInModule();
     gh.lazySingleton<_i59.FirebaseAuth>(() => firebaseModule.firebaseAuth);
     gh.lazySingleton<_i974.FirebaseFirestore>(() => firebaseModule.firestore);
-    gh.lazySingleton<_i457.FirebaseStorage>(() => firebaseModule.firebaseStorage);
-    gh.lazySingleton<_i116.GoogleSignIn>(() => googleSignInModule.googleSignIn);
+    gh.lazySingleton<_i457.FirebaseStorage>(
+        () => firebaseModule.firebaseStorage);
     gh.lazySingleton<_i706.Uuid>(() => uuidModule.uuid);
-
-    // ── Auth ──────────────────────────────────────────────
-    gh.lazySingleton<_i441.AuthRemoteDataSource>(
-      () => _i441.AuthRemoteDataSourceImpl(
-        gh<_i59.FirebaseAuth>(),
-        gh<_i974.FirebaseFirestore>(),
-        gh<_i116.GoogleSignIn>(),
-      ),
-    );
-    gh.lazySingleton<_i305.AuthRepository>(
-      () => _i738.AuthRepositoryImpl(gh<_i441.AuthRemoteDataSource>()),
-    );
-    gh.lazySingleton<_i1.SignInWithEmail>(
-        () => _i1.SignInWithEmail(gh<_i305.AuthRepository>()));
-    gh.lazySingleton<_i614.SignInWithGoogle>(
-        () => _i614.SignInWithGoogle(gh<_i305.AuthRepository>()));
-    gh.lazySingleton<_i512.RegisterWithEmail>(
-        () => _i512.RegisterWithEmail(gh<_i305.AuthRepository>()));
-    gh.lazySingleton<_i296.SendPasswordReset>(
-        () => _i296.SendPasswordReset(gh<_i305.AuthRepository>()));
-    gh.lazySingleton<_i812.SignOut>(
-        () => _i812.SignOut(gh<_i305.AuthRepository>()));
-    gh.lazySingleton<_i847.AuthBloc>(
-      () => _i847.AuthBloc(
-        gh<_i305.AuthRepository>(),
-        gh<_i1.SignInWithEmail>(),
-        gh<_i614.SignInWithGoogle>(),
-        gh<_i512.RegisterWithEmail>(),
-        gh<_i296.SendPasswordReset>(),
-        gh<_i812.SignOut>(),
-      ),
-    );
-
-    // ── Accounts ──────────────────────────────────────────
-    gh.lazySingleton<_i801.AccountRemoteDataSource>(
-      () => _i801.AccountRemoteDataSourceImpl(
-        gh<_i974.FirebaseFirestore>(),
-        gh<_i706.Uuid>(),
-      ),
-    );
-    gh.lazySingleton<_i803.AccountRepository>(
-      () => _i802.AccountRepositoryImpl(gh<_i801.AccountRemoteDataSource>()),
-    );
-    gh.lazySingleton<_i805.GetAccounts>(
-        () => _i805.GetAccounts(gh<_i803.AccountRepository>()));
-    gh.lazySingleton<_i804.AddAccount>(
-        () => _i804.AddAccount(gh<_i803.AccountRepository>()));
-    gh.lazySingleton<_i806.UpdateAccount>(
-        () => _i806.UpdateAccount(gh<_i803.AccountRepository>()));
-    gh.factory<_i807.AccountsCubit>(
-      () => _i807.AccountsCubit(
-        gh<_i805.GetAccounts>(),
-        gh<_i804.AddAccount>(),
-        gh<_i806.UpdateAccount>(),
-      ),
-    );
-
-    // ── Dashboard ─────────────────────────────────────────
-    gh.factory<_i901.DashboardCubit>(
-        () => _i901.DashboardCubit(gh<_i805.GetAccounts>()));
-
-    // ── Transactions ─────────────────────────────────────
-    gh.lazySingleton<_i903.TransactionRemoteDataSource>(
-      () => _i903.TransactionRemoteDataSourceImpl(
-        gh<_i974.FirebaseFirestore>(),
-        gh<_i706.Uuid>(),
-        gh<_i961.BadgeService>(),
-      ),
-    );
-    gh.lazySingleton<_i905.TransactionRepository>(
-      () => _i904.TransactionRepositoryImpl(gh<_i903.TransactionRemoteDataSource>()),
-    );
-    gh.lazySingleton<_i906.AddTransaction>(
-        () => _i906.AddTransaction(gh<_i905.TransactionRepository>()));
-    gh.lazySingleton<_i907.GetTransactions>(
-        () => _i907.GetTransactions(gh<_i905.TransactionRepository>()));
-    gh.lazySingleton<_i908.UpdateTransaction>(
-        () => _i908.UpdateTransaction(gh<_i905.TransactionRepository>()));
-    gh.factory<_i909.TransactionsBloc>(
-      () => _i909.TransactionsBloc(
-        gh<_i907.GetTransactions>(),
-        gh<_i906.AddTransaction>(),
-        gh<_i908.UpdateTransaction>(),
-      ),
-    );
-
-    // ── Recurring Transactions ───────────────────────────
-    gh.lazySingleton<_i910.RecurringTransactionDataSource>(
-      () => _i910.RecurringTransactionDataSourceImpl(
-        gh<_i974.FirebaseFirestore>(),
-        gh<_i706.Uuid>(),
-      ),
-    );
-    gh.lazySingleton<_i912.RecurringTransactionRepository>(
-      () => _i911.RecurringTransactionRepositoryImpl(
-        gh<_i910.RecurringTransactionDataSource>(),
-      ),
-    );
-    gh.lazySingleton<_i913.GetRecurringTransactions>(
-        () => _i913.GetRecurringTransactions(gh<_i912.RecurringTransactionRepository>()));
-    gh.lazySingleton<_i914.AddRecurringTransaction>(
-        () => _i914.AddRecurringTransaction(gh<_i912.RecurringTransactionRepository>()));
-    gh.lazySingleton<_i915.UpdateRecurringTransaction>(
-        () => _i915.UpdateRecurringTransaction(gh<_i912.RecurringTransactionRepository>()));
-    gh.factory<_i916.RecurringCubit>(
-      () => _i916.RecurringCubit(
-        gh<_i913.GetRecurringTransactions>(),
-        gh<_i914.AddRecurringTransaction>(),
-        gh<_i915.UpdateRecurringTransaction>(),
-      ),
-    );
-
-    // ── Reports ──────────────────────────────────────────
-    gh.lazySingleton<_i940.ReportsDataSource>(
-      () => _i940.ReportsDataSource(gh<_i974.FirebaseFirestore>()),
-    );
-    gh.factory<_i941.ReportsCubit>(
-      () => _i941.ReportsCubit(gh<_i940.ReportsDataSource>()),
-    );
-
-    // ── Badge Service ─────────────────────────────────────
-    gh.lazySingleton<_i961.BadgeService>(
-      () => _i961.BadgeService(gh<_i974.FirebaseFirestore>()),
-    );
-
-    // ── Gamification ─────────────────────────────────────
-    gh.lazySingleton<_i930.GamificationDataSource>(
-      () => _i930.GamificationDataSourceImpl(gh<_i974.FirebaseFirestore>()),
-    );
-    gh.lazySingleton<_i932.GamificationRepository>(
-      () => _i931.GamificationRepositoryImpl(gh<_i930.GamificationDataSource>()),
-    );
-    gh.factory<_i933.GamificationCubit>(
-      () => _i933.GamificationCubit(gh<_i932.GamificationRepository>()),
-    );
-
-    // ── Goals ────────────────────────────────────────────
-    gh.lazySingleton<_i920.GoalRemoteDataSource>(
-      () => _i920.GoalRemoteDataSourceImpl(
-        gh<_i974.FirebaseFirestore>(),
-        gh<_i706.Uuid>(),
-      ),
-    );
-    gh.lazySingleton<_i922.GoalRepository>(
-      () => _i921.GoalRepositoryImpl(gh<_i920.GoalRemoteDataSource>()),
-    );
-    gh.lazySingleton<_i923.GetGoals>(
-        () => _i923.GetGoals(gh<_i922.GoalRepository>()));
-    gh.lazySingleton<_i924.AddGoal>(
-        () => _i924.AddGoal(gh<_i922.GoalRepository>()));
-    gh.lazySingleton<_i925.UpdateGoal>(
-        () => _i925.UpdateGoal(gh<_i922.GoalRepository>()));
-    gh.lazySingleton<_i926.DeleteGoal>(
-        () => _i926.DeleteGoal(gh<_i922.GoalRepository>()));
-    gh.lazySingleton<_i927.AddContribution>(
-        () => _i927.AddContribution(gh<_i922.GoalRepository>()));
-    gh.factory<_i928.GoalsCubit>(
-      () => _i928.GoalsCubit(
-        gh<_i923.GetGoals>(),
-        gh<_i924.AddGoal>(),
-        gh<_i925.UpdateGoal>(),
-        gh<_i926.DeleteGoal>(),
-        gh<_i927.AddContribution>(),
-      ),
-    );
-
-    // ── Household ─────────────────────────────────────────
-    gh.lazySingleton<_i950.HouseholdDataSource>(
-      () => _i950.HouseholdDataSource(gh<_i974.FirebaseFirestore>()),
-    );
-    gh.lazySingleton<_i952.HouseholdRepository>(
-      () => _i951.HouseholdRepositoryImpl(gh<_i950.HouseholdDataSource>()),
-    );
-    gh.factory<_i953.HouseholdCubit>(
-      () => _i953.HouseholdCubit(gh<_i952.HouseholdRepository>()),
-    );
-
-    // ── Notifications ─────────────────────────────────────
-    gh.factory<_i954.NotificationsCubit>(
-      () => _i954.NotificationsCubit(gh<_i974.FirebaseFirestore>()),
-    );
-
-    // ── App Startup Service ───────────────────────────────
-    gh.lazySingleton<_i955.AppStartupService>(
-      () => _i955.AppStartupService(
-        gh<_i974.FirebaseFirestore>(),
-        gh<_i706.Uuid>(),
-      ),
-    );
-
-    // ── Debts ─────────────────────────────────────────────
-    gh.lazySingleton<_i960.DebtDataSource>(
-      () => _i960.DebtDataSource(
-        gh<_i974.FirebaseFirestore>(),
-        gh<_i706.Uuid>(),
-      ),
-    );
-
-    // ── Onboarding ────────────────────────────────────────
-    gh.lazySingleton<_i902.OnboardingService>(
-      () => _i902.OnboardingService(
-        gh<_i974.FirebaseFirestore>(),
-        gh<_i706.Uuid>(),
-      ),
-    );
-
+    gh.lazySingleton<_i116.GoogleSignIn>(() => googleSignInModule.googleSignIn);
+    gh.lazySingleton<_i161.AuthRemoteDataSource>(
+        () => _i161.AuthRemoteDataSourceImpl(
+              gh<_i59.FirebaseAuth>(),
+              gh<_i974.FirebaseFirestore>(),
+              gh<_i116.GoogleSignIn>(),
+            ));
+    gh.factory<_i578.RecurringCubit>(() => _i578.RecurringCubit(
+          gh<_i964.GetRecurringTransactions>(),
+          gh<_i195.AddRecurringTransaction>(),
+          gh<_i553.UpdateRecurringTransaction>(),
+        ));
+    gh.lazySingleton<_i634.TransactionRemoteDataSource>(
+        () => _i634.TransactionRemoteDataSourceImpl(
+              gh<_i974.FirebaseFirestore>(),
+              gh<_i706.Uuid>(),
+              gh<_i756.BadgeService>(),
+            ));
+    gh.lazySingleton<_i701.RecurringTransactionDataSource>(
+        () => _i701.RecurringTransactionDataSourceImpl(
+              gh<_i974.FirebaseFirestore>(),
+              gh<_i706.Uuid>(),
+            ));
+    gh.lazySingleton<_i720.OnboardingService>(() => _i720.OnboardingService(
+          gh<_i974.FirebaseFirestore>(),
+          gh<_i706.Uuid>(),
+        ));
+    gh.lazySingleton<_i555.CategoryDataSource>(
+        () => _i555.CategoryDataSourceImpl(gh<_i974.FirebaseFirestore>()));
+    gh.lazySingleton<_i802.CategoriesCubit>(() => _i802.CategoriesCubit(
+          gh<_i555.CategoryDataSource>(),
+          gh<_i706.Uuid>(),
+        ));
+    gh.lazySingleton<_i613.AccountRemoteDataSource>(
+        () => _i613.AccountRemoteDataSourceImpl(
+              gh<_i974.FirebaseFirestore>(),
+              gh<_i706.Uuid>(),
+            ));
+    gh.lazySingleton<_i421.TransactionRepository>(() =>
+        _i443.TransactionRepositoryImpl(
+            gh<_i634.TransactionRemoteDataSource>()));
+    gh.lazySingleton<_i706.AccountRepository>(
+        () => _i126.AccountRepositoryImpl(gh<_i613.AccountRemoteDataSource>()));
+    gh.lazySingleton<_i787.AuthRepository>(
+        () => _i153.AuthRepositoryImpl(gh<_i161.AuthRemoteDataSource>()));
+    gh.lazySingleton<_i54.RecurringTransactionRepository>(() =>
+        _i974.RecurringTransactionRepositoryImpl(
+            gh<_i701.RecurringTransactionDataSource>()));
+    gh.lazySingleton<_i298.RegisterWithEmail>(
+        () => _i298.RegisterWithEmail(gh<_i787.AuthRepository>()));
+    gh.lazySingleton<_i174.SendPasswordReset>(
+        () => _i174.SendPasswordReset(gh<_i787.AuthRepository>()));
+    gh.lazySingleton<_i485.SignInWithEmail>(
+        () => _i485.SignInWithEmail(gh<_i787.AuthRepository>()));
+    gh.lazySingleton<_i692.SignInWithGoogle>(
+        () => _i692.SignInWithGoogle(gh<_i787.AuthRepository>()));
+    gh.lazySingleton<_i568.SignOut>(
+        () => _i568.SignOut(gh<_i787.AuthRepository>()));
+    gh.lazySingleton<_i5.AddTransaction>(
+        () => _i5.AddTransaction(gh<_i421.TransactionRepository>()));
+    gh.lazySingleton<_i439.GetTransactions>(
+        () => _i439.GetTransactions(gh<_i421.TransactionRepository>()));
+    gh.lazySingleton<_i373.UpdateTransaction>(
+        () => _i373.UpdateTransaction(gh<_i421.TransactionRepository>()));
+    gh.lazySingleton<_i583.AddAccount>(
+        () => _i583.AddAccount(gh<_i706.AccountRepository>()));
+    gh.lazySingleton<_i473.GetAccounts>(
+        () => _i473.GetAccounts(gh<_i706.AccountRepository>()));
+    gh.lazySingleton<_i770.UpdateAccount>(
+        () => _i770.UpdateAccount(gh<_i706.AccountRepository>()));
+    gh.factory<_i24.DashboardCubit>(
+        () => _i24.DashboardCubit(gh<_i473.GetAccounts>()));
+    gh.lazySingleton<_i797.AuthBloc>(() => _i797.AuthBloc(
+          gh<_i787.AuthRepository>(),
+          gh<_i485.SignInWithEmail>(),
+          gh<_i692.SignInWithGoogle>(),
+          gh<_i298.RegisterWithEmail>(),
+          gh<_i174.SendPasswordReset>(),
+          gh<_i568.SignOut>(),
+        ));
+    gh.factory<_i43.AccountsCubit>(() => _i43.AccountsCubit(
+          gh<_i473.GetAccounts>(),
+          gh<_i583.AddAccount>(),
+          gh<_i770.UpdateAccount>(),
+        ));
+    gh.factory<_i439.TransactionsBloc>(() => _i439.TransactionsBloc(
+          gh<_i439.GetTransactions>(),
+          gh<_i5.AddTransaction>(),
+          gh<_i373.UpdateTransaction>(),
+        ));
     return this;
   }
 }
 
-class _$FirebaseModule extends _i343.FirebaseModule {}
-class _$GoogleSignInModule extends _i860.GoogleSignInModule {}
-class _$UuidModule extends _i344.UuidModule {}
+class _$FirebaseModule extends _i616.FirebaseModule {}
+
+class _$UuidModule extends _i78.UuidModule {}
+
+class _$GoogleSignInModule extends _i508.GoogleSignInModule {}

@@ -14,6 +14,7 @@ import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../../../core/di/injection.dart';
 import '../../../capture/domain/entities/transaction_draft.dart';
 import '../../domain/category_matcher.dart';
+import '../../../categories/domain/category_registry.dart';
 import '../../domain/entities/transaction.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -90,7 +91,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
     _type = tx?.type ?? draft?.type ?? widget.initialType ?? TransactionType.expense;
     _category = tx?.category ??
         _draftCategory(draft) ??
-        TransactionCategory.forType(_type).first;
+        CategoryRegistry.forType(_type).first;
     _selectedAccountId = tx?.accountId;
     _selectedToAccountId = tx?.toAccountId;
     _selectedDate = tx?.date ?? draft?.date ?? DateTime.now();
@@ -119,7 +120,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   TransactionCategory? _draftCategory(TransactionDraft? draft) {
     final category = draft?.category;
     if (category == null) return null;
-    return TransactionCategory.forType(_type).contains(category)
+    return CategoryRegistry.forType(_type).any((c) => c.id == category.id)
         ? category
         : null;
   }
@@ -409,7 +410,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
           child: GestureDetector(
             onTap: () => setState(() {
               _type = t;
-              _category = TransactionCategory.forType(t).first;
+              _category = CategoryRegistry.forType(t).first;
               if (t != TransactionType.transfer) _selectedToAccountId = null;
             }),
             child: AnimatedContainer(
@@ -563,7 +564,9 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   }
 
   Widget _buildCategorySelector() {
-    final categories = TransactionCategory.forType(_type);
+    // Keep the current one listed even if it has since been hidden, so
+    // editing an old movement doesn't silently re-categorise it.
+    final categories = CategoryRegistry.forTypeIncluding(_type, _category);
     final color = _typeColor(_type);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

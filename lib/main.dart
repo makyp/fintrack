@@ -18,6 +18,7 @@ import 'core/theme/app_color_scheme.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/categories/presentation/cubit/categories_cubit.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -76,10 +77,14 @@ class _FimakypAppState extends State<FimakypApp> {
           _authedUid = state.user!.uid;
           unawaited(LocalNotificationService.scheduleFromString(state.user!.reminderTime));
           if (!kIsWeb) unawaited(WidgetService.update(state.user!.uid));
+          // Load the category catalog app-wide: everything that renders a
+          // movement resolves its label through CategoryRegistry.
+          unawaited(getIt<CategoriesCubit>().watchCategories(state.user!.uid));
         }
       } else if (state.isUnauthenticated) {
         AnalyticsService.clearUser();
         _authedUid = null;
+        getIt<CategoriesCubit>().clear();
       }
     });
   }

@@ -249,8 +249,8 @@ class AppStartupService {
           'amount': dailyInterest,
           'type': 'income',
           // Must be 'categoryId' (the key TransactionModel reads/writes), not
-          // 'category' — otherwise it deserialises as TransactionCategory.other
-          // ("Otro") instead of "Inversiones".
+          // 'category' — otherwise it deserialises as "Otro" instead of
+          // "Inversiones".
           'categoryId': 'investment',
           'accountId': accDoc.id,
           'description': 'Interés diario 🏆 ${acc['name']}',

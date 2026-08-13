@@ -14,7 +14,9 @@ class OnboardingStepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stepLabels = ['Efectivo', 'Cuentas', 'Tarjetas'];
+    const stepLabels = ['Efectivo', 'Cuentas', 'Tarjetas', 'Categorías'];
+    // Defensive: a new step without a label here must not crash onboarding.
+    final label = current < stepLabels.length ? ' — ${stepLabels[current]}' : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +39,7 @@ class OnboardingStepIndicator extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Paso ${current + 1} de $total — ${stepLabels[current]}',
+          'Paso ${current + 1} de $total$label',
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
         ),
       ],

@@ -3,6 +3,8 @@ import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
 import '../../accounts/data/models/account_model.dart';
 import '../../accounts/domain/entities/account.dart';
+import '../../categories/data/models/category_model.dart';
+import '../../categories/domain/entities/transaction_category.dart';
 
 @lazySingleton
 class OnboardingService {
@@ -11,14 +13,44 @@ class OnboardingService {
 
   const OnboardingService(this._firestore, this._uuid);
 
+  /// Writes everything the user set up during onboarding in a single batch.
+  ///
+  /// [activeCategoryIds] null means "keep them all"; anything not listed is
+  /// written hidden rather than skipped, so it can be switched back on later
+  /// from the profile without losing its id.
   Future<void> completeOnboarding({
     required String userId,
     required double cashBalance,
     required List<Map<String, dynamic>> bankAccounts,
     required List<Map<String, dynamic>> cards,
+    Set<String>? activeCategoryIds,
+    List<TransactionCategory> customCategories = const [],
   }) async {
     final batch = _firestore.batch();
     final now = DateTime.now();
+
+    // ── Categories ──────────────────────────────────────────────────────────
+    final categoriesRef =
+        _firestore.collection('users').doc(userId).collection('categories');
+    for (final c in DefaultCategories.all) {
+      final isActive = c.isProtected ||
+          activeCategoryIds == null ||
+          activeCategoryIds.contains(c.id);
+      batch.set(
+        categoriesRef.doc(c.id),
+        CategoryModel.fromEntity(c.copyWith(isActive: isActive)).toFirestore(),
+      );
+    }
+    var customOrder = DefaultCategories.all.length;
+    for (final custom in customCategories) {
+      if (custom.label.trim().isEmpty) continue;
+      final model = CategoryModel.fromEntity(
+          custom.copyWith(sortOrder: customOrder++));
+      batch.set(
+        categoriesRef.doc(_uuid.v4()),
+        model.toFirestore(),
+      );
+    }
 
     // Add cash account if balance > 0
     if (cashBalance > 0) {

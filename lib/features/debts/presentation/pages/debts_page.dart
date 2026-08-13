@@ -10,6 +10,7 @@ import '../../../../core/utils/thousands_separator_formatter.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../categories/domain/category_registry.dart';
 import '../../../transactions/domain/entities/transaction.dart';
 import '../../../transactions/domain/usecases/add_transaction.dart';
 import '../../data/datasources/debt_datasource.dart';
@@ -697,7 +698,7 @@ class _DebtCard extends StatelessWidget {
                         userId: userId,
                         amount: amount,
                         type: txType,
-                        category: TransactionCategory.other,
+                        category: CategoryRegistry.byId('other'),
                         accountId: selectedAccountId!,
                         description: note ??
                             (debt.direction == DebtDirection.theyOweMe

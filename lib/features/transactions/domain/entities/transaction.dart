@@ -1,97 +1,25 @@
 import 'package:equatable/equatable.dart';
 
-enum TransactionType { expense, income, transfer }
+import '../../../categories/domain/category_registry.dart';
+import '../../../categories/domain/entities/transaction_category.dart';
+import 'transaction_type.dart';
 
-enum TransactionCategory {
-  // Expenses
-  food,
-  transport,
-  entertainment,
-  health,
-  education,
-  home,
-  clothing,
-  shopping,
-  technology,
-  services,
-  cleaning,
-  other,
-  // Income
-  salary,
-  freelance,
-  investment,
-  sale,
-  gift,
-  bonus,
-  // Transfer
-  transfer;
-
-  String get label {
-    switch (this) {
-      case TransactionCategory.food: return 'Alimentación';
-      case TransactionCategory.transport: return 'Transporte';
-      case TransactionCategory.entertainment: return 'Entretenimiento';
-      case TransactionCategory.health: return 'Salud';
-      case TransactionCategory.education: return 'Educación';
-      case TransactionCategory.home: return 'Hogar';
-      case TransactionCategory.clothing: return 'Ropa';
-      case TransactionCategory.shopping: return 'Compras online';
-      case TransactionCategory.technology: return 'Tecnología';
-      case TransactionCategory.services: return 'Servicios';
-      case TransactionCategory.cleaning: return 'Aseo';
-      case TransactionCategory.salary: return 'Salario';
-      case TransactionCategory.freelance: return 'Freelance';
-      case TransactionCategory.investment: return 'Inversiones';
-      case TransactionCategory.sale: return 'Venta';
-      case TransactionCategory.gift: return 'Regalo';
-      case TransactionCategory.bonus: return 'Bono';
-      case TransactionCategory.transfer: return 'Transferencia';
-      case TransactionCategory.other: return 'Otro';
-    }
-  }
-
-  String get icon {
-    switch (this) {
-      case TransactionCategory.food: return '🍔';
-      case TransactionCategory.transport: return '🚗';
-      case TransactionCategory.entertainment: return '🎬';
-      case TransactionCategory.health: return '💊';
-      case TransactionCategory.education: return '📚';
-      case TransactionCategory.home: return '🏠';
-      case TransactionCategory.clothing: return '👕';
-      case TransactionCategory.shopping: return '🛒';
-      case TransactionCategory.technology: return '💻';
-      case TransactionCategory.services: return '⚡';
-      case TransactionCategory.cleaning: return '🧹';
-      case TransactionCategory.salary: return '💼';
-      case TransactionCategory.freelance: return '🧑‍💻';
-      case TransactionCategory.investment: return '📈';
-      case TransactionCategory.sale: return '🛍️';
-      case TransactionCategory.gift: return '🎁';
-      case TransactionCategory.bonus: return '⭐';
-      case TransactionCategory.transfer: return '↔️';
-      case TransactionCategory.other: return '📌';
-    }
-  }
-
-  static List<TransactionCategory> forType(TransactionType type) {
-    switch (type) {
-      case TransactionType.expense:
-        return [food, transport, entertainment, health, education, home, clothing, shopping, technology, services, cleaning, other];
-      case TransactionType.income:
-        return [salary, freelance, investment, sale, gift, bonus, other];
-      case TransactionType.transfer:
-        return [transfer];
-    }
-  }
-}
+// Categories used to be an enum declared right here. They are now user-editable
+// entities, but every file that imports this one for `TransactionType` /
+// `TransactionCategory` keeps working through these re-exports.
+export '../../../categories/domain/entities/transaction_category.dart';
+export 'transaction_type.dart';
 
 class Transaction extends Equatable {
   final String id;
   final String userId;
   final double amount;
   final TransactionType type;
-  final TransactionCategory category;
+
+  /// Only the id is stored. The category itself is resolved on read so a
+  /// rename — or a catalog that finished loading after this movement was
+  /// built — shows up without having to rebuild the entity.
+  final String categoryId;
   final String accountId;
   final String? toAccountId; // for transfers
   final String description;
@@ -108,12 +36,12 @@ class Transaction extends Equatable {
   /// joins the card debt, the instalments only split how it is paid back.
   final int? installments;
 
-  const Transaction({
+  Transaction({
     required this.id,
     required this.userId,
     required this.amount,
     required this.type,
-    required this.category,
+    required TransactionCategory category,
     required this.accountId,
     this.toAccountId,
     required this.description,
@@ -124,7 +52,9 @@ class Transaction extends Equatable {
     this.tags = const [],
     required this.createdAt,
     this.installments,
-  });
+  }) : categoryId = category.id;
+
+  TransactionCategory get category => CategoryRegistry.byId(categoryId);
 
   /// True when the purchase was split into more than one instalment.
   bool get isDeferred => (installments ?? 1) > 1;
@@ -168,5 +98,5 @@ class Transaction extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, userId, amount, type, category, accountId, description, date, installments];
+  List<Object?> get props => [id, userId, amount, type, categoryId, accountId, description, date, installments];
 }

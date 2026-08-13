@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+
+import '../../../categories/domain/category_registry.dart';
 import 'transaction.dart';
 
 enum RecurringFrequency {
@@ -42,7 +44,9 @@ class RecurringTransaction extends Equatable {
   final String userId;
   final double amount;
   final TransactionType type;
-  final TransactionCategory category;
+
+  /// Stored as an id and resolved on read — see [Transaction.category].
+  final String categoryId;
   final String accountId;
   final String? toAccountId;
   final String description;
@@ -53,12 +57,12 @@ class RecurringTransaction extends Equatable {
   final bool isActive;
   final DateTime createdAt;
 
-  const RecurringTransaction({
+  RecurringTransaction({
     required this.id,
     required this.userId,
     required this.amount,
     required this.type,
-    required this.category,
+    required TransactionCategory category,
     required this.accountId,
     this.toAccountId,
     required this.description,
@@ -68,7 +72,9 @@ class RecurringTransaction extends Equatable {
     required this.nextDueDate,
     this.isActive = true,
     required this.createdAt,
-  });
+  }) : categoryId = category.id;
+
+  TransactionCategory get category => CategoryRegistry.byId(categoryId);
 
   bool get isDue {
     final today = DateTime.now();
@@ -115,5 +121,5 @@ class RecurringTransaction extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, userId, amount, type, category, accountId, description, frequency, nextDueDate, isActive];
+      [id, userId, amount, type, categoryId, accountId, description, frequency, nextDueDate, isActive];
 }

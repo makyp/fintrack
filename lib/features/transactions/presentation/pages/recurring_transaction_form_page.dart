@@ -8,6 +8,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
 import '../../domain/entities/recurring_transaction.dart';
+import '../../../categories/domain/category_registry.dart';
 import '../../domain/entities/transaction.dart';
 import '../cubit/recurring_cubit.dart';
 
@@ -49,7 +50,7 @@ class _RecurringTransactionFormPageState
       ..watchAccounts(widget.userId);
     final item = widget.item;
     _type = item?.type ?? TransactionType.expense;
-    _category = item?.category ?? TransactionCategory.forType(_type).first;
+    _category = item?.category ?? CategoryRegistry.forType(_type).first;
     _frequency = item?.frequency ?? RecurringFrequency.monthly;
     _accountId = item?.accountId;
     _startDate = item?.startDate ?? DateTime.now();
@@ -213,7 +214,7 @@ class _RecurringTransactionFormPageState
           child: GestureDetector(
             onTap: () => setState(() {
               _type = t;
-              _category = TransactionCategory.forType(t).first;
+              _category = CategoryRegistry.forType(t).first;
             }),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -239,7 +240,7 @@ class _RecurringTransactionFormPageState
   }
 
   Widget _buildCategoryChips() {
-    final cats = TransactionCategory.forType(_type);
+    final cats = CategoryRegistry.forTypeIncluding(_type, _category);
     return Wrap(
       spacing: AppDimensions.sm,
       runSpacing: AppDimensions.sm,

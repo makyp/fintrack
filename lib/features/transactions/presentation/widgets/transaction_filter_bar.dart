@@ -7,6 +7,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../accounts/domain/entities/account.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
+import '../../../categories/domain/category_registry.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/transactions_bloc.dart';
 import '../bloc/transactions_event.dart';
@@ -65,8 +66,10 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
   }
 
   List<TransactionCategory> get _availableCategories {
-    if (_type == null) return TransactionCategory.values;
-    return TransactionCategory.forType(_type!);
+    // Filtering has to reach movements filed under hidden categories too, so
+    // this list is the whole catalog, not just the active part.
+    if (_type == null) return CategoryRegistry.all;
+    return CategoryRegistry.all.where((c) => c.appliesTo(_type!)).toList();
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../../goals/data/models/savings_goal_model.dart';
+import '../../../categories/domain/category_registry.dart';
 import '../../../transactions/domain/entities/transaction.dart';
 import '../../domain/models/report_data.dart';
 
@@ -45,8 +46,7 @@ class ReportsDataSource {
       final catStr  = d['categoryId'] as String? ?? 'other';
       final type = TransactionType.values.firstWhere(
           (e) => e.name == typeStr, orElse: () => TransactionType.expense);
-      final cat = TransactionCategory.values.firstWhere(
-          (e) => e.name == catStr, orElse: () => TransactionCategory.other);
+      final cat = CategoryRegistry.byId(catStr);
       final day = (d['date'] as Timestamp).toDate().day;
 
       if (type == TransactionType.expense) {
@@ -131,8 +131,7 @@ class ReportsDataSource {
       final type = TransactionType.values.firstWhere(
           (e) => e.name == typeStr, orElse: () => TransactionType.expense);
       if (type == TransactionType.transfer) continue;
-      final cat = TransactionCategory.values.firstWhere(
-          (e) => e.name == catStr, orElse: () => TransactionCategory.other);
+      final cat = CategoryRegistry.byId(catStr);
       final date = (d['date'] as Timestamp).toDate();
       final desc = d['description'] as String? ?? '';
       txSummaries.add(TxSummary(date: date, description: desc, category: cat, type: type, amount: amount));
@@ -199,8 +198,7 @@ class ReportsDataSource {
       final catStr = d['categoryId'] as String? ?? 'other';
       final type = TransactionType.values.firstWhere(
           (e) => e.name == typeStr, orElse: () => TransactionType.expense);
-      final cat = TransactionCategory.values.firstWhere(
-          (e) => e.name == catStr, orElse: () => TransactionCategory.other);
+      final cat = CategoryRegistry.byId(catStr);
 
       if (type == TransactionType.expense) {
         totalExpenses += amount;

@@ -3,6 +3,7 @@ import 'package:fintrack/features/capture/domain/parsers/receipt_parser.dart';
 import 'package:fintrack/features/capture/domain/parsers/spanish_amount_parser.dart';
 import 'package:fintrack/features/capture/domain/parsers/voice_transaction_parser.dart';
 import 'package:fintrack/features/transactions/domain/entities/transaction.dart';
+import 'package:fintrack/features/categories/domain/category_registry.dart';
 
 void main() {
   group('SpanishAmountParser', () {
@@ -59,7 +60,7 @@ void main() {
       expect(draft.amount, 25000);
       expect(draft.type, TransactionType.expense);
       expect(draft.description, 'Almuerzo');
-      expect(draft.category, TransactionCategory.food);
+      expect(draft.category, CategoryRegistry.byId('food'));
     });
 
     test('parses income with a relative date', () {
@@ -70,7 +71,7 @@ void main() {
 
       expect(draft.amount, 2000000);
       expect(draft.type, TransactionType.income);
-      expect(draft.category, TransactionCategory.salary);
+      expect(draft.category, CategoryRegistry.byId('salary'));
       expect(draft.date, DateTime(2026, 8, 9));
     });
 
@@ -93,7 +94,7 @@ void main() {
 
       expect(draft.amount, 80000);
       expect(draft.date, DateTime(2026, 3, 5));
-      expect(draft.category, TransactionCategory.home);
+      expect(draft.category, CategoryRegistry.byId('home'));
     });
 
     test('handles "hace 3 días"', () {
@@ -104,7 +105,7 @@ void main() {
 
       expect(draft.amount, 12000);
       expect(draft.date, DateTime(2026, 8, 7));
-      expect(draft.category, TransactionCategory.transport);
+      expect(draft.category, CategoryRegistry.byId('transport'));
       expect(draft.description, 'Uber');
     });
 
@@ -152,7 +153,7 @@ TOTAL
 
       final draft = ReceiptParser.parse(text, reference: reference);
       expect(draft.amount, 32900);
-      expect(draft.category, TransactionCategory.health);
+      expect(draft.category, CategoryRegistry.byId('health'));
     });
 
     test('returns no amount rather than guessing the biggest number', () {

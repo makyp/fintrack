@@ -7,11 +7,13 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
+import '../../../categories/domain/entities/transaction_category.dart';
 import '../../domain/onboarding_service.dart';
 import '../widgets/onboarding_step_indicator.dart';
 import 'onboarding_step_cash.dart';
 import 'onboarding_step_accounts.dart';
 import 'onboarding_step_cards.dart';
+import 'onboarding_step_categories.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -23,13 +25,20 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final _pageController = PageController();
   int _currentStep = 0;
-  final int _totalSteps = 3;
+  final int _totalSteps = 4;
   bool _isSaving = false;
 
   // Shared data collected across steps
   double cashBalance = 0;
   final List<Map<String, dynamic>> bankAccounts = [];
   final List<Map<String, dynamic>> cards = [];
+
+  /// Every shipped category starts selected — the step is about unchecking
+  /// what you don't want, not building the list from nothing.
+  final Set<String> selectedCategoryIds = {
+    for (final c in DefaultCategories.all) c.id,
+  };
+  final List<TransactionCategory> customCategories = [];
 
   @override
   void dispose() {
@@ -72,6 +81,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
         cashBalance: cashBalance,
         bankAccounts: bankAccounts,
         cards: cards,
+        activeCategoryIds: selectedCategoryIds,
+        customCategories: customCategories,
       );
       if (mounted) {
         context.read<AuthBloc>().add(const AuthOnboardingCompleted());
@@ -138,6 +149,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   OnboardingStepCards(
                     cards: cards,
+                  ),
+                  OnboardingStepCategories(
+                    selectedIds: selectedCategoryIds,
+                    customCategories: customCategories,
                   ),
                 ],
               ),

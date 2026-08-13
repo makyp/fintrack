@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fintrack/features/accounts/domain/entities/account.dart';
 import 'package:fintrack/features/transactions/domain/entities/transaction.dart';
+import 'package:fintrack/features/categories/domain/category_registry.dart';
 
 Account card({int? statementDay, int? paymentDay, AccountType type = AccountType.credit}) {
   return Account(
@@ -24,7 +25,7 @@ Transaction purchase({int? installments, double amount = 1200000}) {
     userId: 'u1',
     amount: amount,
     type: TransactionType.expense,
-    category: TransactionCategory.shopping,
+    category: CategoryRegistry.byId('shopping'),
     accountId: 'c1',
     description: 'Nevera',
     date: DateTime(2026, 8, 11),

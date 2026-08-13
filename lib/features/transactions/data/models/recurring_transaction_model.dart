@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import '../../../categories/domain/category_registry.dart';
 import '../../domain/entities/recurring_transaction.dart';
 import '../../domain/entities/transaction.dart';
 
 class RecurringTransactionModel extends RecurringTransaction {
-  const RecurringTransactionModel({
+  RecurringTransactionModel({
     required super.id,
     required super.userId,
     required super.amount,
@@ -29,9 +30,8 @@ class RecurringTransactionModel extends RecurringTransaction {
       type: TransactionType.values.firstWhere(
           (e) => e.name == data['type'],
           orElse: () => TransactionType.expense),
-      category: TransactionCategory.values.firstWhere(
-          (e) => e.name == data['category'],
-          orElse: () => TransactionCategory.other),
+      // Recurring rules store the id under 'category', not 'categoryId'.
+      category: CategoryRegistry.byId(data['category'] as String? ?? 'other'),
       accountId: data['accountId'] as String,
       toAccountId: data['toAccountId'] as String?,
       description: data['description'] as String? ?? '',
@@ -52,7 +52,7 @@ class RecurringTransactionModel extends RecurringTransaction {
         'userId': userId,
         'amount': amount,
         'type': type.name,
-        'category': category.name,
+        'category': categoryId,
         'accountId': accountId,
         if (toAccountId != null) 'toAccountId': toAccountId,
         'description': description,

@@ -13,6 +13,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../categories/presentation/pages/categories_page.dart';
 import '../../../gamification/presentation/pages/badges_page.dart';
 import 'preferences_page.dart';
 import 'security_page.dart';
@@ -89,6 +90,18 @@ class ProfilePage extends StatelessWidget {
               // ── Color de la aplicación ────────────────────────────────────
               _ThemePickerTile(),
               const Divider(),
+
+              // ── Categorías ───────────────────────────────────────────────
+              ListTile(
+                leading: const Icon(Icons.sell_outlined, color: AppColors.primary),
+                title: const Text('Mis categorías'),
+                subtitle: const Text('Agregar, editar u ocultar'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: user == null
+                    ? null
+                    : () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => CategoriesPage(userId: user.uid))),
+              ),
 
               // ── Preferencias ─────────────────────────────────────────────
               ListTile(
