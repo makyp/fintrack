@@ -39,6 +39,10 @@ import '../../features/auth/domain/usecases/sign_in_with_email.dart' as _i485;
 import '../../features/auth/domain/usecases/sign_in_with_google.dart' as _i692;
 import '../../features/auth/domain/usecases/sign_out.dart' as _i568;
 import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i797;
+import '../../features/budgets/data/budget_alert_service.dart' as _i31;
+import '../../features/budgets/data/datasources/budget_datasource.dart'
+    as _i455;
+import '../../features/budgets/presentation/cubit/budgets_cubit.dart' as _i1056;
 import '../../features/categories/data/datasources/category_datasource.dart'
     as _i555;
 import '../../features/categories/presentation/cubit/categories_cubit.dart'
@@ -47,6 +51,8 @@ import '../../features/dashboard/presentation/cubit/dashboard_cubit.dart'
     as _i24;
 import '../../features/gamification/data/services/badge_service.dart' as _i756;
 import '../../features/onboarding/domain/onboarding_service.dart' as _i720;
+import '../../features/reports/data/datasources/reports_datasource.dart'
+    as _i112;
 import '../../features/transactions/data/datasources/recurring_transaction_datasource.dart'
     as _i701;
 import '../../features/transactions/data/datasources/transaction_remote_datasource.dart'
@@ -124,6 +130,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i974.FirebaseFirestore>(),
           gh<_i706.Uuid>(),
         ));
+    gh.lazySingleton<_i455.BudgetDataSource>(
+        () => _i455.BudgetDataSourceImpl(gh<_i974.FirebaseFirestore>()));
     gh.lazySingleton<_i555.CategoryDataSource>(
         () => _i555.CategoryDataSourceImpl(gh<_i974.FirebaseFirestore>()));
     gh.lazySingleton<_i802.CategoriesCubit>(() => _i802.CategoriesCubit(
@@ -138,6 +146,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i421.TransactionRepository>(() =>
         _i443.TransactionRepositoryImpl(
             gh<_i634.TransactionRemoteDataSource>()));
+    gh.lazySingleton<_i31.BudgetAlertService>(() => _i31.BudgetAlertService(
+          gh<_i455.BudgetDataSource>(),
+          gh<_i112.ReportsDataSource>(),
+        ));
     gh.lazySingleton<_i706.AccountRepository>(
         () => _i126.AccountRepositoryImpl(gh<_i613.AccountRemoteDataSource>()));
     gh.lazySingleton<_i787.AuthRepository>(
@@ -161,6 +173,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i439.GetTransactions(gh<_i421.TransactionRepository>()));
     gh.lazySingleton<_i373.UpdateTransaction>(
         () => _i373.UpdateTransaction(gh<_i421.TransactionRepository>()));
+    gh.lazySingleton<_i1056.BudgetsCubit>(() => _i1056.BudgetsCubit(
+          gh<_i455.BudgetDataSource>(),
+          gh<_i112.ReportsDataSource>(),
+        ));
     gh.lazySingleton<_i583.AddAccount>(
         () => _i583.AddAccount(gh<_i706.AccountRepository>()));
     gh.lazySingleton<_i473.GetAccounts>(
@@ -169,6 +185,12 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i770.UpdateAccount(gh<_i706.AccountRepository>()));
     gh.factory<_i24.DashboardCubit>(
         () => _i24.DashboardCubit(gh<_i473.GetAccounts>()));
+    gh.factory<_i439.TransactionsBloc>(() => _i439.TransactionsBloc(
+          gh<_i439.GetTransactions>(),
+          gh<_i5.AddTransaction>(),
+          gh<_i373.UpdateTransaction>(),
+          gh<_i31.BudgetAlertService>(),
+        ));
     gh.lazySingleton<_i797.AuthBloc>(() => _i797.AuthBloc(
           gh<_i787.AuthRepository>(),
           gh<_i485.SignInWithEmail>(),
@@ -181,11 +203,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i473.GetAccounts>(),
           gh<_i583.AddAccount>(),
           gh<_i770.UpdateAccount>(),
-        ));
-    gh.factory<_i439.TransactionsBloc>(() => _i439.TransactionsBloc(
-          gh<_i439.GetTransactions>(),
-          gh<_i5.AddTransaction>(),
-          gh<_i373.UpdateTransaction>(),
         ));
     return this;
   }

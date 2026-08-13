@@ -5,6 +5,8 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../budgets/data/datasources/budget_datasource.dart';
+import '../../../budgets/domain/budget_calculator.dart';
 import '../../../reports/data/datasources/reports_datasource.dart';
 import '../../../reports/domain/models/report_data.dart';
 import '../../domain/entities/financial_tip.dart';
@@ -37,7 +39,15 @@ class _TipsSectionState extends State<TipsSection> {
     final now = DateTime.now();
     final ReportData data =
         await getIt<ReportsDataSource>().loadReport(widget.userId, now.year, now.month);
-    return InsightsEngine.generate(data);
+    // Caps turn into tips of their own ("te pasaste", "vas en el 85%").
+    final budgets = await getIt<BudgetDataSource>().getBudgets(widget.userId);
+    return InsightsEngine.generate(
+      data,
+      budgets: BudgetCalculator.summarize(
+        budgets: budgets,
+        spendingByCategory: data.expensesByCategory,
+      ),
+    );
   }
 
   @override

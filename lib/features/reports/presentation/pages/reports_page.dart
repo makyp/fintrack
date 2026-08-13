@@ -10,6 +10,10 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../budgets/data/datasources/budget_datasource.dart';
+import '../../../budgets/domain/budget_calculator.dart';
+import '../../../budgets/domain/entities/budget.dart';
+import '../../../budgets/presentation/widgets/budgets_report_section.dart';
 import '../../domain/models/report_data.dart';
 import '../cubit/reports_cubit.dart';
 import '../widgets/expense_donut_chart.dart';
@@ -43,6 +47,23 @@ class _ReportsView extends StatelessWidget {
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
   ];
 
+  /// Caps are measured against the month being exported, so the PDF says the
+  /// same thing the screen does.
+  Future<void> _sharePdf(ReportData data) async {
+    var budgets = const BudgetSummary([]);
+    if (userId.isNotEmpty) {
+      try {
+        budgets = BudgetCalculator.summarize(
+          budgets: await getIt<BudgetDataSource>().getBudgets(userId),
+          spendingByCategory: data.expensesByCategory,
+        );
+      } catch (_) {
+        // Export the report without the caps rather than failing outright.
+      }
+    }
+    await ReportPdfGenerator.shareReport(data, budgets: budgets);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,7 +86,7 @@ class _ReportsView extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.picture_as_pdf_outlined),
                       tooltip: 'Descargar PDF',
-                      onPressed: () => ReportPdfGenerator.shareReport(state.data!),
+                      onPressed: () => _sharePdf(state.data!),
                     ),
                     IconButton(
                       icon: const Icon(Icons.copy_outlined),
@@ -125,6 +146,11 @@ class _ReportsView extends StatelessWidget {
               if (data.topExpense != null || data.topIncome != null) ...[
                 _buildHighlightCards(context, data),
                 const SizedBox(height: AppDimensions.md),
+              ],
+
+              // ── Topes de gasto (solo modo personal: los topes son tuyos) ─
+              if (state.mode != ReportMode.household && userId.isNotEmpty) ...[
+                BudgetsReportSection(userId: userId, data: data),
               ],
 
               // ── Member breakdown (household mode only) ──────────────────

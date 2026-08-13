@@ -18,6 +18,8 @@ import 'core/theme/app_color_scheme.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/budgets/data/budget_alert_service.dart';
+import 'features/budgets/presentation/cubit/budgets_cubit.dart';
 import 'features/categories/presentation/cubit/categories_cubit.dart';
 import 'firebase_options.dart';
 
@@ -80,11 +82,16 @@ class _FimakypAppState extends State<FimakypApp> {
           // Load the category catalog app-wide: everything that renders a
           // movement resolves its label through CategoryRegistry.
           unawaited(getIt<CategoriesCubit>().watchCategories(state.user!.uid));
+          unawaited(getIt<BudgetsCubit>().watchBudgets(state.user!.uid));
+          // Catch a cap that was blown while the app was closed (a recurring
+          // charge, a shared household expense).
+          unawaited(getIt<BudgetAlertService>().check(state.user!.uid));
         }
       } else if (state.isUnauthenticated) {
         AnalyticsService.clearUser();
         _authedUid = null;
         getIt<CategoriesCubit>().clear();
+        getIt<BudgetsCubit>().clear();
       }
     });
   }

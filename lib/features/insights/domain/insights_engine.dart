@@ -1,4 +1,5 @@
 import '../../../core/utils/currency_formatter.dart';
+import '../../budgets/domain/entities/budget.dart';
 import '../../reports/domain/models/report_data.dart';
 import '../../transactions/domain/entities/transaction.dart';
 import 'entities/financial_tip.dart';
@@ -10,8 +11,11 @@ import 'entities/financial_tip.dart';
 ///
 /// Priority scale (higher = more important, shown first):
 ///   100  deficit (spending more than you earn)
+///    95  a spending cap was blown
+///    85  a spending cap is about to be blown
 ///    80  low savings rate
 ///    70  a single category dominating expenses
+///    65  every cap respected (praise)
 ///    60  healthy savings rate (praise)
 ///    50  moderate savings rate (encourage)
 ///    10  no data yet
@@ -19,15 +23,82 @@ class InsightsEngine {
   const InsightsEngine._();
 
   /// Generates the full list of applicable tips, sorted by priority desc.
-  static List<FinancialTip> generate(ReportData data) {
+  ///
+  /// [budgets] is optional: without caps configured the engine behaves exactly
+  /// as before.
+  static List<FinancialTip> generate(
+    ReportData data, {
+    BudgetSummary budgets = const BudgetSummary([]),
+  }) {
     final tips = <FinancialTip?>[
       _deficit(data),
       _savingsRate(data),
       _dominantCategory(data),
+      _budgetsOver(budgets),
+      _budgetsNearLimit(budgets),
+      _budgetsRespected(budgets),
       _noData(data),
     ].whereType<FinancialTip>().toList()
       ..sort((a, b) => b.priority.compareTo(a.priority));
     return tips;
+  }
+
+  // ── Rule: a cap was blown ──────────────────────────────────────────────
+  static FinancialTip? _budgetsOver(BudgetSummary b) {
+    final over = b.over;
+    if (over.isEmpty) return null;
+    final worst = over.first;
+    final extra = over.length - 1;
+    final tail = extra > 0
+        ? ' Y $extra tope${extra > 1 ? 's' : ''} más en la misma situación.'
+        : '';
+    return FinancialTip(
+      id: 'budget_over',
+      severity: TipSeverity.danger,
+      emoji: '🚨',
+      title: 'Te pasaste en ${worst.category.label}',
+      message: 'Tu tope era ${CurrencyFormatter.format(worst.limit)} y llevas '
+          '${CurrencyFormatter.format(worst.spent)}: '
+          '${CurrencyFormatter.format(worst.overspent)} de más.$tail',
+      priority: 95,
+      actionLabel: 'Ver topes',
+      actionRoute: '/budgets',
+    );
+  }
+
+  // ── Rule: a cap is close ───────────────────────────────────────────────
+  static FinancialTip? _budgetsNearLimit(BudgetSummary b) {
+    final near = b.nearLimit;
+    if (near.isEmpty) return null;
+    final worst = near.first;
+    return FinancialTip(
+      id: 'budget_near',
+      severity: TipSeverity.warning,
+      emoji: '⚠️',
+      title: 'Ojo con ${worst.category.label}',
+      message: 'Vas en el ${(worst.progress * 100).round()}% de tu tope. Te '
+          'quedan ${CurrencyFormatter.format(worst.available)} para el resto '
+          'del mes.',
+      priority: 85,
+      actionLabel: 'Ver topes',
+      actionRoute: '/budgets',
+    );
+  }
+
+  // ── Rule: everything within its cap ────────────────────────────────────
+  static FinancialTip? _budgetsRespected(BudgetSummary b) {
+    if (b.isEmpty || b.over.isNotEmpty || b.nearLimit.isNotEmpty) return null;
+    if (b.totalSpent <= 0) return null;
+    return FinancialTip(
+      id: 'budget_ok',
+      severity: TipSeverity.positive,
+      emoji: '✅',
+      title: 'Tus topes van bien',
+      message: 'Llevas ${CurrencyFormatter.format(b.totalSpent)} de '
+          '${CurrencyFormatter.format(b.totalLimit)} presupuestados. Te quedan '
+          '${CurrencyFormatter.format(b.totalAvailable)} disponibles.',
+      priority: 65,
+    );
   }
 
   // ── Rule 1: spending more than you earn ────────────────────────────────

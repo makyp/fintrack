@@ -278,6 +278,53 @@ class LocalNotificationService {
     }
   }
 
+  // ── Budget caps ───────────────────────────────────────────────────────────
+
+  static const _budgetChannelId = 'fimakyp_budgets';
+  static const _budgetChannelName = 'Topes de gasto Fimakyp';
+  static const _budgetBaseId = 3200; // 3200–3299
+  static const _budgetIdLimit = 100;
+
+  /// Shows a cap alert immediately — crossing a threshold is an event, so
+  /// there is nothing to schedule. The id is derived from the category so a
+  /// later alert for the same category replaces the previous one instead of
+  /// stacking up in the tray.
+  static Future<void> showBudgetAlert({
+    required String categoryId,
+    required String title,
+    required String body,
+  }) async {
+    if (kIsWeb) return;
+    await initialize();
+    final id = _budgetBaseId + (categoryId.hashCode.abs() % _budgetIdLimit);
+    try {
+      await _plugin.show(
+        id,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _budgetChannelId,
+            _budgetChannelName,
+            importance: Importance.max,
+            priority: Priority.max,
+            icon: '@mipmap/ic_launcher',
+            playSound: true,
+            enableVibration: true,
+            channelShowBadge: true,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+      );
+    } catch (_) {
+      // Never crash because an alert could not be shown.
+    }
+  }
+
   static Future<void> _scheduleOneShot(
     int id,
     String title,

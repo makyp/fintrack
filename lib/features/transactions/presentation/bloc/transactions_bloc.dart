@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import '../../../budgets/data/budget_alert_service.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/usecases/get_transactions.dart';
 import '../../domain/usecases/add_transaction.dart';
@@ -13,11 +14,13 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
   final GetTransactions _getTransactions;
   final AddTransaction _addTransaction;
   final UpdateTransaction _updateTransaction;
+  final BudgetAlertService _budgetAlerts;
   StreamSubscription<List<Transaction>>? _subscription;
 
   String _userId = '';
 
-  TransactionsBloc(this._getTransactions, this._addTransaction, this._updateTransaction)
+  TransactionsBloc(this._getTransactions, this._addTransaction,
+      this._updateTransaction, this._budgetAlerts)
       : super(const TransactionsState.initial()) {
     on<TransactionsWatchStarted>(_onWatchStarted);
     on<TransactionsLoadMore>(_onLoadMore);
@@ -72,7 +75,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     final result = await _addTransaction(event.transaction);
     result.fold(
       (f) => emit(TransactionsState.error(f.message)),
-      (_) {},
+      (_) => _checkBudgets(event.transaction),
     );
   }
 
@@ -80,8 +83,15 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     final result = await _updateTransaction(event.transaction);
     result.fold(
       (f) => emit(TransactionsState.error(f.message)),
-      (_) {},
+      (_) => _checkBudgets(event.transaction),
     );
+  }
+
+  /// A saved expense may have just pushed a category past its cap. Fire and
+  /// forget: the alert must never delay or fail the save.
+  void _checkBudgets(Transaction tx) {
+    if (tx.type != TransactionType.expense) return;
+    unawaited(_budgetAlerts.check(tx.userId));
   }
 
   Future<void> _onDeleted(TransactionDeleted event, Emitter<TransactionsState> emit) async {

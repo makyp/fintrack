@@ -13,6 +13,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../budgets/presentation/pages/budgets_page.dart';
 import '../../../categories/presentation/pages/categories_page.dart';
 import '../../../gamification/presentation/pages/badges_page.dart';
 import 'preferences_page.dart';
@@ -101,6 +102,18 @@ class ProfilePage extends StatelessWidget {
                     ? null
                     : () => Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => CategoriesPage(userId: user.uid))),
+              ),
+
+              // ── Topes de gasto ───────────────────────────────────────────
+              ListTile(
+                leading: const Icon(Icons.speed_outlined, color: AppColors.warning),
+                title: const Text('Topes de gasto'),
+                subtitle: const Text('Cuánto quieres gastar por categoría'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: user == null
+                    ? null
+                    : () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => BudgetsPage(userId: user.uid))),
               ),
 
               // ── Preferencias ─────────────────────────────────────────────

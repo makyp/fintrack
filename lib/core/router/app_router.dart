@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/budgets/presentation/pages/budgets_page.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -119,6 +121,12 @@ class AppRouter {
             GoRoute(
               path: '/notifications',
               builder: (_, __) => const NotificationsPage(),
+            ),
+            GoRoute(
+              path: '/budgets',
+              builder: (context, __) => BudgetsPage(
+                userId: context.read<AuthBloc>().state.user?.uid ?? '',
+              ),
             ),
           ],
         ),

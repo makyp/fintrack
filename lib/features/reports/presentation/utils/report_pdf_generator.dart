@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../../../budgets/domain/entities/budget.dart';
 import '../../../transactions/domain/entities/transaction.dart';
 import '../../domain/models/report_data.dart';
 
@@ -44,8 +45,12 @@ class ReportPdfGenerator {
 
   // ── Public entry point ────────────────────────────────────────────────────
 
-  static Future<void> shareReport(ReportData data) async {
-    final bytes = await _buildPdf(data);
+  /// [budgets] is optional — when the user has caps configured, the report
+  /// gains a section with what was budgeted, what is left and what was
+  /// exceeded per category.
+  static Future<void> shareReport(ReportData data,
+      {BudgetSummary budgets = const BudgetSummary([])}) async {
+    final bytes = await _buildPdf(data, budgets);
     final month = _months[data.month - 1];
     await Printing.sharePdf(
       bytes: bytes,
@@ -55,7 +60,8 @@ class ReportPdfGenerator {
 
   // ── PDF construction ──────────────────────────────────────────────────────
 
-  static Future<Uint8List> _buildPdf(ReportData data) async {
+  static Future<Uint8List> _buildPdf(
+      ReportData data, BudgetSummary budgets) async {
     final doc = pw.Document();
 
     final font = await PdfGoogleFonts.nunitoRegular();
@@ -123,6 +129,15 @@ class ReportPdfGenerator {
             pw.SizedBox(height: 10),
             _buildDailyChart(data.daily, incomeColor, expenseColor, greyMid,
                 greyLight, borderGrey, font),
+            pw.SizedBox(height: 22),
+          ],
+
+          // ── 6b. SPENDING CAPS ────────────────────────────────────────────
+          if (!budgets.isEmpty) ...[
+            _sectionTitle('Topes de gasto', primary, fontBold),
+            pw.SizedBox(height: 10),
+            _buildBudgets(budgets, incomeColor, expenseColor, greyMid,
+                greyLight, borderGrey, font, fontBold),
             pw.SizedBox(height: 22),
           ],
 
@@ -1015,6 +1030,121 @@ class ReportPdfGenerator {
   }
 
   // ── SHARED HELPERS ────────────────────────────────────────────────────────
+
+  static const _budgetTrackW = 460.0;
+
+  // ── SECTION: SPENDING CAPS ────────────────────────────────────────────────
+
+  static pw.Widget _buildBudgets(
+    BudgetSummary budgets,
+    PdfColor incomeColor,
+    PdfColor expenseColor,
+    PdfColor greyMid,
+    PdfColor greyLight,
+    PdfColor borderGrey,
+    pw.Font font,
+    pw.Font fontBold,
+  ) {
+    pw.Widget totalCell(String label, String value, PdfColor color) {
+      return pw.Expanded(
+        child: pw.Column(children: [
+          pw.Text(label, style: pw.TextStyle(font: font, fontSize: 8, color: greyMid)),
+          pw.SizedBox(height: 2),
+          pw.Text(value,
+              style: pw.TextStyle(font: fontBold, fontSize: 11, color: color)),
+        ]),
+      );
+    }
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        // Totals strip: presupuestado / disponible / exceso.
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: pw.BoxDecoration(
+            color: greyLight,
+            borderRadius: pw.BorderRadius.circular(8),
+          ),
+          child: pw.Row(children: [
+            totalCell('Presupuestado', _fmt(budgets.totalLimit), greyMid),
+            totalCell('Gastado', _fmt(budgets.totalSpent), greyMid),
+            totalCell('Disponible', _fmt(budgets.totalAvailable), incomeColor),
+            totalCell(
+                'Te pasaste',
+                budgets.totalOverspent > 0
+                    ? _fmt(budgets.totalOverspent)
+                    : '\$ 0',
+                budgets.totalOverspent > 0 ? expenseColor : greyMid),
+          ]),
+        ),
+        pw.SizedBox(height: 12),
+        // One row per cap, with a bar that fills to 100% and no further.
+        ...budgets.statuses.map((s) {
+          final color = s.isOver ? expenseColor : incomeColor;
+          final verdict = s.isOver
+              ? 'Te pasaste ${_fmt(s.overspent)}'
+              : 'Te queda ${_fmt(s.available)}';
+          return pw.Container(
+            margin: const pw.EdgeInsets.only(bottom: 8),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: borderGrey),
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(children: [
+                  pw.Expanded(
+                    child: pw.Text(s.category.label,
+                        style: pw.TextStyle(font: fontBold, fontSize: 10)),
+                  ),
+                  pw.Text('${(s.progress * 100).round()}%',
+                      style: pw.TextStyle(
+                          font: fontBold, fontSize: 10, color: color)),
+                ]),
+                pw.SizedBox(height: 5),
+                // Fixed track width: the pdf package has no
+                // FractionallySizedBox, so the fill is computed in points.
+                pw.Stack(children: [
+                  pw.Container(
+                    height: 7,
+                    width: _budgetTrackW,
+                    decoration: pw.BoxDecoration(
+                      color: greyLight,
+                      borderRadius: pw.BorderRadius.circular(4),
+                    ),
+                  ),
+                  pw.Container(
+                    height: 7,
+                    width: s.progress.clamp(0.0, 1.0) * _budgetTrackW,
+                    decoration: pw.BoxDecoration(
+                      color: color,
+                      borderRadius: pw.BorderRadius.circular(4),
+                    ),
+                  ),
+                ]),
+                pw.SizedBox(height: 5),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('${_fmt(s.spent)} de ${_fmt(s.limit)}',
+                        style: pw.TextStyle(
+                            font: font, fontSize: 8, color: greyMid)),
+                    pw.Text(verdict,
+                        style: pw.TextStyle(
+                            font: fontBold, fontSize: 8, color: color)),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
 
   static pw.Widget _sectionTitle(
       String title, PdfColor color, pw.Font fontBold) {
