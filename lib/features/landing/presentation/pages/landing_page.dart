@@ -730,8 +730,9 @@ class _HeroCopy extends StatelessWidget {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460),
             child: Text(
-              'Fimakyp transforma cómo manejas tus finanzas personales: registra '
-              'gastos, crea metas de ahorro y genera reportes PDF con un solo toque.',
+              'Fimakyp transforma cómo manejas tus finanzas personales: registra un '
+              'gasto dictándolo o con una foto del recibo, crea metas de ahorro y '
+              'recibe consejos según tus propios números.',
               textAlign: mobile ? TextAlign.center : TextAlign.start,
               style: _b(mobile ? 15 : 16.5),
             ),
@@ -894,6 +895,36 @@ class _HeroVisualState extends State<_HeroVisual>
                   color: _accent,
                   label: 'Meta viaje',
                   value: '78%'),
+            ),
+            // Tarjeta flotante: captura por voz
+            _FloatingChip(
+              ctrl: _ctrl,
+              phase: 0.75,
+              top: 150,
+              left: -16,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                        color: _primary.withOpacity(0.12),
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.mic_rounded,
+                        color: _primary, size: 14),
+                  ),
+                  const SizedBox(width: 9),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Dictado por voz', style: _b(10.5, color: _grey)),
+                      Text('«gasté 25 mil en almuerzo»',
+                          style: _b(12, w: FontWeight.w700, color: _ink)),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1614,6 +1645,300 @@ class _RecurringScreen extends StatelessWidget {
       );
 }
 
+// ── Pantalla: Captura (voz / foto / manual) ─────────────────────────────────
+class _CaptureScreen extends StatelessWidget {
+  const _CaptureScreen();
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Fondo atenuado, como cuando se abre la hoja sobre la app
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 36, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Movimientos', style: _h(15, color: _ink, ls: 0)),
+              const SizedBox(height: 12),
+              for (final o in const [0.9, 0.55, 0.75, 0.4])
+                Container(
+                  height: 34,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: _tint.withOpacity(o * 0.7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Container(color: _ink.withOpacity(0.28)),
+        // Hoja inferior con las tres formas de registrar
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(13, 9, 13, 14),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 34,
+                    height: 3.5,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                        color: _border, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                Text('Nuevo movimiento', style: _h(13, color: _ink, ls: 0)),
+                const SizedBox(height: 3),
+                Text('Elige cómo prefieres registrarlo',
+                    style: _b(9, color: _grey)),
+                const SizedBox(height: 12),
+                _opt(Icons.mic_none_rounded, _primary, 'Dictar por voz',
+                    '«gasté 25 mil en almuerzo»'),
+                _opt(Icons.receipt_long_outlined, _accent, 'Foto del recibo',
+                    'Leo el total sin que escribas nada'),
+                _opt(Icons.edit_outlined, _grey, 'Escribirlo yo',
+                    'El formulario de siempre'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _opt(IconData icon, Color c, String title, String sub) => Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: c.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.withOpacity(0.18)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                  color: c.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: c, size: 16),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: _b(10.5, w: FontWeight.w700, color: _ink)),
+                  const SizedBox(height: 1),
+                  Text(sub, style: _b(8.5, color: _grey)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: _greyLt, size: 15),
+          ],
+        ),
+      );
+}
+
+// ── Pantalla: Consejos del mes ──────────────────────────────────────────────
+class _TipsScreen extends StatelessWidget {
+  const _TipsScreen();
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 36, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lightbulb_outline_rounded,
+                  color: _primary, size: 16),
+              const SizedBox(width: 7),
+              Text('Para ti', style: _h(15, color: _ink, ls: 0)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('Consejos según tus números de este mes',
+              style: _b(9, color: _grey)),
+          const SizedBox(height: 14),
+          _tip('🎉', '¡Excelente ahorro!',
+              'Ahorraste el 24% de tus ingresos este mes. Vas por encima de la meta del 20%.',
+              _violet),
+          _tip('💡', 'Comida se llevó el 38%',
+              'Es tu categoría más alta del mes. Bajarla un 10% te deja \$72.000 libres.',
+              _primary),
+          _tip('⚠️', 'Ojo con la tarjeta',
+              'Tu corte es el día 15 y ya vas en \$980.000.',
+              _primaryDk),
+        ],
+      ),
+    );
+  }
+
+  Widget _tip(String emoji, String title, String msg, Color c) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: c.withOpacity(0.22)),
+          boxShadow: [
+            BoxShadow(
+                color: _primary.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 3)),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: _b(10.5, w: FontWeight.w800, color: _ink)),
+                  const SizedBox(height: 3),
+                  Text(msg, style: _b(8.5, color: _grey, height: 1.45)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+// ── Pantalla: Tarjeta de crédito (corte, pago y cuotas) ─────────────────────
+class _CardScreen extends StatelessWidget {
+  const _CardScreen();
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 36, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Tarjeta Visa', style: _h(15, color: _ink, ls: 0)),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                  colors: [_primaryDeep, _violet],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Deuda actual', style: _b(9.5, color: Colors.white70)),
+                const SizedBox(height: 3),
+                Text('\$980.000', style: _h(22, color: Colors.white, ls: -1)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _cycle(Icons.event_rounded, 'Corte', 'día 15'),
+                    Container(
+                        width: 1,
+                        height: 26,
+                        color: Colors.white24,
+                        margin: const EdgeInsets.symmetric(horizontal: 10)),
+                    _cycle(Icons.payments_rounded, 'Pago', 'día 5'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: _tint,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _border),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_active_rounded,
+                    color: _primary, size: 15),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Te avisamos en el corte, 3 días antes y el día del pago',
+                      style: _b(8.5, color: _primaryDk, height: 1.4)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('COMPRAS A CUOTAS',
+              style: _b(8.5, w: FontWeight.w700, color: _greyLt)),
+          const SizedBox(height: 6),
+          _purchase('📱', 'Celular', '12 cuotas de \$150.000', '-\$1.800.000'),
+          _purchase('🛋️', 'Sofá', '6 cuotas de \$180.000', '-\$1.080.000'),
+        ],
+      ),
+    );
+  }
+
+  Widget _cycle(IconData i, String l, String v) => Expanded(
+        child: Row(
+          children: [
+            Icon(i, color: Colors.white, size: 14),
+            const SizedBox(width: 6),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l, style: _b(8.5, color: Colors.white70)),
+                Text(v, style: _b(11, w: FontWeight.w800, color: Colors.white)),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  Widget _purchase(String e, String t, String plan, String amount) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                  color: _primaryDk.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10)),
+              alignment: Alignment.center,
+              child: Text(e, style: const TextStyle(fontSize: 14)),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t, style: _b(11, w: FontWeight.w600, color: _ink)),
+                  Text(plan, style: _b(8.5, color: _grey)),
+                ],
+              ),
+            ),
+            Text(amount, style: _b(10.5, w: FontWeight.w800, color: _primaryDk)),
+          ],
+        ),
+      );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  NOSOTROS (Quiénes somos)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1897,11 +2222,33 @@ const _modules = <_ModuleData>[
     _DashboardScreen(),
   ),
   _ModuleData(
+    'Captura',
+    'Dicta o fotografía',
+    'Registrar un gasto ya no es llenar un formulario: dilo en voz alta o toma una foto del recibo y Fimakyp llena los campos por ti.',
+    [
+      'Dictado en español natural',
+      'Lee el total del recibo',
+      'Siempre revisas antes de guardar',
+    ],
+    _CaptureScreen(),
+  ),
+  _ModuleData(
     'Transacciones',
     'Registra en segundos',
     'Agrega ingresos, gastos y transferencias con categorías automáticas, filtros y exportación.',
     ['Categorización automática', 'Filtros por cuenta y fecha', 'Exporta a CSV y PDF'],
     _TransactionsScreen(),
+  ),
+  _ModuleData(
+    'Consejos',
+    'Tips con tus números',
+    'El inicio te dice qué está pasando con tu plata: si gastaste de más, cómo va tu ahorro y qué categoría se está llevando el mes.',
+    [
+      'Alerta si gastas más de lo que ingresa',
+      'Mide tu tasa de ahorro',
+      'Detecta la categoría dominante',
+    ],
+    _TipsScreen(),
   ),
   _ModuleData(
     'Metas',
@@ -1916,6 +2263,17 @@ const _modules = <_ModuleData>[
     'Lleva quién te debe y a quién le debes, registra abonos y nunca pierdas el rastro del dinero.',
     ['Te deben / debes', 'Abonos y pagos', 'Resumen por persona'],
     _DebtsScreen(),
+  ),
+  _ModuleData(
+    'Tarjetas',
+    'Tu tarjeta, sin sustos',
+    'Guarda el día de corte y el día de pago de cada tarjeta, y registra tus compras diferidas indicando en cuántas cuotas quedaron.',
+    [
+      'Corte y pago por tarjeta',
+      'Aviso en el corte y antes de pagar',
+      'Compras a cuotas visibles',
+    ],
+    _CardScreen(),
   ),
   _ModuleData(
     'Reportes',
@@ -1953,7 +2311,7 @@ class _ModulesSection extends StatelessWidget {
             titleStart: 'Una app, ',
             titleAccent: 'todo lo que necesitas',
             subtitle:
-                'Siete módulos diseñados para que domines tus finanzas sin complicaciones.',
+                'Diez módulos diseñados para que domines tus finanzas sin complicaciones.',
           ),
           SizedBox(height: 44),
           _ModulesCarousel(),
@@ -2200,6 +2558,16 @@ class _FeaturesSection extends StatelessWidget {
   const _FeaturesSection({super.key});
 
   static const _items = [
+    (Icons.mic_rounded, 'Registro por voz',
+        'Di «gasté 25 mil en almuerzo» y el formulario se llena solo.'),
+    (Icons.document_scanner_rounded, 'Foto del recibo',
+        'La cámara lee el total y la fecha del tirilla, sin escribir nada.'),
+    (Icons.lightbulb_rounded, 'Consejos personalizados',
+        'Tips calculados con tus propios datos, sin costo ni servicios externos.'),
+    (Icons.credit_card_rounded, 'Ciclo de tu tarjeta',
+        'Día de corte y de pago con avisos para que nunca pagues intereses.'),
+    (Icons.view_week_rounded, 'Compras a cuotas',
+        'Registra en cuántas cuotas quedó cada compra y ve el valor mensual.'),
     (Icons.account_balance_wallet_rounded, 'Múltiples cuentas',
         'Efectivo, débito, crédito e inversiones en una vista unificada.'),
     (Icons.repeat_rounded, 'Gastos recurrentes',
@@ -2363,8 +2731,8 @@ class _StatsSection extends StatelessWidget {
                         desktopCols: 4,
                         gap: 16,
                         children: [
-                          _StatItem(Icons.widgets_rounded, 7, '', 'Módulos'),
-                          _StatItem(Icons.auto_awesome_rounded, 9, '', 'Características'),
+                          _StatItem(Icons.widgets_rounded, 10, '', 'Módulos'),
+                          _StatItem(Icons.auto_awesome_rounded, 14, '', 'Características'),
                           _StatItem(Icons.palette_rounded, 3, '', 'Temas de color'),
                           _StatItem(Icons.favorite_rounded, 100, '%', 'Gratis'),
                         ],
