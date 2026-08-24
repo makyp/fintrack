@@ -1820,6 +1820,97 @@ class _TipsScreen extends StatelessWidget {
       );
 }
 
+// ── Pantalla: Presupuestos (topes de gasto por categoría) ───────────────────
+class _BudgetsScreen extends StatelessWidget {
+  const _BudgetsScreen();
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 36, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Presupuestos', style: _h(15, color: _ink, ls: 0)),
+          const SizedBox(height: 4),
+          Text('Topes de gasto de este mes', style: _b(9, color: _grey)),
+          const SizedBox(height: 12),
+          _budget('🍔', 'Comida', 0.92, '\$460.000 de \$500.000', true),
+          _budget('🚕', 'Transporte', 0.55, '\$110.000 de \$200.000', false),
+          _budget('🎬', 'Ocio', 0.78, '\$117.000 de \$150.000', false),
+          _budget('🛒', 'Hogar', 0.40, '\$240.000 de \$600.000', false),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: _tint,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _border),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_active_rounded,
+                    color: _primary, size: 15),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Comida va en 92%: te avisamos antes de pasarte',
+                      style: _b(8.5, color: _primaryDk, height: 1.4)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _budget(String e, String t, double p, String detail, bool nearLimit) {
+    final c = nearLimit ? _primaryDk : _primary;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: c.withOpacity(nearLimit ? 0.35 : 0.15)),
+        boxShadow: [
+          BoxShadow(
+              color: _primary.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(e, style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: 7),
+              Expanded(
+                  child:
+                      Text(t, style: _b(11, w: FontWeight.w700, color: _ink))),
+              Text('${(p * 100).round()}%',
+                  style: _b(10.5, w: FontWeight.w800, color: c)),
+            ],
+          ),
+          const SizedBox(height: 7),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: p,
+              minHeight: 6,
+              backgroundColor: _tint,
+              valueColor: AlwaysStoppedAnimation(c),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(detail, style: _b(8.5, color: _grey)),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Pantalla: Tarjeta de crédito (corte, pago y cuotas) ─────────────────────
 class _CardScreen extends StatelessWidget {
   const _CardScreen();
@@ -2251,6 +2342,17 @@ const _modules = <_ModuleData>[
     _TipsScreen(),
   ),
   _ModuleData(
+    'Presupuestos',
+    'Topes de gasto',
+    'Ponle un límite mensual a cada categoría. Fimakyp te avisa cuando te estás acercando y te muestra cómo vas en el reporte del mes.',
+    [
+      'Tope mensual por categoría',
+      'Alerta antes de pasarte',
+      'Cumplimiento en el reporte',
+    ],
+    _BudgetsScreen(),
+  ),
+  _ModuleData(
     'Metas',
     'Metas de ahorro',
     'Crea objetivos con monto y fecha. Visualiza tu progreso en tiempo real y mantente motivado.',
@@ -2311,7 +2413,7 @@ class _ModulesSection extends StatelessWidget {
             titleStart: 'Una app, ',
             titleAccent: 'todo lo que necesitas',
             subtitle:
-                'Diez módulos diseñados para que domines tus finanzas sin complicaciones.',
+                'Once módulos diseñados para que domines tus finanzas sin complicaciones.',
           ),
           SizedBox(height: 44),
           _ModulesCarousel(),
@@ -2564,12 +2666,16 @@ class _FeaturesSection extends StatelessWidget {
         'La cámara lee el total y la fecha del tirilla, sin escribir nada.'),
     (Icons.lightbulb_rounded, 'Consejos personalizados',
         'Tips calculados con tus propios datos, sin costo ni servicios externos.'),
+    (Icons.track_changes_rounded, 'Topes de gasto',
+        'Ponle un límite mensual a cada categoría y recibe alerta antes de pasarte.'),
     (Icons.credit_card_rounded, 'Ciclo de tu tarjeta',
         'Día de corte y de pago con avisos para que nunca pagues intereses.'),
     (Icons.view_week_rounded, 'Compras a cuotas',
         'Registra en cuántas cuotas quedó cada compra y ve el valor mensual.'),
     (Icons.account_balance_wallet_rounded, 'Múltiples cuentas',
         'Efectivo, débito, crédito e inversiones en una vista unificada.'),
+    (Icons.sell_rounded, 'Categorías a tu medida',
+        'Crea las tuyas, edita las que vienen y oculta las que no usas.'),
     (Icons.repeat_rounded, 'Gastos recurrentes',
         'Programa cobros automáticos y nunca pierdas un vencimiento.'),
     (Icons.notifications_active_rounded, 'Recordatorios',
@@ -2582,6 +2688,8 @@ class _FeaturesSection extends StatelessWidget {
         'Genera reportes con gráficas y narrativa lista para compartir.'),
     (Icons.cloud_sync_rounded, 'Sincronización',
         'Tus datos siempre al día en todos tus dispositivos al instante.'),
+    (Icons.checklist_rounded, 'Arranque guiado',
+        'Al crear tu cuenta dejas listos tu efectivo, cuentas, tarjetas y categorías en minutos.'),
     (Icons.palette_rounded, 'Temas a tu gusto',
         'Personaliza la app con paletas de color: morado, azul o verde.'),
     (Icons.lock_rounded, 'Seguridad total',
@@ -2731,8 +2839,8 @@ class _StatsSection extends StatelessWidget {
                         desktopCols: 4,
                         gap: 16,
                         children: [
-                          _StatItem(Icons.widgets_rounded, 10, '', 'Módulos'),
-                          _StatItem(Icons.auto_awesome_rounded, 14, '', 'Características'),
+                          _StatItem(Icons.widgets_rounded, 11, '', 'Módulos'),
+                          _StatItem(Icons.auto_awesome_rounded, 17, '', 'Características'),
                           _StatItem(Icons.palette_rounded, 3, '', 'Temas de color'),
                           _StatItem(Icons.favorite_rounded, 100, '%', 'Gratis'),
                         ],
