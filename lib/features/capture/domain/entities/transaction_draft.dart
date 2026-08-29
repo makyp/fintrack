@@ -6,6 +6,7 @@ import '../../../transactions/domain/entities/transaction.dart';
 enum CaptureSource {
   voice,
   receipt,
+  notification,
   manual;
 
   String get label {
@@ -14,6 +15,8 @@ enum CaptureSource {
         return 'Dictado por voz';
       case CaptureSource.receipt:
         return 'Leído del recibo';
+      case CaptureSource.notification:
+        return 'Detectado en una notificación';
       case CaptureSource.manual:
         return 'Manual';
     }

@@ -7,6 +7,8 @@ import '../../data/capture_platform.dart';
 import '../../domain/entities/transaction_draft.dart';
 import 'receipt_capture_sheet.dart';
 import 'voice_capture_sheet.dart';
+import '../../data/bank_notification_service.dart';
+import 'detected_movements_sheet.dart';
 
 /// Runs the whole capture flow: asks *how* the user wants to register, runs
 /// that route, and returns the resulting draft.
@@ -27,6 +29,8 @@ Future<TransactionDraft?> showCaptureFlow(BuildContext context) async {
       return VoiceCaptureSheet.show(context);
     case CaptureSource.receipt:
       return ReceiptCaptureSheet.show(context);
+    case CaptureSource.notification:
+      return DetectedMovementsSheet.show(context);
     case CaptureSource.manual:
       return const TransactionDraft(source: CaptureSource.manual);
   }
@@ -90,6 +94,15 @@ class CaptureOptionsSheet extends StatelessWidget {
               title: 'Foto del recibo',
               subtitle: 'Leo el total sin que escribas nada',
               source: CaptureSource.receipt,
+            ),
+          if (BankNotificationService.isSupported)
+            _option(
+              context,
+              icon: Icons.notifications_active_outlined,
+              color: AppColors.warning,
+              title: 'Detectados por el banco',
+              subtitle: 'De las notificaciones que ya te llegan',
+              source: CaptureSource.notification,
             ),
           _option(
             context,
