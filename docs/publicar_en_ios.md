@@ -23,22 +23,12 @@ orden, con lo que ya quedó hecho marcado.
 
 ## Lo que hay que hacer, en orden
 
-### 1. Elegir el bundle identifier — es la única decisión de fondo
+### 1. ~~Elegir el bundle identifier~~ — ya está: `app.fimakyp.finanzas`
 
-Hoy el proyecto trae `com.example.fintrack`, el placeholder de Flutter. Hay que
-cambiarlo por uno real **antes** de registrar nada, porque el bundle id queda
-amarrado al proyecto de Firebase, al certificado y a la ficha de App Store para
-siempre.
-
-Se cambia en Xcode (Runner › Signing & Capabilities › Bundle Identifier) o
-buscando `PRODUCT_BUNDLE_IDENTIFIER` en `ios/Runner.xcodeproj/project.pbxproj`
-(aparece tres veces para Runner y tres para RunnerTests).
-
-> Nota sobre Android: el `applicationId` también es `com.example.fintrack`.
-> Google Play **rechaza** cualquier paquete que empiece por `com.example`, así
-> que si algún día se publica ahí hay que cambiarlo — pero eso obliga a generar
-> un `google-services.json` nuevo y hace que la app sea otra distinta para
-> Android (no hay actualización desde la instalada). Por eso no se tocó aquí.
+Ya no es `com.example.fintrack`. El identificador quedó fijado en el proyecto
+Xcode (las seis apariciones de `PRODUCT_BUNDLE_IDENTIFIER`, Runner y
+RunnerTests) y es el mismo que usa Android, así que no hay dos identidades que
+mantener. Ver `identificador_de_la_app.md`.
 
 ### 2. Cuenta de desarrollador de Apple
 
@@ -53,7 +43,7 @@ buscando `PRODUCT_BUNDLE_IDENTIFIER` en `ios/Runner.xcodeproj/project.pbxproj`
 
 En la consola de `fintrack-6b6d4` › Configuración › Agregar app › iOS:
 
-1. Escribir el bundle id del paso 1.
+1. Escribir el bundle id: `app.fimakyp.finanzas`.
 2. Descargar `GoogleService-Info.plist` y arrastrarlo a `ios/Runner/` **desde
    Xcode** (con "Copy items if needed" marcado), no desde el explorador de
    archivos: tiene que quedar dentro del target Runner o Firebase no lo
@@ -122,6 +112,6 @@ flutter build ipa --release
 ## Resumen honesto
 
 Del lado del repositorio, iOS está tan listo como puede estarlo desde Windows.
-Lo que falta es, en este orden: decidir el bundle id, pagar los USD 99,
-conseguir un Mac (o un runner macOS), registrar la app en Firebase, pegar el
-`REVERSED_CLIENT_ID` y agregar Sign in with Apple.
+Lo que falta es, en este orden: pagar los USD 99, conseguir un Mac (o un runner
+macOS), registrar la app en Firebase, pegar el `REVERSED_CLIENT_ID` y agregar
+Sign in with Apple.

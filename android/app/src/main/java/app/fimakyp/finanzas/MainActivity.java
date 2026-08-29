@@ -1,4 +1,4 @@
-package com.example.fintrack;
+package app.fimakyp.finanzas;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;

@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:94712880912:android:8e6d87421b2aadf7bf4f95",
         "android_client_info": {
-          "package_name": "com.example.fintrack"
+          "package_name": "app.fimakyp.finanzas"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "94712880912-gmjpeajg1jdhc9eieapv79vip6ba28d7.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.fintrack",
+            "package_name": "app.fimakyp.finanzas",
             "certificate_hash": "6dd1e157ed4149011c6ae4fc1202016db7be1102"
           }
         },

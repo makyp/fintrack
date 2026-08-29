@@ -60,7 +60,7 @@ class WidgetService {
 
       await HomeWidget.updateWidget(
         androidName: _widgetName,
-        qualifiedAndroidName: 'com.example.fintrack.$_widgetName',
+        qualifiedAndroidName: 'app.fimakyp.finanzas.$_widgetName',
       );
     } catch (_) {
       // Widget update is best-effort; never crash the app
