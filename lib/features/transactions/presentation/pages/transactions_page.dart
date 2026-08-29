@@ -19,6 +19,7 @@ import '../bloc/transactions_bloc.dart';
 import '../bloc/transactions_event.dart';
 import '../bloc/transactions_state.dart';
 import '../widgets/transaction_filter_bar.dart';
+import 'import_statement_page.dart';
 import '../utils/transactions_export.dart';
 import 'transaction_form_page.dart';
 import 'recurring_transactions_page.dart';
@@ -112,6 +113,21 @@ class _TransactionsViewState extends State<_TransactionsView> {
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const RecurringTransactionsPage()),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.upload_file_outlined),
+                tooltip: 'Importar extracto',
+                onPressed: () {
+                  final userId =
+                      context.read<AuthBloc>().state.user?.uid ?? '';
+                  if (userId.isEmpty) return;
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => BlocProvider.value(
+                      value: context.read<TransactionsBloc>(),
+                      child: ImportStatementPage(userId: userId),
+                    ),
+                  ));
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.download_outlined),

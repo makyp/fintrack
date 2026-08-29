@@ -74,6 +74,7 @@ dependencies:
   # Icons
   cupertino_icons: ^1.0.6
   permission_handler: ^11.3.1
+  file_picker: 8.1.4
 
 dev_dependencies:
   flutter_test:

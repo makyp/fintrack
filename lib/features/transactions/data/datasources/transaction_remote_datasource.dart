@@ -19,6 +19,10 @@ abstract class TransactionRemoteDataSource {
     int limit = 50, String? lastDocId,
   });
   Future<TransactionModel> addTransaction(TransactionModel tx);
+
+  /// Books several movements at once (a bank statement import). Returns how
+  /// many were written.
+  Future<int> importTransactions(String userId, List<TransactionModel> txs);
   Future<TransactionModel> updateTransaction(TransactionModel tx);
   Future<void> deleteTransaction(String userId, String txId, {
     required String accountId, required double amount, required TransactionType type,
@@ -163,6 +167,62 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     } catch (e) {
       throw ServerException(e.toString());
     }
+  }
+
+  /// Bulk insert for the statement importer.
+  ///
+  /// One batch for the whole file instead of a round-trip per row: the balance
+  /// deltas are added up per account first, so importing 300 movements costs
+  /// one write of each account instead of 300. Transfers are not produced by
+  /// the importer — a statement has no notion of the other side of one.
+  @override
+  Future<int> importTransactions(
+      String userId, List<TransactionModel> txs) async {
+    if (txs.isEmpty) return 0;
+    try {
+      // A Firestore batch caps at 500 operations, and each movement is one
+      // write plus its account update at the end.
+      const chunkSize = 400;
+      final deltas = <String, double>{};
+      final creditCache = <String, bool>{};
+
+      for (var start = 0; start < txs.length; start += chunkSize) {
+        final chunk = txs.skip(start).take(chunkSize).toList();
+        final batch = _firestore.batch();
+
+        for (final tx in chunk) {
+          final id = tx.id.isEmpty ? _uuid.v4() : tx.id;
+          batch.set(_txRef(userId).doc(id),
+              TransactionModel.fromEntity(tx).toFirestore());
+
+          final isCredit = creditCache[tx.accountId] ??= await _isCredit(
+              userId, tx.accountId);
+          final delta = tx.type == TransactionType.expense
+              ? (isCredit ? tx.amount : -tx.amount)
+              : (isCredit ? -tx.amount : tx.amount);
+          deltas[tx.accountId] = (deltas[tx.accountId] ?? 0) + delta;
+        }
+        fireAndForget(batch.commit(), 'importTransactions');
+      }
+
+      final balanceBatch = _firestore.batch();
+      deltas.forEach((accountId, delta) {
+        balanceBatch.update(_accountRef(userId, accountId),
+            {'balance': FieldValue.increment(delta)});
+      });
+      fireAndForget(balanceBatch.commit(), 'importTransactionsBalances');
+
+      unawaited(_badgeService.onTransactionAdded(userId));
+      unawaited(WidgetService.update(userId));
+      return txs.length;
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  Future<bool> _isCredit(String userId, String accountId) async {
+    final snap = await _accountRef(userId, accountId).get();
+    return (snap.data()?['type'] as String? ?? 'cash') == 'credit';
   }
 
   @override
