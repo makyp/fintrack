@@ -49,10 +49,41 @@ import '../../features/categories/presentation/cubit/categories_cubit.dart'
     as _i802;
 import '../../features/dashboard/presentation/cubit/dashboard_cubit.dart'
     as _i24;
+import '../../features/debts/data/datasources/debt_datasource.dart' as _i580;
+import '../../features/gamification/data/datasources/gamification_datasource.dart'
+    as _i625;
+import '../../features/gamification/data/repositories/gamification_repository_impl.dart'
+    as _i358;
 import '../../features/gamification/data/services/badge_service.dart' as _i756;
+import '../../features/gamification/domain/repositories/gamification_repository.dart'
+    as _i97;
+import '../../features/gamification/presentation/cubit/gamification_cubit.dart'
+    as _i208;
+import '../../features/goals/data/datasources/goal_remote_datasource.dart'
+    as _i292;
+import '../../features/goals/data/repositories/goal_repository_impl.dart'
+    as _i942;
+import '../../features/goals/domain/repositories/goal_repository.dart' as _i112;
+import '../../features/goals/domain/usecases/add_contribution.dart' as _i990;
+import '../../features/goals/domain/usecases/add_goal.dart' as _i178;
+import '../../features/goals/domain/usecases/delete_goal.dart' as _i471;
+import '../../features/goals/domain/usecases/get_goals.dart' as _i750;
+import '../../features/goals/domain/usecases/update_goal.dart' as _i951;
+import '../../features/goals/presentation/cubit/goals_cubit.dart' as _i154;
+import '../../features/household/data/datasources/household_datasource.dart'
+    as _i635;
+import '../../features/household/data/repositories/household_repository_impl.dart'
+    as _i244;
+import '../../features/household/domain/repositories/household_repository.dart'
+    as _i385;
+import '../../features/household/presentation/cubit/household_cubit.dart'
+    as _i812;
+import '../../features/notifications/presentation/cubit/notifications_cubit.dart'
+    as _i405;
 import '../../features/onboarding/domain/onboarding_service.dart' as _i720;
 import '../../features/reports/data/datasources/reports_datasource.dart'
     as _i112;
+import '../../features/reports/presentation/cubit/reports_cubit.dart' as _i671;
 import '../../features/transactions/data/datasources/recurring_transaction_datasource.dart'
     as _i701;
 import '../../features/transactions/data/datasources/transaction_remote_datasource.dart'
@@ -81,6 +112,7 @@ import '../../features/transactions/presentation/bloc/transactions_bloc.dart'
     as _i439;
 import '../../features/transactions/presentation/cubit/recurring_cubit.dart'
     as _i578;
+import '../services/app_startup_service.dart' as _i25;
 import 'firebase_module.dart' as _i616;
 import 'uuid_module.dart' as _i78;
 
@@ -110,30 +142,50 @@ extension GetItInjectableX on _i174.GetIt {
               gh<_i974.FirebaseFirestore>(),
               gh<_i116.GoogleSignIn>(),
             ));
-    gh.factory<_i578.RecurringCubit>(() => _i578.RecurringCubit(
-          gh<_i964.GetRecurringTransactions>(),
-          gh<_i195.AddRecurringTransaction>(),
-          gh<_i553.UpdateRecurringTransaction>(),
-        ));
+    gh.lazySingleton<_i756.BadgeService>(
+        () => _i756.BadgeService(gh<_i974.FirebaseFirestore>()));
+    gh.lazySingleton<_i635.HouseholdDataSource>(
+        () => _i635.HouseholdDataSource(gh<_i974.FirebaseFirestore>()));
+    gh.lazySingleton<_i112.ReportsDataSource>(
+        () => _i112.ReportsDataSource(gh<_i974.FirebaseFirestore>()));
+    gh.lazySingleton<_i625.GamificationDataSource>(
+        () => _i625.GamificationDataSourceImpl(gh<_i974.FirebaseFirestore>()));
     gh.lazySingleton<_i634.TransactionRemoteDataSource>(
         () => _i634.TransactionRemoteDataSourceImpl(
               gh<_i974.FirebaseFirestore>(),
               gh<_i706.Uuid>(),
               gh<_i756.BadgeService>(),
             ));
+    gh.lazySingleton<_i25.AppStartupService>(() => _i25.AppStartupService(
+          gh<_i974.FirebaseFirestore>(),
+          gh<_i706.Uuid>(),
+        ));
+    gh.lazySingleton<_i385.HouseholdRepository>(
+        () => _i244.HouseholdRepositoryImpl(gh<_i635.HouseholdDataSource>()));
     gh.lazySingleton<_i701.RecurringTransactionDataSource>(
         () => _i701.RecurringTransactionDataSourceImpl(
               gh<_i974.FirebaseFirestore>(),
               gh<_i706.Uuid>(),
             ));
+    gh.lazySingleton<_i580.DebtDataSource>(() => _i580.DebtDataSource(
+          gh<_i974.FirebaseFirestore>(),
+          gh<_i706.Uuid>(),
+        ));
     gh.lazySingleton<_i720.OnboardingService>(() => _i720.OnboardingService(
           gh<_i974.FirebaseFirestore>(),
           gh<_i706.Uuid>(),
         ));
     gh.lazySingleton<_i455.BudgetDataSource>(
         () => _i455.BudgetDataSourceImpl(gh<_i974.FirebaseFirestore>()));
+    gh.factory<_i405.NotificationsCubit>(
+        () => _i405.NotificationsCubit(gh<_i974.FirebaseFirestore>()));
     gh.lazySingleton<_i555.CategoryDataSource>(
         () => _i555.CategoryDataSourceImpl(gh<_i974.FirebaseFirestore>()));
+    gh.lazySingleton<_i292.GoalRemoteDataSource>(
+        () => _i292.GoalRemoteDataSourceImpl(
+              gh<_i974.FirebaseFirestore>(),
+              gh<_i706.Uuid>(),
+            ));
     gh.lazySingleton<_i802.CategoriesCubit>(() => _i802.CategoriesCubit(
           gh<_i555.CategoryDataSource>(),
           gh<_i706.Uuid>(),
@@ -146,17 +198,25 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i421.TransactionRepository>(() =>
         _i443.TransactionRepositoryImpl(
             gh<_i634.TransactionRemoteDataSource>()));
+    gh.factory<_i812.HouseholdCubit>(
+        () => _i812.HouseholdCubit(gh<_i385.HouseholdRepository>()));
+    gh.lazySingleton<_i97.GamificationRepository>(() =>
+        _i358.GamificationRepositoryImpl(gh<_i625.GamificationDataSource>()));
     gh.lazySingleton<_i31.BudgetAlertService>(() => _i31.BudgetAlertService(
           gh<_i455.BudgetDataSource>(),
           gh<_i112.ReportsDataSource>(),
         ));
     gh.lazySingleton<_i706.AccountRepository>(
         () => _i126.AccountRepositoryImpl(gh<_i613.AccountRemoteDataSource>()));
+    gh.factory<_i671.ReportsCubit>(
+        () => _i671.ReportsCubit(gh<_i112.ReportsDataSource>()));
     gh.lazySingleton<_i787.AuthRepository>(
         () => _i153.AuthRepositoryImpl(gh<_i161.AuthRemoteDataSource>()));
     gh.lazySingleton<_i54.RecurringTransactionRepository>(() =>
         _i974.RecurringTransactionRepositoryImpl(
             gh<_i701.RecurringTransactionDataSource>()));
+    gh.lazySingleton<_i112.GoalRepository>(
+        () => _i942.GoalRepositoryImpl(gh<_i292.GoalRemoteDataSource>()));
     gh.lazySingleton<_i298.RegisterWithEmail>(
         () => _i298.RegisterWithEmail(gh<_i787.AuthRepository>()));
     gh.lazySingleton<_i174.SendPasswordReset>(
@@ -173,10 +233,31 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i439.GetTransactions(gh<_i421.TransactionRepository>()));
     gh.lazySingleton<_i373.UpdateTransaction>(
         () => _i373.UpdateTransaction(gh<_i421.TransactionRepository>()));
+    gh.lazySingleton<_i990.AddContribution>(
+        () => _i990.AddContribution(gh<_i112.GoalRepository>()));
+    gh.lazySingleton<_i178.AddGoal>(
+        () => _i178.AddGoal(gh<_i112.GoalRepository>()));
+    gh.lazySingleton<_i471.DeleteGoal>(
+        () => _i471.DeleteGoal(gh<_i112.GoalRepository>()));
+    gh.lazySingleton<_i750.GetGoals>(
+        () => _i750.GetGoals(gh<_i112.GoalRepository>()));
+    gh.lazySingleton<_i951.UpdateGoal>(
+        () => _i951.UpdateGoal(gh<_i112.GoalRepository>()));
     gh.lazySingleton<_i1056.BudgetsCubit>(() => _i1056.BudgetsCubit(
           gh<_i455.BudgetDataSource>(),
           gh<_i112.ReportsDataSource>(),
         ));
+    gh.lazySingleton<_i195.AddRecurringTransaction>(() =>
+        _i195.AddRecurringTransaction(
+            gh<_i54.RecurringTransactionRepository>()));
+    gh.lazySingleton<_i964.GetRecurringTransactions>(() =>
+        _i964.GetRecurringTransactions(
+            gh<_i54.RecurringTransactionRepository>()));
+    gh.lazySingleton<_i553.UpdateRecurringTransaction>(() =>
+        _i553.UpdateRecurringTransaction(
+            gh<_i54.RecurringTransactionRepository>()));
+    gh.factory<_i208.GamificationCubit>(
+        () => _i208.GamificationCubit(gh<_i97.GamificationRepository>()));
     gh.lazySingleton<_i583.AddAccount>(
         () => _i583.AddAccount(gh<_i706.AccountRepository>()));
     gh.lazySingleton<_i473.GetAccounts>(
@@ -199,10 +280,22 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i174.SendPasswordReset>(),
           gh<_i568.SignOut>(),
         ));
+    gh.factory<_i578.RecurringCubit>(() => _i578.RecurringCubit(
+          gh<_i964.GetRecurringTransactions>(),
+          gh<_i195.AddRecurringTransaction>(),
+          gh<_i553.UpdateRecurringTransaction>(),
+        ));
     gh.factory<_i43.AccountsCubit>(() => _i43.AccountsCubit(
           gh<_i473.GetAccounts>(),
           gh<_i583.AddAccount>(),
           gh<_i770.UpdateAccount>(),
+        ));
+    gh.factory<_i154.GoalsCubit>(() => _i154.GoalsCubit(
+          gh<_i750.GetGoals>(),
+          gh<_i178.AddGoal>(),
+          gh<_i951.UpdateGoal>(),
+          gh<_i471.DeleteGoal>(),
+          gh<_i990.AddContribution>(),
         ));
     return this;
   }

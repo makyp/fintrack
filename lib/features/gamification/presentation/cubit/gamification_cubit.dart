@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/user_streak.dart';
 import '../../domain/entities/app_badge.dart';
 import '../../domain/repositories/gamification_repository.dart';
 
 part 'gamification_state.dart';
 
+@injectable
 class GamificationCubit extends Cubit<GamificationState> {
   final GamificationRepository _repo;
 

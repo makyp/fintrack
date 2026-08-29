@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:uuid/uuid.dart';
+import 'package:injectable/injectable.dart';
+import '../utils/firestore_write.dart';
 
 /// Runs on every app open (after auth) to replace the paid Cloud Functions:
 ///   1. processRecurringTransactions  — processes overdue recurring txs
 ///   2. creditHighYieldInterest       — credits daily interest on highYield accounts
 ///   3. migrateCategoryIds            — one-time backfill of the legacy
 ///                                      'category' key into 'categoryId'
+@lazySingleton
 class AppStartupService {
   final FirebaseFirestore _db;
   final Uuid _uuid;
@@ -46,7 +49,7 @@ class AppStartupService {
         batch.update(doc.reference, {'categoryId': legacy});
         ops++;
         if (ops >= 400) {
-          await batch.commit();
+          fireAndForget(batch.commit(), 'migrateCategoryIds');
           batch = _db.batch();
           ops = 0;
         }
@@ -55,7 +58,7 @@ class AppStartupService {
 
     // Mark migrated (even when nothing needed fixing) so we don't rescan.
     batch.set(userRef, {'categoryIdMigrated': true}, SetOptions(merge: true));
-    await batch.commit();
+    fireAndForget(batch.commit(), 'migrateCategoryIds');
   }
 
   // ── 1. Recurring transactions ──────────────────────────────────────────────
@@ -156,7 +159,7 @@ class AppStartupService {
       });
     }
 
-    await batch.commit();
+    fireAndForget(batch.commit(), 'processRecurring');
   }
 
   DateTime _nextDueDate(DateTime from, String frequency) {
@@ -273,7 +276,7 @@ class AppStartupService {
       }
     }
 
-    if (hasWrites) await batch.commit();
+    if (hasWrites) fireAndForget(batch.commit(), 'creditInterest');
   }
 
   DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/user_streak.dart';
 import '../../domain/entities/app_badge.dart';
 
@@ -8,6 +9,7 @@ abstract class GamificationDataSource {
   Stream<Set<DateTime>> watchActivityDays(String userId, int year, int month);
 }
 
+@LazySingleton(as: GamificationDataSource)
 class GamificationDataSourceImpl implements GamificationDataSource {
   final FirebaseFirestore _firestore;
 

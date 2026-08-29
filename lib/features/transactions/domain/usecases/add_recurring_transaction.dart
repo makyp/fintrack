@@ -2,7 +2,9 @@ import '../../../../core/utils/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/recurring_transaction.dart';
 import '../repositories/recurring_transaction_repository.dart';
+import 'package:injectable/injectable.dart';
 
+@lazySingleton
 class AddRecurringTransaction {
   final RecurringTransactionRepository _repo;
   AddRecurringTransaction(this._repo);

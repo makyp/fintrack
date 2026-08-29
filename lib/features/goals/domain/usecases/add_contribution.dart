@@ -2,7 +2,9 @@ import '../../../../core/utils/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/savings_goal.dart';
 import '../repositories/goal_repository.dart';
+import 'package:injectable/injectable.dart';
 
+@lazySingleton
 class AddContribution {
   final GoalRepository _repo;
   AddContribution(this._repo);

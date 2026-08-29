@@ -1,7 +1,9 @@
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/household.dart';
 import '../../domain/repositories/household_repository.dart';
 import '../datasources/household_datasource.dart';
 
+@LazySingleton(as: HouseholdRepository)
 class HouseholdRepositoryImpl implements HouseholdRepository {
   final HouseholdDataSource _ds;
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../../domain/usecases/get_goals.dart';
 import '../../domain/usecases/add_goal.dart';
@@ -10,6 +11,7 @@ import '../../domain/usecases/add_contribution.dart';
 
 part 'goals_state.dart';
 
+@injectable
 class GoalsCubit extends Cubit<GoalsState> {
   final GetGoals _get;
   final AddGoal _add;

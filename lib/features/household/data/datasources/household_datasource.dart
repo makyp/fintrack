@@ -1,8 +1,10 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:injectable/injectable.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../domain/entities/household.dart';
 
+@lazySingleton
 class HouseholdDataSource {
   final FirebaseFirestore _firestore;
 

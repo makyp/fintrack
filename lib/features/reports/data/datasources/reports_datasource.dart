@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:injectable/injectable.dart';
 import '../../../goals/data/models/savings_goal_model.dart';
 import '../../../categories/domain/category_registry.dart';
 import '../../../transactions/domain/entities/transaction.dart';
 import '../../domain/models/report_data.dart';
 
+@lazySingleton
 class ReportsDataSource {
   final FirebaseFirestore _firestore;
 

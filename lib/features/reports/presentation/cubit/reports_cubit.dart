@@ -1,11 +1,13 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:injectable/injectable.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../data/datasources/reports_datasource.dart';
 import '../../domain/models/report_data.dart';
 
 part 'reports_state.dart';
 
+@injectable
 class ReportsCubit extends Cubit<ReportsState> {
   final ReportsDataSource _ds;
 

@@ -1,8 +1,10 @@
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/user_streak.dart';
 import '../../domain/entities/app_badge.dart';
 import '../../domain/repositories/gamification_repository.dart';
 import '../datasources/gamification_datasource.dart';
 
+@LazySingleton(as: GamificationRepository)
 class GamificationRepositoryImpl implements GamificationRepository {
   final GamificationDataSource _ds;
   GamificationRepositoryImpl(this._ds);

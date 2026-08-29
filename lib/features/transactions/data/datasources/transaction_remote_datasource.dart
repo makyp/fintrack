@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/widget_service.dart';
+import '../../../../core/utils/firestore_write.dart';
 import '../../../../features/gamification/data/services/badge_service.dart';
 import '../models/transaction_model.dart';
 import '../../domain/entities/transaction.dart';
@@ -149,7 +150,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         });
       }
 
-      await batch.commit();
+      fireAndForget(batch.commit(), 'addTransaction');
       AnalyticsService.logTransactionCreated(model.type.name, model.amount, 'COP');
       unawaited(_badgeService.onTransactionAdded(tx.userId));
       unawaited(WidgetService.update(tx.userId));
@@ -228,7 +229,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         batch.update(_accountRef(tx.userId, tx.toAccountId!), {'balance': FieldValue.increment(toDelta)});
       }
 
-      await batch.commit();
+      fireAndForget(batch.commit(), 'updateTransaction');
       unawaited(WidgetService.update(tx.userId));
       return tx;
     } catch (e) {
@@ -271,7 +272,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
             {'balance': FieldValue.increment(isCredit ? amount : -amount)});
       }
 
-      await batch.commit();
+      fireAndForget(batch.commit(), 'deleteTransaction');
       unawaited(WidgetService.update(userId));
     } catch (e) {
       throw ServerException(e.toString());

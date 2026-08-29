@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/firestore_write.dart';
 import '../models/app_user_model.dart';
 
 abstract class AuthRemoteDataSource {
@@ -275,7 +276,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (photoUrl != null) updates['photoUrl'] = photoUrl;
     if (reminderTime != null) updates['reminderTime'] = reminderTime;
     if (updates.isEmpty) return getUserProfile(user.uid);
-    await _firestore.collection('users').doc(user.uid).update(updates);
+    fireAndForget(
+        _firestore.collection('users').doc(user.uid).update(updates),
+        'updateProfile');
     // Firebase Auth profile update — only send URLs within Auth limits.
     // data: URIs (base64) and emoji:// URIs are stored in Firestore only.
     // Using updateProfile() instead of updateDisplayName() to explicitly

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/firestore_write.dart';
 import '../models/budget_model.dart';
 
 abstract class BudgetDataSource {
@@ -44,9 +45,11 @@ class BudgetDataSourceImpl implements BudgetDataSource {
   @override
   Future<void> saveBudget(String userId, BudgetModel budget) async {
     try {
-      await _ref(userId)
-          .doc(budget.categoryId)
-          .set(budget.toFirestore(), SetOptions(merge: true));
+      fireAndForget(
+          _ref(userId)
+              .doc(budget.categoryId)
+              .set(budget.toFirestore(), SetOptions(merge: true)),
+          'saveBudget');
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -55,7 +58,7 @@ class BudgetDataSourceImpl implements BudgetDataSource {
   @override
   Future<void> deleteBudget(String userId, String categoryId) async {
     try {
-      await _ref(userId).doc(categoryId).delete();
+      fireAndForget(_ref(userId).doc(categoryId).delete(), 'deleteBudget');
     } catch (e) {
       throw ServerException(e.toString());
     }

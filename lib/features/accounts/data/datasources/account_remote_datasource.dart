@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/firestore_write.dart';
 import '../models/account_model.dart';
 
 abstract class AccountRemoteDataSource {
@@ -89,7 +90,9 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
         statementDay: account.statementDay,
         paymentDay: account.paymentDay,
       );
-      await _accountsRef(account.userId).doc(id).set(model.toFirestore());
+      fireAndForget(
+          _accountsRef(account.userId).doc(id).set(model.toFirestore()),
+          'addAccount');
       return model;
     } catch (e) {
       throw ServerException(e.toString());
@@ -111,7 +114,7 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
           throw ServerException('Ya existe una cuenta con el nombre "${account.name}"');
         }
       }
-      await _accountsRef(account.userId).doc(account.id).update({
+      fireAndForget(_accountsRef(account.userId).doc(account.id).update({
         'name': account.name,
         'type': account.type.name,
         'balance': account.balance,
@@ -123,7 +126,7 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
         // must remove it, not leave a stale reminder behind.
         'statementDay': account.statementDay ?? FieldValue.delete(),
         'paymentDay': account.paymentDay ?? FieldValue.delete(),
-      });
+      }), 'updateAccount');
       return account;
     } catch (e) {
       throw ServerException(e.toString());
@@ -133,7 +136,9 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<void> archiveAccount(String userId, String accountId) async {
     try {
-      await _accountsRef(userId).doc(accountId).update({'isArchived': true});
+      fireAndForget(
+          _accountsRef(userId).doc(accountId).update({'isArchived': true}),
+          'archiveAccount');
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -142,7 +147,8 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<void> deleteAccount(String userId, String accountId) async {
     try {
-      await _accountsRef(userId).doc(accountId).delete();
+      fireAndForget(
+          _accountsRef(userId).doc(accountId).delete(), 'deleteAccount');
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -151,7 +157,9 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<void> updateBalance(String userId, String accountId, double newBalance) async {
     try {
-      await _accountsRef(userId).doc(accountId).update({'balance': newBalance});
+      fireAndForget(
+          _accountsRef(userId).doc(accountId).update({'balance': newBalance}),
+          'updateBalance');
     } catch (e) {
       throw ServerException(e.toString());
     }

@@ -1,8 +1,11 @@
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:injectable/injectable.dart';
+import '../../../../core/utils/firestore_write.dart';
 
 /// Evaluates and updates streak + badges after a transaction is added.
 /// Called from the transaction datasource and goal/recurring handlers.
+@lazySingleton
 class BadgeService {
   final FirebaseFirestore _firestore;
 
@@ -96,11 +99,13 @@ class BadgeService {
     longest = math.max(longest, run);
     longest = math.max(longest, current);
 
-    await _userRef(userId).set({
-      'currentStreak': current,
-      'longestStreak': longest,
-      'lastActivityDate': Timestamp.fromDate(sorted.last),
-    }, SetOptions(merge: true));
+    fireAndForget(
+        _userRef(userId).set({
+          'currentStreak': current,
+          'longestStreak': longest,
+          'lastActivityDate': Timestamp.fromDate(sorted.last),
+        }, SetOptions(merge: true)),
+        'updateStreak');
   }
 
   // ── Badge evaluation ──────────────────────────────────────────────────────
@@ -263,6 +268,6 @@ class BadgeService {
     if (recurringCount >= 3) award('recurring_3');
     if (recurringCount >= 5) award('recurring_5');
 
-    if (anyNew) await batch.commit();
+    if (anyNew) fireAndForget(batch.commit(), 'awardBadges');
   }
 }

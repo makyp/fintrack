@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
+import '../../../../core/utils/firestore_write.dart';
 import '../../domain/entities/notification_item.dart';
 
 part 'notifications_state.dart';
 
+@injectable
 class NotificationsCubit extends Cubit<NotificationsState> {
   final FirebaseFirestore _db;
   StreamSubscription<QuerySnapshot>? _sub;
@@ -38,12 +41,14 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   }
 
   Future<void> markRead(String userId, String notifId) async {
-    await _db
-        .collection('users')
-        .doc(userId)
-        .collection('notifications')
-        .doc(notifId)
-        .update({'read': true});
+    fireAndForget(
+        _db
+            .collection('users')
+            .doc(userId)
+            .collection('notifications')
+            .doc(notifId)
+            .update({'read': true}),
+        'markNotificationRead');
   }
 
   Future<void> markAllRead(String userId) async {
@@ -58,7 +63,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     for (final doc in snap.docs) {
       batch.update(doc.reference, {'read': true});
     }
-    await batch.commit();
+    fireAndForget(batch.commit(), 'markAllNotificationsRead');
   }
 
   @override

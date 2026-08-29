@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/household.dart';
 import '../../domain/repositories/household_repository.dart';
 
 part 'household_state.dart';
 
+@injectable
 class HouseholdCubit extends Cubit<HouseholdState> {
   final HouseholdRepository _repo;
   StreamSubscription<Household?>? _sub;

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/firestore_write.dart';
 import '../models/recurring_transaction_model.dart';
 import '../../domain/entities/recurring_transaction.dart';
 
@@ -56,7 +57,8 @@ class RecurringTransactionDataSourceImpl
         isActive: rt.isActive,
         createdAt: rt.createdAt,
       );
-      await _col(rt.userId).doc(id).set(model.toFirestore());
+      fireAndForget(
+          _col(rt.userId).doc(id).set(model.toFirestore()), 'addRecurring');
       return model;
     } catch (e) {
       throw ServerException(e.toString());
@@ -82,7 +84,8 @@ class RecurringTransactionDataSourceImpl
         isActive: rt.isActive,
         createdAt: rt.createdAt,
       );
-      await _col(rt.userId).doc(rt.id).update(model.toFirestore());
+      fireAndForget(_col(rt.userId).doc(rt.id).update(model.toFirestore()),
+          'updateRecurring');
       return model;
     } catch (e) {
       throw ServerException(e.toString());
@@ -92,7 +95,8 @@ class RecurringTransactionDataSourceImpl
   @override
   Future<void> deactivate(String userId, String id) async {
     try {
-      await _col(userId).doc(id).update({'isActive': false});
+      fireAndForget(_col(userId).doc(id).update({'isActive': false}),
+          'deactivateRecurring');
     } catch (e) {
       throw ServerException(e.toString());
     }

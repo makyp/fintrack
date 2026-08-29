@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/firestore_write.dart';
 import '../../domain/entities/transaction_category.dart';
 import '../models/category_model.dart';
 
@@ -69,7 +70,7 @@ class CategoryDataSourceImpl implements CategoryDataSource {
           CategoryModel.fromEntity(c.copyWith(isActive: isActive)).toFirestore(),
         );
       }
-      await batch.commit();
+      fireAndForget(batch.commit(), 'seedCategories');
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -78,9 +79,11 @@ class CategoryDataSourceImpl implements CategoryDataSource {
   @override
   Future<void> saveCategory(String userId, CategoryModel category) async {
     try {
-      await _ref(userId)
-          .doc(category.id)
-          .set(category.toFirestore(), SetOptions(merge: true));
+      fireAndForget(
+          _ref(userId)
+              .doc(category.id)
+              .set(category.toFirestore(), SetOptions(merge: true)),
+          'saveCategory');
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -89,7 +92,9 @@ class CategoryDataSourceImpl implements CategoryDataSource {
   @override
   Future<void> setActive(String userId, String categoryId, bool isActive) async {
     try {
-      await _ref(userId).doc(categoryId).update({'isActive': isActive});
+      fireAndForget(
+          _ref(userId).doc(categoryId).update({'isActive': isActive}),
+          'setCategoryActive');
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -98,7 +103,8 @@ class CategoryDataSourceImpl implements CategoryDataSource {
   @override
   Future<void> deleteCategory(String userId, String categoryId) async {
     try {
-      await _ref(userId).doc(categoryId).delete();
+      fireAndForget(
+          _ref(userId).doc(categoryId).delete(), 'deleteCategory');
     } catch (e) {
       throw ServerException(e.toString());
     }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/utils/firestore_write.dart';
 import '../../accounts/data/models/account_model.dart';
 import '../../accounts/domain/entities/account.dart';
 import '../../categories/data/models/category_model.dart';
@@ -134,7 +135,7 @@ class OnboardingService {
       SetOptions(merge: true),
     );
 
-    await batch.commit();
+    fireAndForget(batch.commit(), 'completeOnboarding');
   }
 
   AccountType _typeFromString(String type) {

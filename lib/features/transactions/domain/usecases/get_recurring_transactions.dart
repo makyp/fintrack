@@ -1,6 +1,8 @@
 import '../entities/recurring_transaction.dart';
 import '../repositories/recurring_transaction_repository.dart';
+import 'package:injectable/injectable.dart';
 
+@lazySingleton
 class GetRecurringTransactions {
   final RecurringTransactionRepository _repo;
   GetRecurringTransactions(this._repo);

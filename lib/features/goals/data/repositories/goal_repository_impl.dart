@@ -1,9 +1,11 @@
+import 'package:injectable/injectable.dart';
 import '../../../../core/utils/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../../domain/repositories/goal_repository.dart';
 import '../datasources/goal_remote_datasource.dart';
 
+@LazySingleton(as: GoalRepository)
 class GoalRepositoryImpl implements GoalRepository {
   final GoalRemoteDataSource _ds;
   GoalRepositoryImpl(this._ds);
