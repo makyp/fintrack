@@ -99,6 +99,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         description: tx.description, date: tx.date, isRecurring: tx.isRecurring,
         householdId: tx.householdId, receiptUrl: tx.receiptUrl, tags: tx.tags,
         createdAt: tx.createdAt,
+        // Rebuilding the model here used to silently drop these two: a
+        // purchase saved "a 12 cuotas" came back as a single payment.
+        installments: tx.installments,
+        currency: tx.currency,
       );
 
       final batch = _firestore.batch();
@@ -151,7 +155,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
 
       fireAndForget(batch.commit(), 'addTransaction');
-      AnalyticsService.logTransactionCreated(model.type.name, model.amount, 'COP');
+      AnalyticsService.logTransactionCreated(
+          model.type.name, model.amount, model.currency);
       unawaited(_badgeService.onTransactionAdded(tx.userId));
       unawaited(WidgetService.update(tx.userId));
       return model;
