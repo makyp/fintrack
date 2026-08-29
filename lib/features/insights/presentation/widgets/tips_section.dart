@@ -77,7 +77,10 @@ class _TipsSectionState extends State<TipsSection> {
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppDimensions.pagePadding),
-                child: _TipCard(tip: tips.first),
+                // _TipCard uses Expanded internally, so it must get a bounded
+                // height — unbounded, the flex child blows up the layout and a
+                // release build paints the whole screen grey.
+                child: SizedBox(height: 150, child: _TipCard(tip: tips.first)),
               )
             else
               SizedBox(
