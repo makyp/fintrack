@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/offline_banner.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
@@ -42,10 +43,16 @@ class _MobileShell extends StatelessWidget {
       // onto a second line (e.g. "Movimientos" dropping its trailing "s").
       bottomNavigationBar: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.0,
-        child: NavigationBar(
-          selectedIndex: selectedIndex,
-          onDestinationSelected: (i) => _navigate(context, i),
-          destinations: _destinations,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const OfflineBanner(),
+            NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (i) => _navigate(context, i),
+              destinations: _destinations,
+            ),
+          ],
         ),
       ),
     );
@@ -64,6 +71,7 @@ class _TabletShell extends StatelessWidget {
     final selectedIndex = _indexFromLocation(location);
 
     return Scaffold(
+      bottomNavigationBar: const SafeArea(top: false, child: OfflineBanner()),
       body: Row(
         children: [
           NavigationRail(
