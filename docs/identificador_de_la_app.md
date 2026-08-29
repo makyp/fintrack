@@ -15,56 +15,36 @@ El identificador nuevo es el mismo en las dos tiendas:
 El código Java se movió de `android/app/src/main/java/com/example/fintrack/` a
 `android/app/src/main/java/app/fimakyp/finanzas/`.
 
-## ⚠️ Falta un paso en la consola de Firebase
+## Firebase: hecho
 
-Un `applicationId` es una app distinta para Google. La app Android registrada
-en el proyecto `fintrack-6b6d4` sigue siendo la vieja, y **el package de una app
-de Firebase no se puede cambiar**: hay que registrar una nueva en el mismo
-proyecto. No se pierde nada — Firestore, Storage y los usuarios son del
-proyecto, no de la app.
+La app Android nueva ya está registrada en el proyecto `fintrack-6b6d4`:
 
-Mientras tanto, el `google-services.json` del repositorio quedó **editado a
-mano** para que el proyecto siga compilando. Sirve para compilar y para todo lo
-que use las credenciales del proyecto, pero:
+| | |
+|---|---|
+| Alias | Fimakyp (Android) |
+| Package | `app.fimakyp.finanzas` |
+| App ID | `1:94712880912:android:c40ba73af444e121bf4f95` |
+| Huella SHA-1 | `6d:d1:e1:57:ed:41:49:01:1c:6a:e4:fc:12:02:01:6d:b7:be:11:02` (depuración) |
 
-> **El inicio de sesión con Google va a fallar con `DEVELOPER_ERROR` (código 10)
-> hasta que se haga el registro de abajo.** Google valida el par
-> (package, huella del certificado) contra el cliente OAuth que tiene
-> registrado, y ese cliente todavía apunta a `com.example.fintrack`.
-> El acceso con correo y contraseña no se ve afectado.
+El `google-services.json` del repositorio es el que descargó la consola —ya no
+el parche a mano— y trae el cliente OAuth propio del package nuevo, así que el
+inicio de sesión con Google funciona. El `appId` de Android en
+`lib/firebase_options.dart` apunta a la app nueva.
 
-### Los cuatro pasos
+El archivo conserva también la entrada de `com.example.fintrack`: así lo genera
+Firebase mientras las dos apps existan en el proyecto. El plugin de Gradle
+resuelve por `package_name`, así que no estorba.
 
-1. **Registrar la app nueva.** Consola de Firebase › proyecto `fintrack-6b6d4`
-   › Configuración del proyecto › Tus apps › Agregar app › Android. Package name:
-   `app.fimakyp.finanzas`.
+### Lo que queda pendiente
 
-2. **Agregar las huellas SHA-1.** En la misma pantalla, "Agregar huella digital".
-   La de depuración se saca así:
-
-   ```bash
-   keytool -list -v -keystore ~/.android/debug.keystore \
-     -alias androiddebugkey -storepass android -keypass android
-   ```
-
-   La app vieja tenía registrada `6dd1e157ed4149011c6ae4fc1202016db7be1102`,
-   que es justamente esa. Cuando exista una firma de release (hoy el
-   `build.gradle` firma el release con las claves de depuración), hay que
-   agregar también su SHA-1, y la que genere Play si se usa App Signing.
-
-3. **Bajar el archivo de verdad y reemplazar los dos generados.**
-
-   ```bash
-   dart pub global activate flutterfire_cli
-   flutterfire configure --project=fintrack-6b6d4
-   ```
-
-   Esto reescribe `android/app/google-services.json` y `lib/firebase_options.dart`
-   con el `appId` correcto de la app nueva, y de paso agrega el bloque de iOS si
-   ya se registró esa (ver `publicar_en_ios.md`).
-
-4. **Borrar la app vieja** (opcional). Una vez que la nueva funcione, la entrada
-   `com.example.fintrack` de la consola se puede eliminar para no confundirse.
+- **SHA-1 de la firma de release.** Hoy `android/app/build.gradle` firma el
+  release con las claves de depuración (`signingConfig = signingConfigs.debug`),
+  por eso la huella de depuración alcanza. Cuando exista un keystore de release
+  —y cuando Play App Signing genere el suyo— hay que agregar esas huellas en la
+  misma pantalla, o el login con Google fallará solo en la versión publicada.
+- **Borrar la app vieja** (opcional). La entrada `com.example.fintrack` se puede
+  eliminar de la consola cuando ya no se necesite. No se tocó: borrar es
+  irreversible y nada obliga a hacerlo ahora.
 
 ## Sobre reinstalar
 

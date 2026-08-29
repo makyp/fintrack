@@ -7,9 +7,46 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:94712880912:android:8e6d87421b2aadf7bf4f95",
+        "mobilesdk_app_id": "1:94712880912:android:c40ba73af444e121bf4f95",
         "android_client_info": {
           "package_name": "app.fimakyp.finanzas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "94712880912-37aim9ol503ln9j555veguvf43qqagpv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.fimakyp.finanzas",
+            "certificate_hash": "6dd1e157ed4149011c6ae4fc1202016db7be1102"
+          }
+        },
+        {
+          "client_id": "94712880912-1720u10csae2be7lccojkojc5l189213.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCcfdKFmanSmq5fNiVm0Tz3V0Ri-ANVvA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "94712880912-1720u10csae2be7lccojkojc5l189213.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:94712880912:android:8e6d87421b2aadf7bf4f95",
+        "android_client_info": {
+          "package_name": "com.example.fintrack"
         }
       },
       "oauth_client": [
@@ -17,7 +54,7 @@
           "client_id": "94712880912-gmjpeajg1jdhc9eieapv79vip6ba28d7.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "app.fimakyp.finanzas",
+            "package_name": "com.example.fintrack",
             "certificate_hash": "6dd1e157ed4149011c6ae4fc1202016db7be1102"
           }
         },
