@@ -10,6 +10,7 @@ import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../domain/entities/household.dart';
 import '../cubit/household_cubit.dart';
 import 'household_setup_page.dart';
+import 'shared_expenses_page.dart';
 
 class HouseholdPage extends StatelessWidget {
   const HouseholdPage({super.key});
@@ -211,6 +212,27 @@ class _HouseholdContent extends StatelessWidget {
           ),
           const SizedBox(height: AppDimensions.lg),
         ],
+
+        // ── Gastos compartidos ────────────────────────────────────────
+        Card(
+          margin: EdgeInsets.zero,
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: AppColors.primary,
+              child: Icon(Icons.call_split, color: AppColors.white, size: 20),
+            ),
+            title: const Text('Gastos compartidos'),
+            subtitle: const Text('Quién pagó qué y quién le debe a quién'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => SharedExpensesPage(
+                household: household,
+                userId: userId,
+              ),
+            )),
+          ),
+        ),
+        const SizedBox(height: AppDimensions.xl),
 
         // ── Members ───────────────────────────────────────────────────
         Text('Miembros', style: AppTextStyles.labelLarge),

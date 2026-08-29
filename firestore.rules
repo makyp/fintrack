@@ -90,6 +90,19 @@ service cloud.firestore {
         allow read, write: if request.auth != null &&
           request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUids;
       }
+
+      // ── Gastos compartidos y liquidaciones ───────────────────────────────
+      // Cualquier miembro registra un gasto y confirma un pago: los saldos son
+      // del hogar entero, no de quien creo el documento.
+      match /shared_expenses/{expenseId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUids;
+      }
+
+      match /settlements/{settlementId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUids;
+      }
     }
   }
 }

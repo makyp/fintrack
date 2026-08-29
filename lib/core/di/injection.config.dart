@@ -78,6 +78,8 @@ import '../../features/household/domain/repositories/household_repository.dart'
     as _i385;
 import '../../features/household/presentation/cubit/household_cubit.dart'
     as _i812;
+import '../../features/household/presentation/cubit/shared_expenses_cubit.dart'
+    as _i209;
 import '../../features/notifications/presentation/cubit/notifications_cubit.dart'
     as _i405;
 import '../../features/onboarding/domain/onboarding_service.dart' as _i720;
@@ -198,6 +200,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i421.TransactionRepository>(() =>
         _i443.TransactionRepositoryImpl(
             gh<_i634.TransactionRemoteDataSource>()));
+    gh.factory<_i209.SharedExpensesCubit>(
+        () => _i209.SharedExpensesCubit(gh<_i635.HouseholdDataSource>()));
     gh.factory<_i812.HouseholdCubit>(
         () => _i812.HouseholdCubit(gh<_i385.HouseholdRepository>()));
     gh.lazySingleton<_i97.GamificationRepository>(() =>

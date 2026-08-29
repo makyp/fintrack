@@ -2,7 +2,9 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/utils/firestore_write.dart';
 import '../../domain/entities/household.dart';
+import '../../domain/entities/shared_expense.dart';
 
 @lazySingleton
 class HouseholdDataSource {
@@ -135,6 +137,126 @@ class HouseholdDataSource {
       if (!snap.exists) return null;
       return _fromMap(snap.id, snap.data()!);
     });
+  }
+
+  // ── Gastos compartidos ────────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _expenses(String householdId) =>
+      _households.doc(householdId).collection('shared_expenses');
+
+  CollectionReference<Map<String, dynamic>> _settlements(String householdId) =>
+      _households.doc(householdId).collection('settlements');
+
+  Stream<List<SharedExpense>> watchSharedExpenses(String householdId) {
+    return _expenses(householdId)
+        .orderBy('date', descending: true)
+        .limit(300)
+        .snapshots()
+        .map((snap) =>
+            snap.docs
+                .map((d) => _expenseFromMap(householdId, d.id, d.data()))
+                .toList());
+  }
+
+  Stream<List<Settlement>> watchSettlements(String householdId) {
+    return _settlements(householdId)
+        .orderBy('date', descending: true)
+        .limit(300)
+        .snapshots()
+        .map((snap) =>
+            snap.docs
+                .map((d) => _settlementFromMap(householdId, d.id, d.data()))
+                .toList());
+  }
+
+  Future<String> addSharedExpense(SharedExpense expense) async {
+    final doc = _expenses(expense.householdId).doc();
+    fireAndForget(
+        doc.set({
+          'description': expense.description,
+          'amount': expense.amount,
+          'currency': expense.currency,
+          'date': Timestamp.fromDate(expense.date),
+          'paidBy': expense.paidBy,
+          'shares': expense.shares,
+          'mode': expense.mode.name,
+          'categoryId': expense.categoryId,
+          'createdBy': expense.createdBy,
+          'createdAt': Timestamp.fromDate(expense.createdAt),
+        }),
+        'addSharedExpense');
+    return doc.id;
+  }
+
+  Future<void> deleteSharedExpense(String householdId, String expenseId) async {
+    fireAndForget(
+        _expenses(householdId).doc(expenseId).delete(), 'deleteSharedExpense');
+  }
+
+  Future<String> addSettlement(Settlement settlement) async {
+    final doc = _settlements(settlement.householdId).doc();
+    fireAndForget(
+        doc.set({
+          'from': settlement.from,
+          'to': settlement.to,
+          'amount': settlement.amount,
+          'currency': settlement.currency,
+          'date': Timestamp.fromDate(settlement.date),
+          'createdBy': settlement.createdBy,
+        }),
+        'addSettlement');
+    return doc.id;
+  }
+
+  // The id of the parent household is not stored in the document — it is
+  // already the path — so it is threaded in from the query.
+  SharedExpense _expenseFromMap(
+      String householdId, String id, Map<String, dynamic> data) {
+    final rawShares = data['shares'];
+    final shares = <String, double>{};
+    if (rawShares is Map) {
+      rawShares.forEach((k, v) {
+        final amount = (v as num?)?.toDouble();
+        if (k is String && amount != null) shares[k] = amount;
+      });
+    }
+    return SharedExpense(
+      id: id,
+      householdId: householdId,
+      description: data['description'] as String? ?? '',
+      amount: (data['amount'] as num?)?.toDouble() ?? 0,
+      currency: data['currency'] as String? ?? 'COP',
+      date: data['date'] != null
+          ? (data['date'] as Timestamp).toDate()
+          : DateTime.now(),
+      paidBy: data['paidBy'] as String? ?? '',
+      shares: shares,
+      mode: SplitMode.values.firstWhere(
+        (m) => m.name == (data['mode'] as String? ?? 'equal'),
+        orElse: () => SplitMode.equal,
+      ),
+      categoryId: data['categoryId'] as String? ?? 'other',
+      createdBy: data['createdBy'] as String? ?? '',
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  Settlement _settlementFromMap(
+      String householdId, String id, Map<String, dynamic> data) {
+    return Settlement(
+      id: id,
+      householdId: householdId,
+      from: data['from'] as String? ?? '',
+      to: data['to'] as String? ?? '',
+      amount: (data['amount'] as num?)?.toDouble() ?? 0,
+      currency: data['currency'] as String? ?? 'COP',
+      date: data['date'] != null
+          ? (data['date'] as Timestamp).toDate()
+          : DateTime.now(),
+      createdBy: data['createdBy'] as String? ?? '',
+    );
   }
 
   Household _fromMap(String id, Map<String, dynamic> data) {
