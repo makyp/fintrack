@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:injectable/injectable.dart';
+import '../../../../core/domain/currency_registry.dart';
 import '../../../goals/data/models/savings_goal_model.dart';
 import '../../../categories/domain/category_registry.dart';
 import '../../../transactions/domain/entities/transaction.dart';
@@ -43,7 +44,11 @@ class ReportsDataSource {
 
     for (final doc in monthSnap.docs) {
       final d = doc.data();
-      final amount = (d['amount'] as num).toDouble();
+      final amount = _amountInBase(d);
+      // No rate for that currency yet: adding it as if it were base currency
+      // would quietly inflate the report, so the movement sits it out until
+      // the user fills the rate in Preferencias.
+      if (amount == null) continue;
       final typeStr = d['type'] as String? ?? 'expense';
       final catStr  = d['categoryId'] as String? ?? 'other';
       final type = TransactionType.values.firstWhere(
@@ -85,7 +90,11 @@ class ReportsDataSource {
 
     for (final doc in trendSnap.docs) {
       final d = doc.data();
-      final amount = (d['amount'] as num).toDouble();
+      final amount = _amountInBase(d);
+      // No rate for that currency yet: adding it as if it were base currency
+      // would quietly inflate the report, so the movement sits it out until
+      // the user fills the rate in Preferencias.
+      if (amount == null) continue;
       final typeStr = d['type'] as String? ?? 'expense';
       final type = TransactionType.values.firstWhere(
           (e) => e.name == typeStr, orElse: () => TransactionType.expense);
@@ -127,7 +136,11 @@ class ReportsDataSource {
     final txSummaries = <TxSummary>[];
     for (final doc in monthSnap.docs) {
       final d = doc.data();
-      final amount = (d['amount'] as num).toDouble();
+      final amount = _amountInBase(d);
+      // No rate for that currency yet: adding it as if it were base currency
+      // would quietly inflate the report, so the movement sits it out until
+      // the user fills the rate in Preferencias.
+      if (amount == null) continue;
       final typeStr = d['type'] as String? ?? 'expense';
       final catStr  = d['categoryId'] as String? ?? 'other';
       final type = TransactionType.values.firstWhere(
@@ -195,7 +208,11 @@ class ReportsDataSource {
 
     for (final doc in monthSnap.docs) {
       final d = doc.data();
-      final amount = (d['amount'] as num).toDouble();
+      final amount = _amountInBase(d);
+      // No rate for that currency yet: adding it as if it were base currency
+      // would quietly inflate the report, so the movement sits it out until
+      // the user fills the rate in Preferencias.
+      if (amount == null) continue;
       final typeStr = d['type'] as String? ?? 'expense';
       final catStr = d['categoryId'] as String? ?? 'other';
       final type = TransactionType.values.firstWhere(
@@ -228,7 +245,11 @@ class ReportsDataSource {
 
     for (final doc in trendSnap.docs) {
       final d = doc.data();
-      final amount = (d['amount'] as num).toDouble();
+      final amount = _amountInBase(d);
+      // No rate for that currency yet: adding it as if it were base currency
+      // would quietly inflate the report, so the movement sits it out until
+      // the user fills the rate in Preferencias.
+      if (amount == null) continue;
       final typeStr = d['type'] as String? ?? 'expense';
       final type = TransactionType.values.firstWhere(
           (e) => e.name == typeStr, orElse: () => TransactionType.expense);
@@ -276,5 +297,13 @@ class ReportsDataSource {
             ? a.year.compareTo(b.year)
             : a.month.compareTo(b.month)),
     );
+  }
+
+  /// A stored movement's amount converted into the user's base currency.
+  /// Null when its currency has no rate — see the call sites.
+  static double? _amountInBase(Map<String, dynamic> d) {
+    final raw = (d['amount'] as num?)?.toDouble() ?? 0.0;
+    final code = d['currency'] as String? ?? CurrencyRegistry.base;
+    return CurrencyRegistry.toBase(raw, code);
   }
 }

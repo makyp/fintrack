@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/domain/currency_registry.dart';
+
 import '../../../categories/domain/category_registry.dart';
 import '../../../categories/domain/entities/transaction_category.dart';
 import 'transaction_type.dart';
@@ -36,6 +38,11 @@ class Transaction extends Equatable {
   /// joins the card debt, the instalments only split how it is paid back.
   final int? installments;
 
+  /// Currency this amount is expressed in — always the one of the account it
+  /// was booked against. Copied at write time instead of resolved from the
+  /// account later, so changing an account's currency never rewrites history.
+  final String currency;
+
   Transaction({
     required this.id,
     required this.userId,
@@ -52,7 +59,9 @@ class Transaction extends Equatable {
     this.tags = const [],
     required this.createdAt,
     this.installments,
-  }) : categoryId = category.id;
+    String? currency,
+  })  : categoryId = category.id,
+        currency = (currency ?? CurrencyRegistry.base).toUpperCase();
 
   TransactionCategory get category => CategoryRegistry.byId(categoryId);
 
@@ -76,6 +85,7 @@ class Transaction extends Equatable {
     List<String>? tags,
     int? installments,
     bool clearInstallments = false,
+    String? currency,
   }) {
     return Transaction(
       id: id,
@@ -94,9 +104,10 @@ class Transaction extends Equatable {
       createdAt: createdAt,
       installments:
           clearInstallments ? null : (installments ?? this.installments),
+      currency: currency ?? this.currency,
     );
   }
 
   @override
-  List<Object?> get props => [id, userId, amount, type, categoryId, accountId, description, date, installments];
+  List<Object?> get props => [id, userId, amount, type, categoryId, accountId, description, date, installments, currency];
 }

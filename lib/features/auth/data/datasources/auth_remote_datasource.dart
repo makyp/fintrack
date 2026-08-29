@@ -30,6 +30,7 @@ abstract class AuthRemoteDataSource {
   Future<AppUserModel> updateProfile({
     String? displayName,
     String? currency,
+    Map<String, double>? exchangeRates,
     String? photoUrl,
     String? reminderTime,
   });
@@ -265,6 +266,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<AppUserModel> updateProfile({
     String? displayName,
     String? currency,
+    Map<String, double>? exchangeRates,
     String? photoUrl,
     String? reminderTime,
   }) async {
@@ -273,6 +275,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final updates = <String, dynamic>{};
     if (displayName != null) updates['displayName'] = displayName;
     if (currency != null) updates['currency'] = currency;
+    if (exchangeRates != null) updates['exchangeRates'] = exchangeRates;
     if (photoUrl != null) updates['photoUrl'] = photoUrl;
     if (reminderTime != null) updates['reminderTime'] = reminderTime;
     if (updates.isEmpty) return getUserProfile(user.uid);

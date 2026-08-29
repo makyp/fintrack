@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/domain/currency_registry.dart';
 import '../../domain/entities/account.dart';
 
 class AccountCard extends StatelessWidget {
@@ -80,7 +81,8 @@ class AccountCard extends StatelessWidget {
               ),
               const SizedBox(height: AppDimensions.md),
               Text(
-                CurrencyFormatter.format(account.balance),
+                CurrencyFormatter.format(account.balance,
+                    code: account.currency),
                 style: AppTextStyles.monoLarge.copyWith(
                   color: account.type.isLiability
                       ? AppColors.danger
@@ -88,6 +90,7 @@ class AccountCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              _buildConversionLine(),
               if (account.type.isLiability)
                 Text(
                   'Saldo a pagar',
@@ -99,6 +102,28 @@ class AccountCard extends StatelessWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// For an account in a foreign currency, what it is worth in the base one —
+  /// or a nudge to add the rate when there isn't one. Renders nothing at all
+  /// for the usual single-currency case.
+  Widget _buildConversionLine() {
+    final code = account.currency.toUpperCase();
+    if (code == CurrencyRegistry.base.toUpperCase()) {
+      return const SizedBox.shrink();
+    }
+    final converted = CurrencyRegistry.toBase(account.balance, code);
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        converted == null
+            ? 'Sin tasa de $code — no entra en tu balance total'
+            : '≈ ${CurrencyFormatter.format(converted)} · $code',
+        style: AppTextStyles.bodySmall.copyWith(
+          color: converted == null ? AppColors.warning : AppColors.grey500,
         ),
       ),
     );
@@ -181,7 +206,8 @@ class AccountCard extends StatelessWidget {
           ),
           const SizedBox(height: AppDimensions.sm),
           Text(
-            CurrencyFormatter.format(account.balance),
+            CurrencyFormatter.format(account.balance,
+                code: account.currency),
             style: AppTextStyles.monoSmall.copyWith(
               color: account.type.isLiability ? AppColors.danger : color,
               fontWeight: FontWeight.w600,

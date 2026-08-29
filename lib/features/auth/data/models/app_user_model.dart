@@ -11,6 +11,7 @@ class AppUserModel extends AppUser {
     required super.createdAt,
     super.householdId,
     super.reminderTime,
+    super.exchangeRates,
   });
 
   factory AppUserModel.fromFirestore(Map<String, dynamic> map, String uid) {
@@ -28,6 +29,7 @@ class AppUserModel extends AppUser {
           : DateTime.now(),
       householdId: map['householdId'] as String?,
       reminderTime: map['reminderTime'] as String?,
+      exchangeRates: _ratesFromMap(map['exchangeRates']),
     );
   }
 
@@ -41,7 +43,22 @@ class AppUserModel extends AppUser {
       'createdAt': createdAt,
       if (householdId != null) 'householdId': householdId,
       if (reminderTime != null) 'reminderTime': reminderTime,
+      if (exchangeRates.isNotEmpty) 'exchangeRates': exchangeRates,
     };
+  }
+
+  /// Firestore gives back `num`, and a rate that arrived as 0 or negative
+  /// (a bad manual edit) would divide the totals into nonsense — drop those.
+  static Map<String, double> _ratesFromMap(Object? raw) {
+    if (raw is! Map) return const {};
+    final out = <String, double>{};
+    raw.forEach((key, value) {
+      final rate = (value as num?)?.toDouble();
+      if (key is String && rate != null && rate > 0) {
+        out[key.toUpperCase()] = rate;
+      }
+    });
+    return out;
   }
 
   factory AppUserModel.fromFirebaseUser({

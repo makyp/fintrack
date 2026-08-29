@@ -8,6 +8,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/thousands_separator_formatter.dart';
+import '../../../../core/domain/currency.dart';
+import '../../../../core/domain/currency_registry.dart';
 import '../../../accounts/domain/entities/account.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/cubit/accounts_state.dart';
@@ -206,6 +208,26 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
         );
         return;
       }
+      // A transfer moves the same amount out of one account and into the
+      // other. Across currencies that is a currency exchange, not a transfer:
+      // the two legs differ by the rate and the spread the bank charged, and
+      // guessing either would silently misstate both balances.
+      final from = _accountById(_selectedAccountId!);
+      final to = _accountById(_selectedToAccountId!);
+      if (from != null &&
+          to != null &&
+          from.currency.toUpperCase() != to.currency.toUpperCase()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'No se puede transferir entre ${from.currency} y ${to.currency}. '
+                'Registra un gasto en una cuenta y un ingreso en la otra con '
+                'los montos reales de cada una.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+        return;
+      }
     }
 
     final amount = ThousandsSeparatorFormatter.parse(_amountCtrl.text);
@@ -248,6 +270,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       // Only kept when it actually applies: switching away from the card (or
       // to a single payment) must not leave a stale instalment count behind.
       installments: _canDefer && _installments > 1 ? _installments : null,
+      currency: _accountById(_selectedAccountId!)?.currency,
     );
 
     if (_isEditing) {
@@ -281,9 +304,11 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
         title: const Text('Saldo insuficiente'),
         content: Text(
           'La cuenta "${account.name}" tiene '
-          '${CurrencyFormatter.format(account.balance)} disponible, '
-          'pero estás registrando ${CurrencyFormatter.format(amount)}.\n\n'
-          'Faltan ${CurrencyFormatter.format(missing)}. No puedes registrar un '
+          '${CurrencyFormatter.format(account.balance, code: account.currency)} '
+          'disponible, pero estás registrando '
+          '${CurrencyFormatter.format(amount, code: account.currency)}.\n\n'
+          'Faltan ${CurrencyFormatter.format(missing, code: account.currency)}. '
+          'No puedes registrar un '
           'movimiento mayor al saldo disponible. Verifica el monto o elige '
           'otra cuenta.',
         ),
@@ -470,6 +495,12 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
 
   Widget _buildAmountField() {
     final color = _typeColor(_type);
+    // The amount is always in the currency of the account it hits, so the
+    // symbol in front of the field follows the account picker.
+    final account =
+        _selectedAccountId == null ? null : _accountById(_selectedAccountId!);
+    final symbol = Currency.byCode(account?.currency ?? CurrencyRegistry.base)
+        .symbol;
     return TextFormField(
       controller: _amountCtrl,
       keyboardType: TextInputType.number,
@@ -478,7 +509,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
       textAlign: TextAlign.center,
       decoration: InputDecoration(
         hintText: '0',
-        prefixText: '\$ ',
+        prefixText: '$symbol ',
         prefixStyle: AppTextStyles.displaySmall.copyWith(color: color),
         border: InputBorder.none,
         filled: false,

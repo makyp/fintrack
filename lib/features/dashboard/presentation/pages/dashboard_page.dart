@@ -10,6 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../accounts/domain/entities/account.dart';
 import '../../../accounts/presentation/cubit/accounts_cubit.dart';
 import '../../../accounts/presentation/widgets/account_card.dart';
 import '../../../capture/domain/entities/transaction_draft.dart';
@@ -214,12 +215,10 @@ class _DashboardViewState extends State<_DashboardView> {
 
   Widget _buildBalanceCard(BuildContext context, DashboardState state) {
     final palette = AppColorPalette.fromType(context.read<ThemeCubit>().state);
-    final assets = state.accounts
-        .where((a) => !a.type.isLiability)
-        .fold(0.0, (s, a) => s + a.balance);
-    final debts = state.accounts
-        .where((a) => a.type.isLiability)
-        .fold(0.0, (s, a) => s + a.balance);
+    // Both totals go through the exchange rates, so an account in USD is
+    // counted in the base currency instead of being added as if it were pesos.
+    final assets = state.accounts.consolidatedAssets.amount;
+    final debts = state.accounts.consolidatedLiabilities.amount;
 
     return SliverToBoxAdapter(
       child: Container(
@@ -283,6 +282,26 @@ class _DashboardViewState extends State<_DashboardView> {
                 fontSize: 34,
               ),
             ),
+            if (state.missingRates.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded,
+                      size: 13, color: Colors.white70),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      'Sin ${state.missingRates.join(', ')} — falta su tasa '
+                      'de cambio en Preferencias',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: AppDimensions.lg),
             // Stats row
             Container(
@@ -642,7 +661,7 @@ class _DashboardViewState extends State<_DashboardView> {
                         subtitle: Text(tx.category.label,
                             style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
                         trailing: Text(
-                          '$sign${cf.CurrencyFormatter.format(tx.amount)}',
+                          '$sign${cf.CurrencyFormatter.format(tx.amount, code: tx.currency)}',
                           style: AppTextStyles.monoSmall.copyWith(color: color, fontWeight: FontWeight.w600),
                         ),
                         onTap: () {

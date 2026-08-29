@@ -30,6 +30,7 @@ abstract class AuthRepository {
   Future<Either<Failure, AppUser>> updateProfile({
     String? displayName,
     String? currency,
+    Map<String, double>? exchangeRates,
     String? photoUrl,
     String? reminderTime,
   });

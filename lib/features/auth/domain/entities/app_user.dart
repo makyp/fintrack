@@ -11,6 +11,12 @@ class AppUser extends Equatable {
   final String? householdId;
   final String? reminderTime; // "HH:mm" format, e.g. "20:00"
 
+  /// How many units of [currency] one unit of each foreign currency is worth
+  /// ({'USD': 4000} = "el dólar está a 4.000"). Entered by hand: fetching live
+  /// rates would mean a paid API, and a stale rate the user typed is easier to
+  /// reason about than one that moved overnight.
+  final Map<String, double> exchangeRates;
+
   const AppUser({
     required this.uid,
     required this.email,
@@ -21,6 +27,7 @@ class AppUser extends Equatable {
     required this.createdAt,
     this.householdId,
     this.reminderTime,
+    this.exchangeRates = const {},
   });
 
   AppUser copyWith({
@@ -31,6 +38,7 @@ class AppUser extends Equatable {
     String? householdId,
     bool clearHouseholdId = false,
     String? reminderTime,
+    Map<String, double>? exchangeRates,
   }) {
     return AppUser(
       uid: uid,
@@ -42,9 +50,10 @@ class AppUser extends Equatable {
       createdAt: createdAt,
       householdId: clearHouseholdId ? null : (householdId ?? this.householdId),
       reminderTime: reminderTime ?? this.reminderTime,
+      exchangeRates: exchangeRates ?? this.exchangeRates,
     );
   }
 
   @override
-  List<Object?> get props => [uid, email, displayName, photoUrl, currency, onboardingCompleted, createdAt, householdId, reminderTime];
+  List<Object?> get props => [uid, email, displayName, photoUrl, currency, onboardingCompleted, createdAt, householdId, reminderTime, exchangeRates];
 }

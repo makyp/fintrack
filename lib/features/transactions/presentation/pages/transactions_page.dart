@@ -462,7 +462,7 @@ class _TransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '$sign${CurrencyFormatter.format(transaction.amount)}',
+                  '$sign${CurrencyFormatter.format(transaction.amount, code: transaction.currency)}',
                   style: AppTextStyles.monoMedium.copyWith(
                     color: amountColor,
                     fontWeight: FontWeight.w600,

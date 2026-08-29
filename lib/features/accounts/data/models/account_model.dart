@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/domain/currency_registry.dart';
 import '../../domain/entities/account.dart';
 
 class AccountModel extends Account {
@@ -28,7 +29,7 @@ class AccountModel extends Account {
         orElse: () => AccountType.checking,
       ),
       balance: (map['balance'] as num?)?.toDouble() ?? 0.0,
-      currency: map['currency'] as String? ?? 'COP',
+      currency: map['currency'] as String? ?? CurrencyRegistry.base,
       colorValue: map['colorValue'] as int? ?? 0xFF2563EB,
       icon: map['icon'] as String? ?? '🏦',
       isArchived: map['isArchived'] as bool? ?? false,

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/domain/currency_registry.dart';
 import '../../domain/entities/account.dart';
 
 enum AccountsStatus { initial, loading, loaded, error }
@@ -24,8 +25,14 @@ class AccountsState extends Equatable {
   bool get isLoading => status == AccountsStatus.loading;
   bool get isLoaded => status == AccountsStatus.loaded;
 
-  double get totalBalance =>
-      accounts?.fold<double>(0.0, (sum, a) => sum + a.netBalance) ?? 0.0;
+  /// Net worth in the user's base currency. Accounts in a currency with no
+  /// rate yet are excluded and listed in [missingRates].
+  ConsolidatedAmount get consolidated =>
+      (accounts ?? const <Account>[]).consolidatedNet;
+
+  double get totalBalance => consolidated.amount;
+
+  List<String> get missingRates => consolidated.missingRates;
 
   List<Account> get activeAccounts =>
       accounts?.where((a) => !a.isArchived).toList() ?? [];

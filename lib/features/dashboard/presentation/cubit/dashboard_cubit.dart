@@ -17,10 +17,11 @@ class DashboardCubit extends Cubit<DashboardState> {
     _accountsSub?.cancel();
     _accountsSub = _getAccounts.watch(userId).listen(
       (accounts) {
-        final totalBalance = accounts.fold(0.0, (sum, a) => sum + a.netBalance);
+        final net = accounts.consolidatedNet;
         emit(DashboardState.loaded(
           accounts: accounts,
-          totalBalance: totalBalance,
+          totalBalance: net.amount,
+          missingRates: net.missingRates,
         ));
       },
       onError: (e) => emit(DashboardState.error(e.toString())),

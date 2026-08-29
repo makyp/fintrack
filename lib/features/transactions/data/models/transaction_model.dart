@@ -19,6 +19,7 @@ class TransactionModel extends Transaction {
     super.tags = const [],
     required super.createdAt,
     super.installments,
+    super.currency,
   });
 
   factory TransactionModel.fromFirestore(Map<String, dynamic> map, String id) {
@@ -45,6 +46,9 @@ class TransactionModel extends Transaction {
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
       installments: (map['installments'] as num?)?.toInt(),
+      // Movements written before multi-currency have no code: they were all
+      // in what is now the base currency.
+      currency: map['currency'] as String?,
     );
   }
 
@@ -64,6 +68,7 @@ class TransactionModel extends Transaction {
       'tags': tags,
       'createdAt': Timestamp.fromDate(createdAt),
       if (installments != null && installments! > 1) 'installments': installments,
+      'currency': currency,
     };
   }
 
@@ -83,5 +88,6 @@ class TransactionModel extends Transaction {
         tags: t.tags,
         createdAt: t.createdAt,
         installments: t.installments,
+        currency: t.currency,
       );
 }

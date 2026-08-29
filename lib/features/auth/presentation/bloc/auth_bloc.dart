@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/domain/currency_registry.dart';
 import '../../../../core/services/session_hint.dart';
 import '../../domain/entities/app_user.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -279,6 +280,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await _repository.updateProfile(
       displayName: event.displayName,
       currency: event.currency,
+      exchangeRates: event.exchangeRates,
       photoUrl: event.photoUrl,
       reminderTime: event.reminderTime,
     );
@@ -300,6 +302,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
     await SessionHint.set(false);
     emit(const AuthState.unauthenticated());
+  }
+
+  /// Every path that authenticates or signs out ends in a state change, so
+  /// this is the single place that keeps the money settings in sync — the
+  /// registry is read synchronously from models and the PDF generator, where
+  /// there is no bloc to ask.
+  @override
+  void onChange(Change<AuthState> change) {
+    super.onChange(change);
+    final user = change.nextState.user;
+    if (user == null) {
+      CurrencyRegistry.reset();
+    } else {
+      CurrencyRegistry.snapshot(
+          base: user.currency, rates: user.exchangeRates);
+    }
   }
 
   @override

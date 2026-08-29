@@ -108,6 +108,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, AppUser>> updateProfile({
     String? displayName,
     String? currency,
+    Map<String, double>? exchangeRates,
     String? photoUrl,
     String? reminderTime,
   }) async {
@@ -115,6 +116,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = await _dataSource.updateProfile(
         displayName: displayName,
         currency: currency,
+        exchangeRates: exchangeRates,
         photoUrl: photoUrl,
         reminderTime: reminderTime,
       );

@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/domain/currency_registry.dart';
+
 enum AccountType {
   cash,
   checking,
@@ -153,4 +155,30 @@ class Account extends Equatable {
 
   @override
   List<Object?> get props => [id, userId, name, type, balance, currency, colorValue, icon, isArchived, interestRate, statementDay, paymentDay];
+}
+
+/// Totals across accounts that may be held in different currencies.
+///
+/// Every sum goes through [CurrencyRegistry], so an account in USD is counted
+/// at the rate the user typed — and, when there is no rate yet, is left out and
+/// reported in [ConsolidatedAmount.missingRates] instead of being added at 1:1.
+extension AccountTotals on Iterable<Account> {
+  ConsolidatedAmount get consolidatedNet => CurrencyRegistry.consolidate(
+      map((a) => MapEntry(a.netBalance, a.currency)));
+
+  ConsolidatedAmount get consolidatedAssets => CurrencyRegistry.consolidate(
+      where((a) => !a.type.isLiability).map((a) => MapEntry(a.balance, a.currency)));
+
+  ConsolidatedAmount get consolidatedLiabilities => CurrencyRegistry.consolidate(
+      where((a) => a.type.isLiability).map((a) => MapEntry(a.balance, a.currency)));
+
+  /// Every currency these accounts are held in, base included, sorted.
+  List<String> get currenciesInUse {
+    final codes = map((a) => a.currency.toUpperCase()).toSet().toList()..sort();
+    return codes;
+  }
+
+  /// True once money is held in more than one currency — the trigger for
+  /// showing conversion hints and the rates editor.
+  bool get isMultiCurrency => currenciesInUse.length > 1;
 }

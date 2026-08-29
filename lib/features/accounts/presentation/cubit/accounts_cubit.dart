@@ -73,10 +73,7 @@ class AccountsCubit extends Cubit<AccountsState> {
     );
   }
 
-  double get consolidatedBalance {
-    if (state.accounts == null) return 0;
-    return state.accounts!.fold(0.0, (sum, a) => sum + a.netBalance);
-  }
+  double get consolidatedBalance => state.totalBalance;
 
   @override
   Future<void> close() {

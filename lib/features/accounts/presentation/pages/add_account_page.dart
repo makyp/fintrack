@@ -7,6 +7,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../../core/domain/currency.dart';
+import '../../../../core/domain/currency_registry.dart';
 import '../../domain/entities/account.dart';
 import '../cubit/accounts_cubit.dart';
 import '../cubit/accounts_state.dart';
@@ -28,6 +30,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
   late final AccountsCubit _cubit;
 
   AccountType _selectedType = AccountType.checking;
+  String _currency = CurrencyRegistry.base;
   int _selectedColor = 0xFF2563EB;
   bool _isLoading = false;
 
@@ -65,6 +68,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
           .text;
       _selectedType = a.type;
       _selectedColor = a.colorValue;
+      _currency = a.currency;
       if (a.interestRate != null) {
         _rateCtrl.text = (a.interestRate! * 100).toStringAsFixed(2);
       }
@@ -111,6 +115,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
         final updated = widget.editAccount!.copyWith(
           name: name,
           type: _selectedType,
+          currency: _currency,
           colorValue: _selectedColor,
           icon: _selectedType.icon,
           interestRate: interestRate,
@@ -128,6 +133,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
           name: name,
           type: _selectedType,
           balance: balance,
+          currency: _currency,
           colorValue: _selectedColor,
           icon: _selectedType.icon,
           createdAt: DateTime.now(),
@@ -198,6 +204,8 @@ class _AddAccountPageState extends State<AddAccountPage> {
                       (v == null || v.isEmpty) ? 'Ingresa un nombre' : null,
                 ),
               ],
+              const SizedBox(height: AppDimensions.md),
+              _buildCurrencyPicker(),
               if (_selectedType == AccountType.highYield) ...[
                 const SizedBox(height: AppDimensions.md),
                 TextFormField(
@@ -232,7 +240,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
                     // you have — say so instead of "saldo".
                     labelText: _isCredit ? 'Deuda actual' : 'Saldo inicial',
                     hintText: '0',
-                    prefixText: '\$ ',
+                    prefixText: '${Currency.byCode(_currency).symbol} ',
                   ),
                   validator: (v) => (v == null || v.isEmpty)
                       ? (_isCredit ? 'Ingresa la deuda actual' : 'Ingresa el saldo')
@@ -380,6 +388,43 @@ class _AddAccountPageState extends State<AddAccountPage> {
     if (statement == null || payment == null) return null;
     return 'Te avisaremos el día $statement (corte), 3 días antes del pago y '
         'el día $payment (fecha límite de pago).';
+  }
+
+  /// Currency of this account. Defaults to the user's base currency, so
+  /// single-currency users just leave it alone; picking a different one is
+  /// what turns the rates editor on in Preferencias.
+  Widget _buildCurrencyPicker() {
+    final base = CurrencyRegistry.base;
+    final isForeign = _currency.toUpperCase() != base.toUpperCase();
+    final rate = CurrencyRegistry.rateFor(_currency);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: Currency.isKnown(_currency) ? _currency : base,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Moneda',
+            prefixIcon: Icon(Icons.paid_outlined),
+          ),
+          items: [
+            for (final c in Currency.catalog)
+              DropdownMenuItem(value: c.code, child: Text(c.label)),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => _currency = v);
+          },
+        ),
+        if (isForeign && rate == null) ...[
+          const SizedBox(height: AppDimensions.sm),
+          Text(
+            'Falta la tasa de $_currency. Agrégala en Perfil › Preferencias '
+            'para que esta cuenta entre en tu balance total.',
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _buildDayDropdown({
