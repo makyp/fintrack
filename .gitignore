@@ -42,3 +42,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# iOS — artefactos de build y credenciales que NO van al repositorio.
+# GoogleService-Info.plist trae claves del proyecto Firebase: se descarga de la
+# consola en cada máquina, igual que google-services.json en Android.
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/App.framework
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/ephemeral/
+**/ios/Podfile.lock
+**/ios/Runner/GoogleService-Info.plist
